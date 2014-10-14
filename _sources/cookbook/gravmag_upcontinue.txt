@@ -1,0 +1,12 @@
+.. _cookbook_gravmag_upcontinue:
+
+GravMag: Upward continuation of noisy gz data using the analytical formula
+===========================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/gravmag_upcontinue.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/gravmag_upcontinue.py
+    :language: python
+    :linenos:

@@ -1,0 +1,131 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fatiando.constants &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for fatiando.constants</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Holds all physical constants and unit conversions used in :mod:`fatiando`.</span>
+
+<span class="sd">All modules should import the constants from here!</span>
+
+<span class="sd">All constants should be in SI, unless otherwise stated!</span>
+
+<span class="sd">----</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c">#: The default thermal diffusivity in :math:`m^2/s`</span>
+<span class="n">THERMAL_DIFFUSIVITY</span> <span class="o">=</span> <span class="mf">0.000001</span>
+
+<span class="c">#: The default thermal diffusivity but in :math:`m^2/year`</span>
+<span class="n">THERMAL_DIFFUSIVITY_YEAR</span> <span class="o">=</span> <span class="mf">31.5576</span>
+
+<span class="c">#: Conversion factor from SI units to Eotvos: :math:`1/s^2 = 10^9\ Eotvos`</span>
+<span class="n">SI2EOTVOS</span> <span class="o">=</span> <span class="mf">1000000000.0</span>
+
+<span class="c">#: Conversion factor from SI units to mGal: :math:`1\ m/s^2 = 10^5\ mGal`</span>
+<span class="n">SI2MGAL</span> <span class="o">=</span> <span class="mf">100000.0</span>
+
+<span class="c">#: The gravitational constant in :math:`m^3 kg^{-1} s^{-1}`</span>
+<span class="n">G</span> <span class="o">=</span> <span class="mf">0.00000000006673</span>
+
+<span class="c">#: Proportionality constant used in the magnetic method in henry/m (SI)</span>
+<span class="n">CM</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">7</span><span class="p">)</span>
+
+<span class="c">#: Conversion factor from tesla to nanotesla</span>
+<span class="n">T2NT</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span>
+
+<span class="c">#: The mean earth radius in meters</span>
+<span class="n">MEAN_EARTH_RADIUS</span> <span class="o">=</span> <span class="mf">6378137.0</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

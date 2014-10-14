@@ -1,0 +1,222 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Cookbook &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="index.html" />
+    <link rel="next" title="Geothermal: Forward and inverse modeling of an abrupt change in temperature measured in a well" href="cookbook/geothermal_climsig_abrupt.html" />
+    <link rel="prev" title="Base data module class (fatiando.inversion.datamodule)" href="api/inversion.datamodule.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="cookbook/geothermal_climsig_abrupt.html" title="Geothermal: Forward and inverse modeling of an abrupt change in temperature measured in a well"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="api/inversion.datamodule.html" title="Base data module class (fatiando.inversion.datamodule)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Fatiando a Terra v0.1</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="cookbook">
+<span id="id1"></span><h1>Cookbook<a class="headerlink" href="#cookbook" title="Permalink to this headline">¶</a></h1>
+<p>Here you&#8217;ll find some recipes
+for doing common tasks using Fatiando,
+like generating synthetic data,
+running inversions,
+and plotting things.</p>
+<div class="admonition tip">
+<p class="first admonition-title">Tip</p>
+<p class="last">You can download <tt class="docutils literal"><span class="pre">.py</span></tt> files of the recipes by clicking on the
+<tt class="docutils literal"><span class="pre">[source</span> <span class="pre">code]</span></tt> link bellow the recipe title.</p>
+</div>
+<div class="admonition tip">
+<p class="first admonition-title">Tip</p>
+<p>On <a class="reference external" href="http://www.ipython.org">IPython</a>, try using the <tt class="docutils literal"><span class="pre">%load</span></tt> magic to load a recipe from the
+internet directly into your session:</p>
+<div class="last highlight-python"><div class="highlight"><pre>%load http://fatiando.readthedocs.org/en/latest/_static/cookbook/gravmag_mag_polyprism.py
+</pre></div>
+</div>
+</div>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/geothermal_climsig_abrupt.html">Geothermal: Forward and inverse modeling of an abrupt change in temperature measured in a well</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/geothermal_climsig_linear.html">Geothermal: Forward and inverse modeling of a linear change in temperature measured in a well</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/geothermal_climsig_wrong.html">Geothermal: Climate signal: What happens when assuming a climate change is linear, when in fact it was abrupt?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_2d_polygon_interactive.html">GravMag: Interactive 2D forward modeling with polygons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_2d_polygon_picker.html">GravMag: 2D forward modeling with polygons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_basin2d_trapezoidal.html">GravMag: Simple gravity inversion for the relief of a 2D trapezoidal basin</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_basin2d_trapezoidal_forward.html">GravMag: Interactive 2D forward gravity modeling of a trapezoidal basin</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_basin2d_triangular.html">GravMag: Simple gravity inversion for the relief of a 2D triangular basin</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_basin2d_triangular_forward.html">GravMag: Interactive 2D forward gravity modeling of a triangular basin</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_euler_classic.html">GravMag: Classic 3D Euler deconvolution of magnetic data (single window)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_euler_classic_expanding_window.html">GravMag: Classic 3D Euler deconvolution of magnetic data using an expanding window</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_euler_classic_noisy.html">GravMag: Classic 3D Euler deconvolution of noisy magnetic data (single window)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_fourier_deriv.html">GravMag: Calculating the derivatives of the gravity anomaly using FFT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_grav_polyprism.html">GravMag: Forward gravity modeling using a stack of 3D polygonal prisms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_grav_prism.html">GravMag: Forward modeling of the gravitational potential and its derivatives using 3D prisms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_grav_sphere.html">GravMag: Forward modeling of the gravity anomaly using spheres (calculate on random points)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_grav_tesseroid.html">GravMag: Forward modeling of the gravitational potential and its derivatives using tesseroids</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_grav_tesseroid_parallel.html">GravMag: Forward modeling of the gravity anomaly using tesseroids in parallel using <tt class="docutils literal"><span class="pre">multiprocessing</span></tt></a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_harvester_grav.html">GravMag: 3D gravity inversion by planting anomalous densities using <tt class="docutils literal"><span class="pre">harvester</span></tt> (simple example)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_harvester_grav2.html">GravMag: 3D gravity inversion by planting anomalous densities using <tt class="docutils literal"><span class="pre">harvester</span></tt> (more complex interactive example)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_harvester_tensor.html">GravMag: 3D gravity gradient inversion by planting anomalous densities using <tt class="docutils literal"><span class="pre">harvester</span></tt> (with non-targeted sources)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_harvester_tensor2.html">GravMag: 3D gravity gradient inversion by planting anomalous densities using <tt class="docutils literal"><span class="pre">harvester</span></tt> (3 sources sources)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_harvester_tensor3.html">GravMag: 3D gravity gradient inversion by planting anomalous densities using <tt class="docutils literal"><span class="pre">harvester</span></tt> (dipping example)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_imaging_compare.html">GravMag: Compare the results of different 3D potential field imaging methods (migration, generalized inverse, and sandwich model)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_imaging_geninv.html">GravMag: 3D imaging using the Generalized Inverse method on synthetic gravity data (simple model)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_imaging_geninv2.html">GravMag: 3D imaging using the Generalized Inverse method on synthetic gravity data (more complex model + noisy data)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_imaging_migration.html">GravMag: 3D imaging using the migration method on synthetic gravity data (simple model)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_imaging_migration2.html">GravMag: 3D imaging using the migration method on synthetic gravity data (more complex model + noisy data)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_imaging_sandwich.html">GravMag: 3D imaging using the sandwich model method on synthetic gravity data (simple example)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_imaging_sandwich2.html">GravMag: 3D imaging using the sandwich model method on synthetic gravity data (more complex model)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_mag_polyprism.html">GravMag: 3D forward modeling of total-field magnetic anomaly using polygonal prisms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_mag_prism.html">GravMag: 3D forward modeling of total-field magnetic anomaly using rectangular prisms (model with induced and remanent magnetization)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_mag_sphere.html">GravMag: 3D forward modeling of total-field magnetic anomaly using spheres</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_prism_irregular_grid.html">GravMag: Generate synthetic gravity data on an irregular grid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_tensor_centerofmass.html">GravMag: Center of mass estimation using the first eigenvector of the gravity gradient tensor (simple model)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_tensor_centerofmass2.html">GravMag: Center of mass estimation using the first eigenvector of the gravity gradient tensor (inverted pyramid model)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_tensor_centerofmass3.html">GravMag: Center of mass estimation using the first eigenvector of the gravity gradient tensor (pyramid model)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_tensor_centerofmass4.html">GravMag: Center of mass estimation using the first eigenvector of the gravity gradient tensor (elongated model)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_tensor_centerofmass5.html">GravMag: Center of mass estimation using the first eigenvector of the gravity gradient tensor (vertical elongated model)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_tensor_centerofmass6.html">GravMag: Center of mass estimation using the first eigenvector of the gravity gradient tensor (flat slab model)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_tensor_centerofmass7.html">GravMag: Center of mass estimation using the first eigenvector of the gravity gradient tensor (large flat slab model)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_tensor_centerofmass8.html">GravMag: Center of mass estimation using the first eigenvector of the gravity gradient tensor (2 sources with expanding windows)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_tensor_invariants.html">GravMag: Calculate the gravity gradient tensor invariants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_tensor_polyprism.html">GravMag: Generate synthetic gradient tensor data from polygonal prisms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_tensor_prism_noisy.html">GravMag: Generate noise-corrupted gravity gradient tensor data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/gravmag_upcontinue.html">GravMag: Upward continuation of noisy gz data using the analytical formula</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/grid_cut.html">Gridding: Cut a section from a grid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/grid_scatter.html">Gridding: Generate and plot irregular grids (scatter)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/io_crust2.0_tesseroid_model.html">I/O: Fetch the CRUST2.0 model, convert it to tesseroids and calculate its gravity signal in parallel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/mesher_prismmesh.html">Meshing: Make and plot a 3D prism mesh</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/mesher_prismmesh_filter.html">Meshing: Filter prisms from a 3D prism mesh based on their physical properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/mesher_prismmesh_topo.html">Meshing: Make and plot a 3D prism mesh with topography</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/mesher_prismmesh_vardens.html">Meshing: Make a 3D prism mesh with depth-varying density</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/mesher_prismrelief_grav.html">Meshing: Generate a topographic model using prisms and calculate its gravity anomaly</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/mesher_prismrelief_topo.html">Meshing: Generate a 3D prism model of the topography</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/mesher_squaremesh_from_image.html">Meshing: Generate a SquareMesh and get the physical properties from an image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/mesher_tesseroidmesh.html">Meshing: Make and plot a tesseroid mesh</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/mesher_tesseroidmesh_topo.html">Meshing: Make and plot a tesseroid mesh with topography</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/seismic_epic2d.html">Seismic: 2D epicenter estimation assuming a homogeneous and flat Earth</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/seismic_epic2d_equality.html">Seismic: 2D epicenter estimation on a flat Earth using equality constraints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/seismic_epic2d_iterate.html">Seismic: Show steps taken by different algorithms for 2D epicenter estimation on a flat Earth</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/seismic_profile_vertical.html">Seismic: Invert vertical seismic profile (VSP) traveltimes for the velocity of the layers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/seismic_profile_vertical_interactive.html">Seismic: Interactive forward modeling of 1D vertical seismic profile (VSP) data in layered media</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/seismic_profile_vertical_sharp.html">Seismic: Invert vertical seismic profile (VSP) traveltimes using sharpness regularization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/seismic_profile_vertical_smooth.html">Seismic: Invert vertical seismic profile (VSP) traveltimes using smoothness regularization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/seismic_srtomo_damped.html">Seismic: 2D straight-ray tomography using damping regularization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/seismic_srtomo_sharp.html">Seismic: 2D straight-ray tomography using sharpness (total variation) regularization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/seismic_srtomo_smooth.html">Seismic: 2D straight-ray tomography using smoothness regularization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/seismic_srtomo_sparse.html">Seismic: 2D straight-ray tomography of large data sets and models using sparse matrices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/seismic_wavefd_elastic_psv.html">Seismic: 2D finite difference simulation of elastic P and SV wave propagation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/seismic_wavefd_elastic_sh.html">Seismic: 2D finite difference simulation of elastic SH wave propagation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/seismic_wavefd_elastic_sh_homogeneous.html">Seismic: 2D finite difference simulation of elastic SH wave propagation in a homogeneous medium (no Love wave)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/seismic_wavefd_love_wave.html">Seismic: 2D finite difference simulation of elastic SH wave propagation in a medium with a discontinuity (i.e., Moho), generating Love waves.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/seismic_wavefd_rayleigh_wave.html">Seismic: 2D finite difference simulation of elastic P and SV wave propagation in a medium with a discontinuity (i.e., Moho), generating Rayleigh waves</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/vis_mpl_basemap.html">Vis: Plot a map using the Orthographic map projection and filled contours</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/vis_mpl_basemap2.html">Vis: Plot a map using the Mercator map projection and pseudo-color</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/vis_mpl_basemap3.html">Vis: Plot a map using the Robinson map projection and contours</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook/vis_myv_earth.html">Vis: Plot the Earth, continents, inner and outer core in 3D with Mayavi2</a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="api/inversion.datamodule.html"
+                        title="previous chapter">Base data module class (<tt class="docutils literal"><span class="pre">fatiando.inversion.datamodule</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="cookbook/geothermal_climsig_abrupt.html"
+                        title="next chapter">Geothermal: Forward and inverse modeling of an abrupt change in temperature measured in a well</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/cookbook.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="cookbook/geothermal_climsig_abrupt.html" title="Geothermal: Forward and inverse modeling of an abrupt change in temperature measured in a well"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="api/inversion.datamodule.html" title="Base data module class (fatiando.inversion.datamodule)"
+             >previous</a> |</li>
+        <li><a href="index.html">Fatiando a Terra v0.1</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

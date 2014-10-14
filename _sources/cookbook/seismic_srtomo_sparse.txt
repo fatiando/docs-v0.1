@@ -1,0 +1,12 @@
+.. _cookbook_seismic_srtomo_sparse:
+
+Seismic: 2D straight-ray tomography of large data sets and models using sparse matrices
+========================================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/seismic_srtomo_sparse.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/seismic_srtomo_sparse.py
+    :language: python
+    :linenos:

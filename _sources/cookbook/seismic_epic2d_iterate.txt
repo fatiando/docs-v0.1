@@ -1,0 +1,12 @@
+.. _cookbook_seismic_epic2d_iterate:
+
+Seismic: Show steps taken by different algorithms for 2D epicenter estimation on a flat Earth
+==============================================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/seismic_epic2d_iterate.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/seismic_epic2d_iterate.py
+    :language: python
+    :linenos:

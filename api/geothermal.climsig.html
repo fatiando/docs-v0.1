@@ -1,0 +1,476 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Climate change signal in well temperature logs (fatiando.geothermal.climsig) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Geothermal heat (fatiando.geothermal)" href="geothermal.html" />
+    <link rel="next" title="Meshing (fatiando.mesher)" href="mesher.html" />
+    <link rel="prev" title="Geothermal heat (fatiando.geothermal)" href="geothermal.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mesher.html" title="Meshing (fatiando.mesher)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="geothermal.html" title="Geothermal heat (fatiando.geothermal)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="geothermal.html" accesskey="U">Geothermal heat (<tt class="docutils literal"><span class="pre">fatiando.geothermal</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.geothermal.climsig">
+<span id="climate-change-signal-in-well-temperature-logs-fatiando-geothermal-climsig"></span><span id="fatiando-geothermal-climsig"></span><h1>Climate change signal in well temperature logs (<tt class="docutils literal"><span class="pre">fatiando.geothermal.climsig</span></tt>)<a class="headerlink" href="#module-fatiando.geothermal.climsig" title="Permalink to this headline">¶</a></h1>
+<p>Modeling and inversion of temperature residuals measured in wells due to
+temperature perturbations in the surface.</p>
+<p>Perturbations can be of two kinds:</p>
+<p><strong>Abrupt</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.geothermal.climsig.abrupt" title="fatiando.geothermal.climsig.abrupt"><tt class="xref py py-func docutils literal"><span class="pre">abrupt</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.geothermal.climsig.iabrupt" title="fatiando.geothermal.climsig.iabrupt"><tt class="xref py py-func docutils literal"><span class="pre">iabrupt</span></tt></a></li>
+</ul>
+<p>Assumes that the temperature perturbation was abrupt. The residual temperature
+at a depth <span class="math">\(z_i\)</span> in the well at a time <span class="math">\(t\)</span> after the perturbation is
+given by</p>
+<div class="math">
+\[T_i(z_i) = A \left[1 - \mathrm{erf}\left(
+\frac{z_i}{\sqrt{4\lambda t}}\right)\right]\]</div>
+<p>where <span class="math">\(A\)</span> is the amplitude of the perturbation, <span class="math">\(\lambda\)</span> is the
+thermal diffusivity of the medium, and <span class="math">\(\mathrm{erf}\)</span> is the error
+function.</p>
+<p>Example of inverting for the amplitude and time since the perturbation using
+synthetic data:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">fatiando</span> <span class="kn">as</span> <span class="nn">ft</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Generate the sythetic data along a well</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">zp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">amp</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">age</span> <span class="o">=</span> <span class="mi">100</span> <span class="c"># Uses years to avoid overflows</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">temp</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">geothermal</span><span class="o">.</span><span class="n">climsig</span><span class="o">.</span><span class="n">abrupt</span><span class="p">(</span><span class="n">amp</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">zp</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Run the inversion for the amplitude and time</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span><span class="p">,</span> <span class="n">residuals</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">geothermal</span><span class="o">.</span><span class="n">climsig</span><span class="o">.</span><span class="n">iabrupt</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="n">zp</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&quot;amp: </span><span class="si">%.2f</span><span class="s">  age: </span><span class="si">%.2f</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="go">amp: 2.00  age: 100.00</span>
+</pre></div>
+</div>
+<p><strong>Linear</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.geothermal.climsig.linear" title="fatiando.geothermal.climsig.linear"><tt class="xref py py-func docutils literal"><span class="pre">linear</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.geothermal.climsig.ilinear" title="fatiando.geothermal.climsig.ilinear"><tt class="xref py py-func docutils literal"><span class="pre">ilinear</span></tt></a></li>
+</ul>
+<p>Assumes that the temperature perturbation was linear with time. The residual
+temperature at a depth <span class="math">\(z_i\)</span> in the well at a time <span class="math">\(t\)</span> after the
+perturbation was started is given by</p>
+<div class="math">
+\[T_i(z_i) = A \left[
+\left(1 + 2\frac{z_i^2}{4\lambda t}\right)
+\mathrm{erfc}\left(\frac{z_i}{\sqrt{4\lambda t}}\right) -
+\frac{2}{\sqrt{\pi}}\left(\frac{z_i}{\sqrt{4\lambda t}}\right)
+\mathrm{exp}\left(-\frac{z_i^2}{4\lambda t}\right)
+\right]\]</div>
+<p>where <span class="math">\(A\)</span> is the amplitude of the perturbation, <span class="math">\(\lambda\)</span> is the
+thermal diffusivity of the medium, and <span class="math">\(\mathrm{erf}\)</span> is the error
+function.</p>
+<p>Example of inverting for the amplitude and time since the perturbation using
+synthetic data:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">fatiando</span> <span class="kn">as</span> <span class="nn">ft</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Generate the sythetic data along a well</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">zp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">amp</span> <span class="o">=</span> <span class="mf">3.45</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">age</span> <span class="o">=</span> <span class="mf">52.5</span> <span class="c"># Uses years to avoid overflows</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">temp</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">geothermal</span><span class="o">.</span><span class="n">climsig</span><span class="o">.</span><span class="n">linear</span><span class="p">(</span><span class="n">amp</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">zp</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Run the inversion for the amplitude and time</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span><span class="p">,</span> <span class="n">residuals</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">geothermal</span><span class="o">.</span><span class="n">climsig</span><span class="o">.</span><span class="n">ilinear</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="n">zp</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&quot;amp: </span><span class="si">%.2f</span><span class="s">  age: </span><span class="si">%.2f</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="go">amp: 3.45  age: 52.50</span>
+</pre></div>
+</div>
+<hr class="docutils" />
+<dl class="class">
+<dt id="fatiando.geothermal.climsig.AbruptDM">
+<em class="property">class </em><tt class="descclassname">fatiando.geothermal.climsig.</tt><tt class="descname">AbruptDM</tt><big>(</big><em>temp</em>, <em>zp</em>, <em>diffus=31.5576</em><big>)</big><a class="reference internal" href="../_modules/fatiando/geothermal/climsig.html#AbruptDM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.geothermal.climsig.AbruptDM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="inversion.datamodule.html#fatiando.inversion.datamodule.DataModule" title="fatiando.inversion.datamodule.DataModule"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.inversion.datamodule.DataModule</span></tt></a></p>
+<p>Data module for a single abrupt temperature perturbation.</p>
+<p>Packs the necessary data for the inversion.</p>
+<p>Derivatives with respect to the amplitude and age are calculated using the
+formula</p>
+<div class="math">
+\[\frac{\partial T_i}{\partial A} = 1 - \mathrm{erf}\left(
+\frac{z_i}{\sqrt{4\lambda t}}\right)\]</div>
+<p>and</p>
+<div class="math">
+\[\frac{\partial T_i}{\partial t} = \frac{A}{t\sqrt{\pi}}
+\left(\frac{z_i}{\sqrt{4\lambda t}}\right)
+\exp\left[-\left(\frac{z_i}{\sqrt{4\lambda t}}\right)^2\right]\]</div>
+<p>The Hessian matrix is calculated using a Gauss-Newton approximation.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>temp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The temperature profile</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>zp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">Depths along the profile</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>diffus <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Thermal diffusivity of the medium (in m^2/year)</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.geothermal.climsig.LinearDM">
+<em class="property">class </em><tt class="descclassname">fatiando.geothermal.climsig.</tt><tt class="descname">LinearDM</tt><big>(</big><em>temp</em>, <em>zp</em>, <em>diffus=31.5576</em><big>)</big><a class="reference internal" href="../_modules/fatiando/geothermal/climsig.html#LinearDM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.geothermal.climsig.LinearDM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="inversion.datamodule.html#fatiando.inversion.datamodule.DataModule" title="fatiando.inversion.datamodule.DataModule"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.inversion.datamodule.DataModule</span></tt></a></p>
+<p>Data module for a single linear temperature perturbation.</p>
+<p>Packs the necessary data for the inversion.</p>
+<p>Derivatives with respect to the age are calculated using a 2-point finite
+difference approximation. Derivatives with respect to amplitude are
+calculate using the formula</p>
+<div class="math">
+\[\frac{\partial T_i}{\partial A} =
+\left(1 + 2\frac{z_i^2}{4\lambda t}\right)
+\mathrm{erfc}\left(\frac{z_i}{\sqrt{4\lambda t}}\right) -
+\frac{2}{\sqrt{\pi}}\left(\frac{z_i}{\sqrt{4\lambda t}}\right)
+\mathrm{exp}\left(-\frac{z_i^2}{4\lambda t}\right)\]</div>
+<p>The Hessian matrix is calculated using a Gauss-Newton approximation.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>temp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The temperature profile</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>zp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The depths along the profile</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>diffus <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Thermal diffusivity of the medium (in m^2/year)</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.geothermal.climsig.abrupt">
+<tt class="descclassname">fatiando.geothermal.climsig.</tt><tt class="descname">abrupt</tt><big>(</big><em>amp</em>, <em>age</em>, <em>zp</em>, <em>diffus=31.5576</em><big>)</big><a class="reference internal" href="../_modules/fatiando/geothermal/climsig.html#abrupt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.geothermal.climsig.abrupt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the residual temperature profile in depth due to an abrupt
+temperature perturbation.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>amp <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Amplitude of the perturbation (in C)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>age <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Time since the perturbation occured (in years)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>zp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">Arry with the depths of computation points along the well (in meters)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>diffus <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Thermal diffusivity of the medium (in m^2/year)</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>See the default values for the thermal diffusivity in
+<a class="reference internal" href="constants.html#module-fatiando.constants" title="fatiando.constants"><tt class="xref py py-mod docutils literal"><span class="pre">fatiando.constants</span></tt></a>.</p>
+<p>Returns</p>
+<ul>
+<li><dl class="first docutils">
+<dt>temp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The residual temperatures measured along the well</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.geothermal.climsig.iabrupt">
+<tt class="descclassname">fatiando.geothermal.climsig.</tt><tt class="descname">iabrupt</tt><big>(</big><em>temp</em>, <em>zp</em>, <em>solver=None</em>, <em>diffus=31.5576</em>, <em>iterate=False</em><big>)</big><a class="reference internal" href="../_modules/fatiando/geothermal/climsig.html#iabrupt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.geothermal.climsig.iabrupt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invert the residual temperature profile to estimate the amplitude and age
+of an abrupt temperature perturbation.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>temp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The temperature profile</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>zp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The depths along the profile</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>solver <span class="classifier-delimiter">:</span> <span class="classifier">function or None</span></dt>
+<dd><p class="first last">A non-linear inverse problem solver generated by a factory function
+from a <a class="reference internal" href="inversion.html#module-fatiando.inversion" title="fatiando.inversion"><tt class="xref py py-mod docutils literal"><span class="pre">fatiando.inversion</span></tt></a> inverse problem solver module. If
+None, will use the default solver.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>diffus <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Thermal diffusivity of the medium (in m^2/year)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>iterate <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">If True, will yield the current estimate at each iteration yielded by
+<em>solver</em>. In Python terms, <tt class="docutils literal"><span class="pre">iterate=True</span></tt> transforms this function
+into a generator function.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>See the default values for the thermal diffusivity in
+<a class="reference internal" href="constants.html#module-fatiando.constants" title="fatiando.constants"><tt class="xref py py-mod docutils literal"><span class="pre">fatiando.constants</span></tt></a>.</p>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>results <span class="classifier-delimiter">:</span> <span class="classifier">list = [p, residuals]</span></dt>
+<dd><p class="first last">The estimated paramter vector <tt class="docutils literal"><span class="pre">p</span> <span class="pre">=</span> <span class="pre">[amp,</span> <span class="pre">age]</span></tt> and the residuals (fit)
+produced by the inversion. The residuals are the observed data minus the
+data predicted by the estimated parameters.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.geothermal.climsig.ilinear">
+<tt class="descclassname">fatiando.geothermal.climsig.</tt><tt class="descname">ilinear</tt><big>(</big><em>temp</em>, <em>zp</em>, <em>solver=None</em>, <em>diffus=31.5576</em>, <em>iterate=False</em><big>)</big><a class="reference internal" href="../_modules/fatiando/geothermal/climsig.html#ilinear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.geothermal.climsig.ilinear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invert the residual temperature profile to estimate the amplitude and age
+of a linear temperature perturbation.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>temp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">Array with the temperature profile</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>zp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">Array with the depths along the profile</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>solver <span class="classifier-delimiter">:</span> <span class="classifier">function</span></dt>
+<dd><p class="first last">A non-linear inverse problem solver generated by a factory function
+from a <a class="reference internal" href="inversion.html#module-fatiando.inversion" title="fatiando.inversion"><tt class="xref py py-mod docutils literal"><span class="pre">inversion</span></tt></a> inverse problem solver module.If
+None, will use the default solver.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>diffus <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Thermal diffusivity of the medium (in m^2/year)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>iterate <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">If True, will yield the current estimate at each iteration yielded by
+<em>solver</em>. In Python terms, <tt class="docutils literal"><span class="pre">iterate=True</span></tt> transforms this function
+into a generator function.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>See the default values for the thermal diffusivity in
+<a class="reference internal" href="constants.html#module-fatiando.constants" title="fatiando.constants"><tt class="xref py py-mod docutils literal"><span class="pre">fatiando.constants</span></tt></a>.</p>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>results <span class="classifier-delimiter">:</span> <span class="classifier">list = [p, residuals]</span></dt>
+<dd><p class="first last">The estimated paramter vector <tt class="docutils literal"><span class="pre">p</span> <span class="pre">=</span> <span class="pre">[amp,</span> <span class="pre">age]</span></tt> and the residuals (fit)
+produced by the inversion. The residuals are the observed data minus the
+data predicted by the estimated parameters.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.geothermal.climsig.linear">
+<tt class="descclassname">fatiando.geothermal.climsig.</tt><tt class="descname">linear</tt><big>(</big><em>amp</em>, <em>age</em>, <em>zp</em>, <em>diffus=31.5576</em><big>)</big><a class="reference internal" href="../_modules/fatiando/geothermal/climsig.html#linear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.geothermal.climsig.linear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the residual temperature profile in depth due to a linear
+temperature perturbation.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>amp <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Amplitude of the perturbation (in C)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>age <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Time since the perturbation occured (in years)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>zp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The depths of computation points along the well (in meters)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>diffus <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Thermal diffusivity of the medium (in m^2/year)</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>See the default values for the thermal diffusivity in
+<a class="reference internal" href="constants.html#module-fatiando.constants" title="fatiando.constants"><tt class="xref py py-mod docutils literal"><span class="pre">fatiando.constants</span></tt></a>.</p>
+<p>Returns</p>
+<ul>
+<li><dl class="first docutils">
+<dt>temp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The residual temperatures measured along the well</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="geothermal.html"
+                        title="previous chapter">Geothermal heat (<tt class="docutils literal"><span class="pre">fatiando.geothermal</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="mesher.html"
+                        title="next chapter">Meshing (<tt class="docutils literal"><span class="pre">fatiando.mesher</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/geothermal.climsig.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mesher.html" title="Meshing (fatiando.mesher)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="geothermal.html" title="Geothermal heat (fatiando.geothermal)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="geothermal.html" >Geothermal heat (<tt class="docutils literal"><span class="pre">fatiando.geothermal</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+.. _cookbook_gravmag_basin2d_trapezoidal_forward:
+
+GravMag: Interactive 2D forward gravity modeling of a trapezoidal basin
+========================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/gravmag_basin2d_trapezoidal_forward.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/gravmag_basin2d_trapezoidal_forward.py
+    :language: python
+    :linenos:

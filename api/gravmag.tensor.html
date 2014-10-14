@@ -1,0 +1,319 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Utilities for operating on the gradient tensor (fatiando.gravmag.tensor) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Gravity and magnetics (fatiando.gravmag)" href="gravmag.html" />
+    <link rel="next" title="3D Euler deconvolution methods (fatiando.gravmag.euler)" href="gravmag.euler.html" />
+    <link rel="prev" title="Imaging methods for potential fields (fatiando.gravmag.imaging)" href="gravmag.imaging.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag.euler.html" title="3D Euler deconvolution methods (fatiando.gravmag.euler)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gravmag.imaging.html" title="Imaging methods for potential fields (fatiando.gravmag.imaging)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="gravmag.html" accesskey="U">Gravity and magnetics (<tt class="docutils literal"><span class="pre">fatiando.gravmag</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.gravmag.tensor">
+<span id="utilities-for-operating-on-the-gradient-tensor-fatiando-gravmag-tensor"></span><span id="fatiando-gravmag-tensor"></span><h1>Utilities for operating on the gradient tensor (<tt class="docutils literal"><span class="pre">fatiando.gravmag.tensor</span></tt>)<a class="headerlink" href="#module-fatiando.gravmag.tensor" title="Permalink to this headline">¶</a></h1>
+<p>Utilities for operating on the gradient tensor of potential fields.</p>
+<p><strong>Functions</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.gravmag.tensor.invariants" title="fatiando.gravmag.tensor.invariants"><tt class="xref py py-func docutils literal"><span class="pre">invariants</span></tt></a>: Calculates the first
+(<span class="math">\(I_1\)</span>), second (<span class="math">\(I_2\)</span>), and dimensionless (<span class="math">\(I\)</span>) invariants</li>
+<li><a class="reference internal" href="#fatiando.gravmag.tensor.eigen" title="fatiando.gravmag.tensor.eigen"><tt class="xref py py-func docutils literal"><span class="pre">eigen</span></tt></a>: Calculates the eigenvalues and
+eigenvectors of the an array of gradient tensor measurements</li>
+<li><a class="reference internal" href="#fatiando.gravmag.tensor.center_of_mass" title="fatiando.gravmag.tensor.center_of_mass"><tt class="xref py py-func docutils literal"><span class="pre">center_of_mass</span></tt></a>: Estimate the center of
+mass of sources from the first eigenvector using the method of
+Beiki and Pedersen (2010)</li>
+</ul>
+<p><strong>Theory</strong></p>
+<p>Following Pedersen and Rasmussen (1990), the characteristic polynomail of the
+gravity gradient tensor <span class="math">\(\mathbf{\Gamma}\)</span> is</p>
+<div class="math">
+\[\lambda^3 + I_1\lambda - I_2 = 0\]</div>
+<p>where <span class="math">\(\lambda\)</span> is an eigen value and <span class="math">\(I_1\)</span> and <span class="math">\(I_2\)</span> are
+the two invariants. The dimensionless invariant <span class="math">\(I\)</span> is</p>
+<div class="math">
+\[I = -\dfrac{(I_2/2)^2}{(I_1/3)^3}\]</div>
+<p>The invariant <span class="math">\(I\)</span> indicates the dimensionality of the source.
+<span class="math">\(I = 0\)</span> for 2 dimensional bodies and <span class="math">\(I = 1\)</span> for a monopole.</p>
+<p><strong>References</strong></p>
+<p>Beiki, M., and L. B. Pedersen (2010), Eigenvector analysis of gravity gradient
+tensor to locate geologic bodies, Geophysics, 75(6), I37, doi:10.1190/1.3484098</p>
+<p>Pedersen, L. B., and T. M. Rasmussen (1990), The gradient tensor of potential
+field anomalies: Some implications on data collection and data processing of
+maps, Geophysics, 55(12), 1558, doi:10.1190/1.1442807</p>
+<hr class="docutils" />
+<dl class="function">
+<dt id="fatiando.gravmag.tensor.center_of_mass">
+<tt class="descclassname">fatiando.gravmag.tensor.</tt><tt class="descname">center_of_mass</tt><big>(</big><em>x</em>, <em>y</em>, <em>z</em>, <em>eigvec1</em>, <em>windows=1</em>, <em>wcenter=None</em>, <em>wmin=None</em>, <em>wmax=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/tensor.html#center_of_mass"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.tensor.center_of_mass" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimates the center of mass of a source using the method of Beiki and
+Pedersen (2010).</p>
+<p>Uses an expanding window to get the best estimate and deal with multiple
+sources.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>x, y, z <span class="classifier-delimiter">:</span> <span class="classifier">arrays</span></dt>
+<dd><p class="first last">The x, y, and z coordinates of the observation points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>eigvec1 <span class="classifier-delimiter">:</span> <span class="classifier">array (shape = (N, 3) where N is the number of observations)</span></dt>
+<dd><p class="first last">The first eigenvector of the gravity gradient tensor at each observation
+point</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>windows <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">The number of expanding windows to use</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>wcenter <span class="classifier-delimiter">:</span> <span class="classifier">list = [x, y]</span></dt>
+<dd><p class="first last">The [x, y] coordinates of the center of the expanding windows. Will
+default to the middle of the data area if None</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>wmin, wmax <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Minimum and maximum size of the expanding windows. Will default to
+10% data area and 100% data area, respectively, if None</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>[xo, yo, zo], sigma <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">xo, yo, zo are the coordinates of the estimated center of mass. sigma is
+the estimated standard deviation of the distances between the estimated
+center of mass and the lines passing through the observation point in
+the direction of the eigenvector</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">fatiando</span> <span class="kn">as</span> <span class="nn">ft</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Generate synthetic data using a prism</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">prism</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">mesher</span><span class="o">.</span><span class="n">Prism</span><span class="p">(</span><span class="o">-</span><span class="mi">200</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">100</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">200</span><span class="p">,{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">gridder</span><span class="o">.</span><span class="n">regular</span><span class="p">((</span><span class="o">-</span><span class="mi">500</span><span class="p">,</span><span class="mi">500</span><span class="p">,</span><span class="o">-</span><span class="mi">500</span><span class="p">,</span><span class="mi">500</span><span class="p">),</span> <span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">),</span> <span class="n">z</span><span class="o">=-</span><span class="mi">100</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tensor</span> <span class="o">=</span> <span class="p">[</span><span class="n">ft</span><span class="o">.</span><span class="n">gravmag</span><span class="o">.</span><span class="n">prism</span><span class="o">.</span><span class="n">gxx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="p">[</span><span class="n">prism</span><span class="p">]),</span>
+<span class="gp">... </span>          <span class="n">ft</span><span class="o">.</span><span class="n">gravmag</span><span class="o">.</span><span class="n">prism</span><span class="o">.</span><span class="n">gxy</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="p">[</span><span class="n">prism</span><span class="p">]),</span>
+<span class="gp">... </span>          <span class="n">ft</span><span class="o">.</span><span class="n">gravmag</span><span class="o">.</span><span class="n">prism</span><span class="o">.</span><span class="n">gxz</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="p">[</span><span class="n">prism</span><span class="p">]),</span>
+<span class="gp">... </span>          <span class="n">ft</span><span class="o">.</span><span class="n">gravmag</span><span class="o">.</span><span class="n">prism</span><span class="o">.</span><span class="n">gyy</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="p">[</span><span class="n">prism</span><span class="p">]),</span>
+<span class="gp">... </span>          <span class="n">ft</span><span class="o">.</span><span class="n">gravmag</span><span class="o">.</span><span class="n">prism</span><span class="o">.</span><span class="n">gyz</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="p">[</span><span class="n">prism</span><span class="p">]),</span>
+<span class="gp">... </span>          <span class="n">ft</span><span class="o">.</span><span class="n">gravmag</span><span class="o">.</span><span class="n">prism</span><span class="o">.</span><span class="n">gzz</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="p">[</span><span class="n">prism</span><span class="p">])]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Get the eigenvector</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">eigenvals</span><span class="p">,</span> <span class="n">eigenvecs</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">gravmag</span><span class="o">.</span><span class="n">tensor</span><span class="o">.</span><span class="n">eigen</span><span class="p">(</span><span class="n">tensor</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Now estimate the center of mass</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cm</span><span class="p">,</span> <span class="n">sigma</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">gravmag</span><span class="o">.</span><span class="n">tensor</span><span class="o">.</span><span class="n">center_of_mass</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">eigenvecs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">xo</span><span class="p">,</span> <span class="n">yo</span><span class="p">,</span> <span class="n">zo</span> <span class="o">=</span> <span class="n">cm</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&quot;</span><span class="si">%.2lf</span><span class="s">, </span><span class="si">%.2lf</span><span class="s">, </span><span class="si">%.2lf</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">xo</span><span class="p">,</span> <span class="n">yo</span><span class="p">,</span> <span class="n">zo</span><span class="p">)</span>
+<span class="go">-100.05, 0.00, 99.86</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.tensor.eigen">
+<tt class="descclassname">fatiando.gravmag.tensor.</tt><tt class="descname">eigen</tt><big>(</big><em>tensor</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/tensor.html#eigen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.tensor.eigen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the eigenvalues and eigenvectors of the gradient tensor.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The coordinate system used is x-&gt;North, y-&gt;East, z-&gt;Down</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>tensor <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">A list of arrays with the 6 components of the gradient tensor measured
+on a set of points. The order of the list should be:
+[gxx, gxy, gxz, gyy, gyz, gzz]</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>result <span class="classifier-delimiter">:</span> <span class="classifier">list = [[eigval1, eigval2, eigval3], [eigvec1, eigvec2, eigvec3]]</span></dt>
+<dd><p class="first">The eigenvalues and eigenvectors at each observation point.</p>
+<ul class="last">
+<li><dl class="first docutils">
+<dt>eigval1,2,3 <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The first, second, and third eigenvalues</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>eigvec1,2,3 <span class="classifier-delimiter">:</span> <span class="classifier">array (shape = (N, 3) where N is the number of points)</span></dt>
+<dd><p class="first last">The first, second, and third eigenvectors</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">tensor</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">eigenvals</span><span class="p">,</span> <span class="n">eigenvecs</span> <span class="o">=</span> <span class="n">eigen</span><span class="p">(</span><span class="n">tensor</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">eigenvals</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">eigenvecs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="go">[ 3.] [[ 0.  1.  0.]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">eigenvals</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">eigenvecs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="go">[ 2.] [[ 1.  0.  0.]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">eigenvals</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">eigenvecs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="go">[ 1.] [[ 0.  0.  1.]]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.tensor.invariants">
+<tt class="descclassname">fatiando.gravmag.tensor.</tt><tt class="descname">invariants</tt><big>(</big><em>tensor</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/tensor.html#invariants"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.tensor.invariants" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the first, second, and dimensionless invariants of the gradient
+tensor.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The coordinate system used is x-&gt;North, y-&gt;East, z-&gt;Down</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>tensor <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">A list of arrays with the 6 components of the gradient tensor measured
+on a set of points. The order of the list should be:
+[gxx, gxy, gxz, gyy, gyz, gzz]</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>invariants <span class="classifier-delimiter">:</span> <span class="classifier">list = [<span class="math">\(I_1\)</span>, <span class="math">\(I_2\)</span>, <span class="math">\(I\)</span>]</span></dt>
+<dd><p class="first last">The invariants calculated for each point</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gravmag.imaging.html"
+                        title="previous chapter">Imaging methods for potential fields (<tt class="docutils literal"><span class="pre">fatiando.gravmag.imaging</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gravmag.euler.html"
+                        title="next chapter">3D Euler deconvolution methods (<tt class="docutils literal"><span class="pre">fatiando.gravmag.euler</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/gravmag.tensor.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag.euler.html" title="3D Euler deconvolution methods (fatiando.gravmag.euler)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gravmag.imaging.html" title="Imaging methods for potential fields (fatiando.gravmag.imaging)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="gravmag.html" >Gravity and magnetics (<tt class="docutils literal"><span class="pre">fatiando.gravmag</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

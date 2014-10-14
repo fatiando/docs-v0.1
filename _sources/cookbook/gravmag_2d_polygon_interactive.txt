@@ -1,0 +1,12 @@
+.. _cookbook_gravmag_2d_polygon_interactive:
+
+GravMag: Interactive 2D forward modeling with polygons
+=======================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/gravmag_2d_polygon_interactive.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/gravmag_2d_polygon_interactive.py
+    :language: python
+    :linenos:

@@ -1,0 +1,12 @@
+.. _cookbook_seismic_wavefd_elastic_sh:
+
+Seismic: 2D finite difference simulation of elastic SH wave propagation
+========================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/seismic_wavefd_elastic_sh.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/seismic_wavefd_elastic_sh.py
+    :language: python
+    :linenos:

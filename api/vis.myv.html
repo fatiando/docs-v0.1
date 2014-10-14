@@ -1,0 +1,1025 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plot 3D objects in Mayavi2 (fatiando.vis.myv) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Visualization (fatiando.vis)" href="vis.html" />
+    <link rel="next" title="Input/Output (fatiando.io)" href="io.html" />
+    <link rel="prev" title="Plot 2D objects, maps and grids with matplotlib (fatiando.vis.mpl)" href="vis.mpl.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="io.html" title="Input/Output (fatiando.io)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="vis.mpl.html" title="Plot 2D objects, maps and grids with matplotlib (fatiando.vis.mpl)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="vis.html" accesskey="U">Visualization (<tt class="docutils literal"><span class="pre">fatiando.vis</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.vis.myv">
+<span id="plot-3d-objects-in-mayavi2-fatiando-vis-myv"></span><span id="fatiando-vis-myv"></span><h1>Plot 3D objects in Mayavi2 (<tt class="docutils literal"><span class="pre">fatiando.vis.myv</span></tt>)<a class="headerlink" href="#module-fatiando.vis.myv" title="Permalink to this headline">¶</a></h1>
+<p>Wrappers for calls to Mayavi2&#8217;s <cite>mlab</cite> module for plotting
+<a class="reference internal" href="mesher.html#module-fatiando.mesher" title="fatiando.mesher"><tt class="xref py py-mod docutils literal"><span class="pre">fatiando.mesher</span></tt></a> objects and automating common tasks.</p>
+<p><strong>Objects</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.vis.myv.prisms" title="fatiando.vis.myv.prisms"><tt class="xref py py-func docutils literal"><span class="pre">prisms</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.myv.polyprisms" title="fatiando.vis.myv.polyprisms"><tt class="xref py py-func docutils literal"><span class="pre">polyprisms</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.myv.points" title="fatiando.vis.myv.points"><tt class="xref py py-func docutils literal"><span class="pre">points</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.myv.tesseroids" title="fatiando.vis.myv.tesseroids"><tt class="xref py py-func docutils literal"><span class="pre">tesseroids</span></tt></a></li>
+</ul>
+<p><strong>Misc objects</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.vis.myv.outline" title="fatiando.vis.myv.outline"><tt class="xref py py-func docutils literal"><span class="pre">outline</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.myv.axes" title="fatiando.vis.myv.axes"><tt class="xref py py-func docutils literal"><span class="pre">axes</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.myv.wall_north" title="fatiando.vis.myv.wall_north"><tt class="xref py py-func docutils literal"><span class="pre">wall_north</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.myv.wall_south" title="fatiando.vis.myv.wall_south"><tt class="xref py py-func docutils literal"><span class="pre">wall_south</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.myv.wall_east" title="fatiando.vis.myv.wall_east"><tt class="xref py py-func docutils literal"><span class="pre">wall_east</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.myv.wall_west" title="fatiando.vis.myv.wall_west"><tt class="xref py py-func docutils literal"><span class="pre">wall_west</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.myv.wall_top" title="fatiando.vis.myv.wall_top"><tt class="xref py py-func docutils literal"><span class="pre">wall_top</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.myv.wall_bottom" title="fatiando.vis.myv.wall_bottom"><tt class="xref py py-func docutils literal"><span class="pre">wall_bottom</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.myv.earth" title="fatiando.vis.myv.earth"><tt class="xref py py-func docutils literal"><span class="pre">earth</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.myv.core" title="fatiando.vis.myv.core"><tt class="xref py py-func docutils literal"><span class="pre">core</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.myv.continents" title="fatiando.vis.myv.continents"><tt class="xref py py-func docutils literal"><span class="pre">continents</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.myv.meridians" title="fatiando.vis.myv.meridians"><tt class="xref py py-func docutils literal"><span class="pre">meridians</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.myv.parallels" title="fatiando.vis.myv.parallels"><tt class="xref py py-func docutils literal"><span class="pre">parallels</span></tt></a></li>
+</ul>
+<p><strong>Helpers</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.vis.myv.figure" title="fatiando.vis.myv.figure"><tt class="xref py py-func docutils literal"><span class="pre">figure</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.myv.title" title="fatiando.vis.myv.title"><tt class="xref py py-func docutils literal"><span class="pre">title</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.myv.show" title="fatiando.vis.myv.show"><tt class="xref py py-func docutils literal"><span class="pre">show</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.myv.savefig" title="fatiando.vis.myv.savefig"><tt class="xref py py-func docutils literal"><span class="pre">savefig</span></tt></a></li>
+</ul>
+<hr class="docutils" />
+<dl class="function">
+<dt id="fatiando.vis.myv.axes">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">axes</tt><big>(</big><em>plot</em>, <em>nlabels=5</em>, <em>extent=None</em>, <em>ranges=None</em>, <em>color=(0</em>, <em>0</em>, <em>0)</em>, <em>width=2</em>, <em>fmt='%-#.2f'</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#axes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.axes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an Axes module to a Mayavi2 plot or dataset.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>plot</dt>
+<dd><p class="first last">Either the plot (as returned by one of the plotting functions of this
+module) or a TVTK dataset.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>nlabels <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Number of labels on the axes</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>extent <span class="classifier-delimiter">:</span> <span class="classifier">list = [xmin, xmax, ymin, ymax, zmin, zmax]</span></dt>
+<dd><p class="first last">Default if the objects extent.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>ranges <span class="classifier-delimiter">:</span> <span class="classifier">list = [xmin, xmax, ymin, ymax, zmin, zmax]</span></dt>
+<dd><p class="first last">What will be display in the axes labels. Default is <em>extent</em></p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (r, g, b)</span></dt>
+<dd><p class="first last">RGB of the color of the axes and text</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>width <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Line width</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>fmt <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Label number format</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>axes <span class="classifier-delimiter">:</span> <span class="classifier">Mayavi axes instace</span></dt>
+<dd><p class="first last">The axes object in the pipeline</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.continents">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">continents</tt><big>(</big><em>color=(0</em>, <em>0</em>, <em>0)</em>, <em>linewidth=1</em>, <em>resolution=2</em>, <em>opacity=1</em>, <em>radius=6378137.0</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#continents"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.continents" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the outline of the continents.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">tuple</span></dt>
+<dd><p class="first last">RGB color of the lines. Default = black</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>linewidth <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The width of the continent lines</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>resolution <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The data_source.on_ratio parameter that controls the resolution of the
+continents</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>opacity <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The opacity of the lines. Must be between 0 and 1</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>radius <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The radius of the sphere where the continents will be plotted. Defaults
+to the mean Earth radius</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>continents <span class="classifier-delimiter">:</span> <span class="classifier">Mayavi surface</span></dt>
+<dd><p class="first last">The Mayavi surface element of the continents</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.core">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">core</tt><big>(</big><em>inner=False</em>, <em>color=(1</em>, <em>0</em>, <em>0)</em>, <em>opacity=1</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#core"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.core" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a sphere representing the Earth&#8217;s core.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>inner <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">If True, will use the radius of the inner core, else the outer core.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">tuple</span></dt>
+<dd><p class="first last">RGB color of the sphere. Defaults to red.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>opacity <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The opacity of the sphere. Must be between 0 and 1</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>sphere <span class="classifier-delimiter">:</span> <span class="classifier">Mayavi surface</span></dt>
+<dd><p class="first last">The Mayavi surface element of the sphere</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.earth">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">earth</tt><big>(</big><em>color=(0.4</em>, <em>0.5</em>, <em>1.0)</em>, <em>opacity=1</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#earth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.earth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a sphere representing the Earth.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">tuple</span></dt>
+<dd><p class="first last">RGB color of the sphere. Defaults to ocean blue.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>opacity <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The opacity of the sphere. Must be between 0 and 1</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>sphere <span class="classifier-delimiter">:</span> <span class="classifier">Mayavi surface</span></dt>
+<dd><p class="first last">The Mayavi surface element of the sphere</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.figure">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">figure</tt><big>(</big><em>size=None</em>, <em>zdown=True</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#figure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.figure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a default figure in Mayavi with white background</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>size <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (dx, dy)</span></dt>
+<dd><p class="first last">The size of the figure. If <tt class="docutils literal"><span class="pre">None</span></tt> will use the default size.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>zdown <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">If True, will turn the figure upside-down to make the z-axis point down</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Return:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>fig <span class="classifier-delimiter">:</span> <span class="classifier">Mayavi figure object</span></dt>
+<dd><p class="first last">The figure</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.meridians">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">meridians</tt><big>(</big><em>longitudes</em>, <em>color=(0</em>, <em>0</em>, <em>0)</em>, <em>linewidth=1</em>, <em>opacity=1</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#meridians"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.meridians" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw meridians on the Earth.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>longitudes <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The longitudes where the meridians will be drawn.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">tuple</span></dt>
+<dd><p class="first last">RGB color of the lines. Defaults to black.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>linewidth <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The width of the lines</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>opacity <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The opacity of the lines. Must be between 0 and 1</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>lines <span class="classifier-delimiter">:</span> <span class="classifier">Mayavi surface</span></dt>
+<dd><p class="first last">The Mayavi surface element of the lines</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.outline">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">outline</tt><big>(</big><em>extent=None</em>, <em>color=(0</em>, <em>0</em>, <em>0)</em>, <em>width=2</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#outline"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.outline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a default outline in Mayavi2.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>extent <span class="classifier-delimiter">:</span> <span class="classifier">list = [xmin, xmax, ymin, ymax, zmin, zmax]</span></dt>
+<dd><p class="first last">Default if the objects extent.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (r, g, b)</span></dt>
+<dd><p class="first last">RGB of the color of the axes and text</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>width <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Line width</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>outline <span class="classifier-delimiter">:</span> <span class="classifier">Mayavi outline instace</span></dt>
+<dd><p class="first last">The outline in the pipeline</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.parallels">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">parallels</tt><big>(</big><em>latitudes</em>, <em>color=(0</em>, <em>0</em>, <em>0)</em>, <em>linewidth=1</em>, <em>opacity=1</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#parallels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.parallels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw parallels on the Earth.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>latitudes <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The latitudes where the parallels will be drawn.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">tuple</span></dt>
+<dd><p class="first last">RGB color of the lines. Defaults to black.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>linewidth <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The width of the lines</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>opacity <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The opacity of the lines. Must be between 0 and 1</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>lines <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">List of the Mayavi surface elements of each line</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.points">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">points</tt><big>(</big><em>points</em>, <em>color=(0</em>, <em>0</em>, <em>0)</em>, <em>opacity=1</em>, <em>size=200.0</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#points"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a series of 3D points.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Still doesn&#8217;t plot points with physical properties.</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>points <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The list of points to plot. Each point is an [x, y, z] list with the
+x, y, and z coordinates of the point</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (r, g, b)</span></dt>
+<dd><p class="first last">RGB of the color of the points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>opacity <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Decimal percentage of opacity</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>size <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The size of the points (relative to their spacing)</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.polyprisms">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">polyprisms</tt><big>(</big><em>prisms</em>, <em>prop=None</em>, <em>style='surface'</em>, <em>opacity=1</em>, <em>edges=True</em>, <em>vmin=None</em>, <em>vmax=None</em>, <em>cmap='blue-red'</em>, <em>linewidth=0.1</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#polyprisms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.polyprisms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a list of 3D polygonal prisms using Mayavi2.</p>
+<p>Will not plot a value None in <em>prisms</em>.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>prisms <span class="classifier-delimiter">:</span> <span class="classifier">list of <a class="reference internal" href="mesher.html#fatiando.mesher.PolygonalPrism" title="fatiando.mesher.PolygonalPrism"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.PolygonalPrism</span></tt></a></span></dt>
+<dd><p class="first last">The prisms</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>prop <span class="classifier-delimiter">:</span> <span class="classifier">str or None</span></dt>
+<dd><p class="first last">The physical property of the prisms to use as the color scale. If a
+prism doesn&#8217;t have <em>prop</em>, or if it is None, then it will not be plotted</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>style <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Either <tt class="docutils literal"><span class="pre">'surface'</span></tt> for solid prisms or <tt class="docutils literal"><span class="pre">'wireframe'</span></tt> for just the
+contour</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>opacity <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Decimal percentage of opacity</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>edges <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">Wether or not to display the edges of the prisms in black lines. Will
+ignore this if <tt class="docutils literal"><span class="pre">style='wireframe'</span></tt></p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>vmin, vmax <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Min and max values for the color scale. If <em>None</em> will default to
+the min and max of <em>prop</em> in the prisms.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>cmap <span class="classifier-delimiter">:</span> <span class="classifier">Mayavi colormap</span></dt>
+<dd><p class="first last">Color map to use. See the &#8216;Colors and Legends&#8217; menu on the Mayavi2 GUI
+for valid color maps.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>linewidth <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The width of the lines (edges) of the prisms.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>surface</dt>
+<dd><p class="first last">the last element on the pipeline</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.prisms">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">prisms</tt><big>(</big><em>prisms</em>, <em>prop=None</em>, <em>style='surface'</em>, <em>opacity=1</em>, <em>edges=True</em>, <em>vmin=None</em>, <em>vmax=None</em>, <em>cmap='blue-red'</em>, <em>linewidth=0.1</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#prisms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.prisms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a list of 3D right rectangular prisms using Mayavi2.</p>
+<p>Will not plot a value None in <em>prisms</em></p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>prisms <span class="classifier-delimiter">:</span> <span class="classifier">list of <a class="reference internal" href="mesher.html#fatiando.mesher.Prism" title="fatiando.mesher.Prism"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.Prism</span></tt></a></span></dt>
+<dd><p class="first last">The prisms</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>prop <span class="classifier-delimiter">:</span> <span class="classifier">str or None</span></dt>
+<dd><p class="first last">The physical property of the prisms to use as the color scale. If a
+prism doesn&#8217;t have <em>prop</em>, or if it is None, then it will not be plotted</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>style <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Either <tt class="docutils literal"><span class="pre">'surface'</span></tt> for solid prisms or <tt class="docutils literal"><span class="pre">'wireframe'</span></tt> for just the
+contour</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>opacity <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Decimal percentage of opacity</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>edges <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">Wether or not to display the edges of the prisms in black lines. Will
+ignore this if <tt class="docutils literal"><span class="pre">style='wireframe'</span></tt></p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>vmin, vmax <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Min and max values for the color scale. If <em>None</em> will default to
+the min and max of <em>prop</em> in the prisms.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>cmap <span class="classifier-delimiter">:</span> <span class="classifier">Mayavi colormap</span></dt>
+<dd><p class="first last">Color map to use. See the &#8216;Colors and Legends&#8217; menu on the Mayavi2 GUI
+for valid color maps.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>linewidth <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The width of the lines (edges) of the prisms.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>surface</dt>
+<dd><p class="first last">the last element on the pipeline</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.savefig">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">savefig</tt><big>(</big><em>fname</em>, <em>magnification=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#savefig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.savefig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save a snapshot the current Mayavi figure to a file.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>fname <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">The name of the file. The format is deduced from the extension.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>magnification <span class="classifier-delimiter">:</span> <span class="classifier">int or None</span></dt>
+<dd><p class="first last">If not None, then the scaling between the pixels on the screen, and the
+pixels in the file saved.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.show">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">show</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#show"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.show" title="Permalink to this definition">¶</a></dt>
+<dd><p>Show the 3D plot of Mayavi2.</p>
+<p>Enters a loop until the window is closed.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.tesseroids">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">tesseroids</tt><big>(</big><em>tesseroids</em>, <em>prop=None</em>, <em>style='surface'</em>, <em>opacity=1</em>, <em>edges=True</em>, <em>vmin=None</em>, <em>vmax=None</em>, <em>cmap='blue-red'</em>, <em>linewidth=0.1</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#tesseroids"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.tesseroids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a list of tesseroids using Mayavi2.</p>
+<p>Will not plot a value None in <em>tesseroids</em></p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>tesseroids <span class="classifier-delimiter">:</span> <span class="classifier">list of <a class="reference internal" href="mesher.html#fatiando.mesher.Tesseroid" title="fatiando.mesher.Tesseroid"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.Tesseroid</span></tt></a></span></dt>
+<dd><p class="first last">The prisms</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>prop <span class="classifier-delimiter">:</span> <span class="classifier">str or None</span></dt>
+<dd><p class="first last">The physical property of the tesseroids to use as the color scale. If a
+tesseroid doesn&#8217;t have <em>prop</em>, or if it is None, then it will not be
+plotted</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>style <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Either <tt class="docutils literal"><span class="pre">'surface'</span></tt> for solid tesseroids or <tt class="docutils literal"><span class="pre">'wireframe'</span></tt> for just
+the contour</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>opacity <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Decimal percentage of opacity</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>edges <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">Wether or not to display the edges of the tesseroids in black lines.
+Will ignore this if <tt class="docutils literal"><span class="pre">style='wireframe'</span></tt></p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>vmin, vmax <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Min and max values for the color scale. If <em>None</em> will default to
+the min and max of <em>prop</em>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>cmap <span class="classifier-delimiter">:</span> <span class="classifier">Mayavi colormap</span></dt>
+<dd><p class="first last">Color map to use. See the &#8216;Colors and Legends&#8217; menu on the Mayavi2 GUI
+for valid color maps.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>linewidth <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The width of the lines (edges).</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>surface</dt>
+<dd><p class="first last">the last element on the pipeline</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.title">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">title</tt><big>(</big><em>text</em>, <em>color=(0</em>, <em>0</em>, <em>0)</em>, <em>size=0.3</em>, <em>height=1</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#title"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.title" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a title on a Mayavi figure.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Must be called <strong>after</strong> you&#8217;ve plotted something (e.g.,
+prisms) to the figure. This is a bug.</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>text <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">The title</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (r, g, b)</span></dt>
+<dd><p class="first last">RGB of the color of the text</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>size <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The size of the text</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>height <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The height where the title will be placed on the screen</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.wall_bottom">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">wall_bottom</tt><big>(</big><em>bounds</em>, <em>color=(0</em>, <em>0</em>, <em>0)</em>, <em>opacity=0.1</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#wall_bottom"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.wall_bottom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a 3D wall in Mayavi2 on the Bottom side.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Remember that x-&gt;North, y-&gt;East and z-&gt;Down</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>bounds <span class="classifier-delimiter">:</span> <span class="classifier">list = [xmin, xmax, ymin, ymax, zmin, zmax]</span></dt>
+<dd><p class="first last">The extent of the region where the wall is placed</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (r, g, b)</span></dt>
+<dd><p class="first last">RGB of the color of the wall</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>opacity <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Decimal percentage of opacity</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition tip">
+<p class="first admonition-title">Tip</p>
+<p class="last">You can use <tt class="xref py py-func docutils literal"><span class="pre">add_axes</span></tt> to create and
+<cite>axes</cite> variable and get the bounds as <tt class="docutils literal"><span class="pre">axes.axes.bounds</span></tt></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.wall_east">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">wall_east</tt><big>(</big><em>bounds</em>, <em>color=(0</em>, <em>0</em>, <em>0)</em>, <em>opacity=0.1</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#wall_east"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.wall_east" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a 3D wall in Mayavi2 on the East side.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Remember that x-&gt;North, y-&gt;East and z-&gt;Down</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>bounds <span class="classifier-delimiter">:</span> <span class="classifier">list = [xmin, xmax, ymin, ymax, zmin, zmax]</span></dt>
+<dd><p class="first last">The extent of the region where the wall is placed</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (r, g, b)</span></dt>
+<dd><p class="first last">RGB of the color of the wall</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>opacity <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Decimal percentage of opacity</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition tip">
+<p class="first admonition-title">Tip</p>
+<p class="last">You can use <tt class="xref py py-func docutils literal"><span class="pre">add_axes</span></tt> to create and
+<cite>axes</cite> variable and get the bounds as <tt class="docutils literal"><span class="pre">axes.axes.bounds</span></tt></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.wall_north">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">wall_north</tt><big>(</big><em>bounds</em>, <em>color=(0</em>, <em>0</em>, <em>0)</em>, <em>opacity=0.1</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#wall_north"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.wall_north" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a 3D wall in Mayavi2 on the North side.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Remember that x-&gt;North, y-&gt;East and z-&gt;Down</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>bounds <span class="classifier-delimiter">:</span> <span class="classifier">list = [xmin, xmax, ymin, ymax, zmin, zmax]</span></dt>
+<dd><p class="first last">The extent of the region where the wall is placed</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (r, g, b)</span></dt>
+<dd><p class="first last">RGB of the color of the wall</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>opacity <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Decimal percentage of opacity</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition tip">
+<p class="first admonition-title">Tip</p>
+<p class="last">You can use <tt class="xref py py-func docutils literal"><span class="pre">add_axes</span></tt> to create and
+<cite>axes</cite> variable and get the bounds as <tt class="docutils literal"><span class="pre">axes.axes.bounds</span></tt></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.wall_south">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">wall_south</tt><big>(</big><em>bounds</em>, <em>color=(0</em>, <em>0</em>, <em>0)</em>, <em>opacity=0.1</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#wall_south"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.wall_south" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a 3D wall in Mayavi2 on the South side.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Remember that x-&gt;North, y-&gt;East and z-&gt;Down</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>bounds <span class="classifier-delimiter">:</span> <span class="classifier">list = [xmin, xmax, ymin, ymax, zmin, zmax]</span></dt>
+<dd><p class="first last">The extent of the region where the wall is placed</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (r, g, b)</span></dt>
+<dd><p class="first last">RGB of the color of the wall</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>opacity <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Decimal percentage of opacity</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition tip">
+<p class="first admonition-title">Tip</p>
+<p class="last">You can use <tt class="xref py py-func docutils literal"><span class="pre">add_axes</span></tt> to create and
+<cite>axes</cite> variable and get the bounds as <tt class="docutils literal"><span class="pre">axes.axes.bounds</span></tt></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.wall_top">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">wall_top</tt><big>(</big><em>bounds</em>, <em>color=(0</em>, <em>0</em>, <em>0)</em>, <em>opacity=0.1</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#wall_top"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.wall_top" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a 3D wall in Mayavi2 on the Top side.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Remember that x-&gt;North, y-&gt;East and z-&gt;Down</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>bounds <span class="classifier-delimiter">:</span> <span class="classifier">list = [xmin, xmax, ymin, ymax, zmin, zmax]</span></dt>
+<dd><p class="first last">The extent of the region where the wall is placed</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (r, g, b)</span></dt>
+<dd><p class="first last">RGB of the color of the wall</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>opacity <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Decimal percentage of opacity</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition tip">
+<p class="first admonition-title">Tip</p>
+<p class="last">You can use <tt class="xref py py-func docutils literal"><span class="pre">add_axes</span></tt> to create and
+<cite>axes</cite> variable and get the bounds as <tt class="docutils literal"><span class="pre">axes.axes.bounds</span></tt></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.myv.wall_west">
+<tt class="descclassname">fatiando.vis.myv.</tt><tt class="descname">wall_west</tt><big>(</big><em>bounds</em>, <em>color=(0</em>, <em>0</em>, <em>0)</em>, <em>opacity=0.1</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/myv.html#wall_west"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.myv.wall_west" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a 3D wall in Mayavi2 on the West side.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Remember that x-&gt;North, y-&gt;East and z-&gt;Down</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>bounds <span class="classifier-delimiter">:</span> <span class="classifier">list = [xmin, xmax, ymin, ymax, zmin, zmax]</span></dt>
+<dd><p class="first last">The extent of the region where the wall is placed</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (r, g, b)</span></dt>
+<dd><p class="first last">RGB of the color of the wall</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>opacity <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Decimal percentage of opacity</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition tip">
+<p class="first admonition-title">Tip</p>
+<p class="last">You can use <tt class="xref py py-func docutils literal"><span class="pre">add_axes</span></tt> to create and
+<cite>axes</cite> variable and get the bounds as <tt class="docutils literal"><span class="pre">axes.axes.bounds</span></tt></p>
+</div>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="vis.mpl.html"
+                        title="previous chapter">Plot 2D objects, maps and grids with matplotlib (<tt class="docutils literal"><span class="pre">fatiando.vis.mpl</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="io.html"
+                        title="next chapter">Input/Output (<tt class="docutils literal"><span class="pre">fatiando.io</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/vis.myv.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="io.html" title="Input/Output (fatiando.io)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="vis.mpl.html" title="Plot 2D objects, maps and grids with matplotlib (fatiando.vis.mpl)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="vis.html" >Visualization (<tt class="docutils literal"><span class="pre">fatiando.vis</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

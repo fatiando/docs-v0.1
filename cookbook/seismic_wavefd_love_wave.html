@@ -1,0 +1,294 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Seismic: 2D finite difference simulation of elastic SH wave propagation in a medium with a discontinuity (i.e., Moho), generating Love waves. &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Cookbook" href="../cookbook.html" />
+    <link rel="next" title="Seismic: 2D finite difference simulation of elastic P and SV wave propagation in a medium with a discontinuity (i.e., Moho), generating Rayleigh waves" href="seismic_wavefd_rayleigh_wave.html" />
+    <link rel="prev" title="Seismic: 2D finite difference simulation of elastic SH wave propagation in a homogeneous medium (no Love wave)" href="seismic_wavefd_elastic_sh_homogeneous.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="seismic_wavefd_rayleigh_wave.html" title="Seismic: 2D finite difference simulation of elastic P and SV wave propagation in a medium with a discontinuity (i.e., Moho), generating Rayleigh waves"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="seismic_wavefd_elastic_sh_homogeneous.html" title="Seismic: 2D finite difference simulation of elastic SH wave propagation in a homogeneous medium (no Love wave)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../cookbook.html" accesskey="U">Cookbook</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="seismic-2d-finite-difference-simulation-of-elastic-sh-wave-propagation-in-a-medium-with-a-discontinuity-i-e-moho-generating-love-waves">
+<span id="cookbook-seismic-wavefd-love-wave"></span><h1>Seismic: 2D finite difference simulation of elastic SH wave propagation in a medium with a discontinuity (i.e., Moho), generating Love waves.<a class="headerlink" href="#seismic-2d-finite-difference-simulation-of-elastic-sh-wave-propagation-in-a-medium-with-a-discontinuity-i-e-moho-generating-love-waves" title="Permalink to this headline">¶</a></h1>
+[<a href="../_static/cookbook/seismic_wavefd_love_wave.py">source code</a>]<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84</pre></div></td><td class="code"><div class="highlight"><pre><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Seismic: 2D finite difference simulation of elastic SH wave propagation in a</span>
+<span class="sd">medium with a discontinuity (i.e., Moho), generating Love waves.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">animation</span>
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">seismic</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">gridder</span><span class="p">,</span> <span class="n">vis</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">logger</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+<span class="c"># Make a wave source from a mexican hat wavelet</span>
+<span class="n">sources</span> <span class="o">=</span> <span class="p">[</span><span class="n">seismic</span><span class="o">.</span><span class="n">wavefd</span><span class="o">.</span><span class="n">MexHatSource</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mf">1.5</span><span class="p">),</span>
+           <span class="n">seismic</span><span class="o">.</span><span class="n">wavefd</span><span class="o">.</span><span class="n">MexHatSource</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">22</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mf">1.75</span><span class="p">),</span>
+           <span class="n">seismic</span><span class="o">.</span><span class="n">wavefd</span><span class="o">.</span><span class="n">MexHatSource</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mi">2</span><span class="p">)]</span>
+<span class="c"># Set the parameters of the finite difference grid</span>
+<span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="mi">400</span><span class="p">)</span>
+<span class="n">spacing</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+<span class="n">area</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">spacing</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="n">spacing</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="c"># Make a density and S wave velocity model</span>
+<span class="n">moho_index</span> <span class="o">=</span> <span class="mi">30</span>
+<span class="n">moho</span> <span class="o">=</span> <span class="n">moho_index</span><span class="o">*</span><span class="n">spacing</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">dens</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+<span class="n">dens</span><span class="p">[:</span><span class="n">moho_index</span><span class="p">,:]</span> <span class="o">*=</span> <span class="mi">2700</span>
+<span class="n">dens</span><span class="p">[</span><span class="n">moho_index</span><span class="p">:,:]</span> <span class="o">*=</span> <span class="mi">3100</span>
+<span class="n">svel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+<span class="n">svel</span><span class="p">[:</span><span class="n">moho_index</span><span class="p">,:]</span> <span class="o">*=</span> <span class="mi">3000</span>
+<span class="n">svel</span><span class="p">[</span><span class="n">moho_index</span><span class="p">:,:]</span> <span class="o">*=</span> <span class="mi">6000</span>
+
+<span class="c"># Get the iterator. This part only generates an iterator object. The actual</span>
+<span class="c"># computations take place at each iteration in the for loop below</span>
+<span class="n">dt</span> <span class="o">=</span> <span class="mf">0.05</span>
+<span class="n">maxit</span> <span class="o">=</span> <span class="mi">4200</span>
+<span class="n">timesteps</span> <span class="o">=</span> <span class="n">seismic</span><span class="o">.</span><span class="n">wavefd</span><span class="o">.</span><span class="n">elastic_sh</span><span class="p">(</span><span class="n">spacing</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">svel</span><span class="p">,</span> <span class="n">dens</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">maxit</span><span class="p">,</span>
+    <span class="n">sources</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+
+<span class="c"># This part makes an animation using matplotlibs animation API</span>
+<span class="n">rec</span> <span class="o">=</span> <span class="mi">300</span> <span class="c"># The grid node used to record the seismogram</span>
+<span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">=</span> <span class="o">-</span><span class="mi">3</span><span class="o">*</span><span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">4</span><span class="p">),</span> <span class="mi">3</span><span class="o">*</span><span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mf">0.98</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s">&#39;scaled&#39;</span><span class="p">)</span>
+<span class="n">x</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">gridder</span><span class="o">.</span><span class="n">regular</span><span class="p">(</span><span class="n">area</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span>
+<span class="n">wavefield</span> <span class="o">=</span> <span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">pcolor</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">shape</span><span class="p">,</span>
+    <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">rec</span><span class="o">*</span><span class="n">spacing</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[</span><span class="mi">2000</span><span class="p">],</span> <span class="s">&#39;^b&#39;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">hlines</span><span class="p">([</span><span class="n">moho</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="n">area</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s">&#39;k&#39;</span><span class="p">,</span> <span class="s">&#39;-&#39;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">area</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">35000</span><span class="p">,</span> <span class="n">moho</span> <span class="o">+</span> <span class="mi">10000</span><span class="p">,</span> <span class="s">&#39;Moho&#39;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">area</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">90000</span><span class="p">,</span> <span class="mi">15000</span><span class="p">,</span>
+    <span class="s">r&#39;$\rho = </span><span class="si">%g</span><span class="s"> g/cm^3$ $\beta = </span><span class="si">%g</span><span class="s"> km/s$&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="mf">2.7</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">area</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">90000</span><span class="p">,</span> <span class="n">area</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">10000</span><span class="p">,</span>
+    <span class="s">r&#39;$\rho = </span><span class="si">%g</span><span class="s"> g/cm^3$ $\beta = </span><span class="si">%g</span><span class="s"> km/s$&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="mf">3.1</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="n">area</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">area</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">m2km</span><span class="p">()</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&quot;x (km)&quot;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&quot;z (km)&quot;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">seismogram</span><span class="p">,</span> <span class="o">=</span> <span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">plot</span><span class="p">([],</span> <span class="p">[],</span> <span class="s">&#39;-k&#39;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dt</span><span class="o">*</span><span class="n">maxit</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="n">vmin</span><span class="o">*</span><span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="mi">6</span><span class="p">),</span> <span class="n">vmax</span><span class="o">*</span><span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&quot;Time (s)&quot;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&quot;Amplitude ($\mu$m)&quot;</span><span class="p">)</span>
+<span class="n">times</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">addtime</span> <span class="o">=</span> <span class="n">times</span><span class="o">.</span><span class="n">append</span>
+<span class="n">amps</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">addamp</span> <span class="o">=</span> <span class="n">amps</span><span class="o">.</span><span class="n">append</span>
+<span class="c"># This function updates the plot every few timesteps</span>
+<span class="n">steps_per_frame</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="c">#steps_per_frame = 1</span>
+<span class="k">def</span> <span class="nf">animate</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+    <span class="c"># i is the number of the animation frame</span>
+    <span class="k">for</span> <span class="n">t</span><span class="p">,</span> <span class="n">u</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">timesteps</span><span class="p">):</span>
+        <span class="n">addamp</span><span class="p">(</span><span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span><span class="o">*</span><span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">rec</span><span class="p">])</span>
+        <span class="n">addtime</span><span class="p">(</span><span class="n">dt</span><span class="o">*</span><span class="p">(</span><span class="n">t</span> <span class="o">+</span> <span class="n">i</span><span class="o">*</span><span class="n">steps_per_frame</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="n">steps_per_frame</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;time: </span><span class="si">%0.1f</span><span class="s"> s&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="n">steps_per_frame</span><span class="o">*</span><span class="n">dt</span><span class="p">))</span>
+            <span class="n">seismogram</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">amps</span><span class="p">)</span>
+            <span class="n">wavefield</span><span class="o">.</span><span class="n">set_array</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span>
+            <span class="k">break</span>
+    <span class="k">return</span> <span class="n">seismogram</span><span class="p">,</span> <span class="n">wavefield</span>
+<span class="n">anim</span> <span class="o">=</span> <span class="n">animation</span><span class="o">.</span><span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">animate</span><span class="p">,</span> <span class="n">frames</span><span class="o">=</span><span class="n">maxit</span><span class="o">/</span><span class="n">steps_per_frame</span><span class="p">,</span>
+    <span class="n">interval</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">blit</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="c">#anim.save(&#39;love_wave.mp4&#39;, fps=100)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="seismic_wavefd_elastic_sh_homogeneous.html"
+                        title="previous chapter">Seismic: 2D finite difference simulation of elastic SH wave propagation in a homogeneous medium (no Love wave)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="seismic_wavefd_rayleigh_wave.html"
+                        title="next chapter">Seismic: 2D finite difference simulation of elastic P and SV wave propagation in a medium with a discontinuity (i.e., Moho), generating Rayleigh waves</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/cookbook/seismic_wavefd_love_wave.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="seismic_wavefd_rayleigh_wave.html" title="Seismic: 2D finite difference simulation of elastic P and SV wave propagation in a medium with a discontinuity (i.e., Moho), generating Rayleigh waves"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="seismic_wavefd_elastic_sh_homogeneous.html" title="Seismic: 2D finite difference simulation of elastic SH wave propagation in a homogeneous medium (no Love wave)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../cookbook.html" >Cookbook</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+.. _cookbook_gravmag_grav_sphere:
+
+GravMag: Forward modeling of the gravity anomaly using spheres (calculate on random points)
+============================================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/gravmag_grav_sphere.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/gravmag_grav_sphere.py
+    :language: python
+    :linenos:

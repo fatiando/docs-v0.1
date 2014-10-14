@@ -1,0 +1,12 @@
+.. _cookbook_mesher_prismmesh_vardens:
+
+Meshing: Make a 3D prism mesh with depth-varying density
+=========================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/mesher_prismmesh_vardens.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/mesher_prismmesh_vardens.py
+    :language: python
+    :linenos:

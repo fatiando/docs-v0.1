@@ -1,0 +1,12 @@
+.. _cookbook_gravmag_euler_classic_noisy:
+
+GravMag: Classic 3D Euler deconvolution of noisy magnetic data (single window)
+===============================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/gravmag_euler_classic_noisy.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/gravmag_euler_classic_noisy.py
+    :language: python
+    :linenos:

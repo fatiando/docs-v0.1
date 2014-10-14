@@ -1,0 +1,12 @@
+.. _cookbook_grid_cut:
+
+Gridding: Cut a section from a grid
+====================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/grid_cut.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/grid_cut.py
+    :language: python
+    :linenos:

@@ -1,0 +1,12 @@
+.. _cookbook_seismic_profile_vertical_interactive:
+
+Seismic: Interactive forward modeling of 1D vertical seismic profile (VSP) data in layered media
+=================================================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/seismic_profile_vertical_interactive.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/seismic_profile_vertical_interactive.py
+    :language: python
+    :linenos:

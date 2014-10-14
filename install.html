@@ -1,0 +1,217 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Installing Fatiando &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="index.html" />
+    <link rel="next" title="API Reference: The fatiando package" href="api/fatiando.html" />
+    <link rel="prev" title="Changelog" href="changelog.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="api/fatiando.html" title="API Reference: The fatiando package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="changelog.html" title="Changelog"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Fatiando a Terra v0.1</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="installing-fatiando">
+<span id="install"></span><h1>Installing Fatiando<a class="headerlink" href="#installing-fatiando" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you have any trouble installing please write to the
+<a class="reference external" href="https://groups.google.com/forum/#!forum/fatiando">mailing list</a> or to <a class="reference external" href="http://fatiando.org/people/uieda/">Leonardo Uieda</a>. This will help us make
+Fatiando better!</p>
+</div>
+<div class="section" id="install-the-dependencies">
+<h2>Install the dependencies<a class="headerlink" href="#install-the-dependencies" title="Permalink to this headline">¶</a></h2>
+<p>Fatiando requires the following packages:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://numpy.scipy.org/">numpy</a></li>
+<li><a class="reference external" href="http://scipy.org/">scipy</a></li>
+<li><a class="reference external" href="http://matplotlib.sourceforge.net/">matplotlib</a></li>
+<li><a class="reference external" href="http://www.pythonware.com/products/pil/">PIL</a></li>
+<li><a class="reference external" href="http://code.enthought.com/projects/mayavi/">mayavi</a></li>
+<li><a class="reference external" href="http://cython.org/">Cython</a>: to compile faster modules in C. Needed only
+when installing from source (or using <tt class="docutils literal"><span class="pre">pip</span></tt>).</li>
+</ul>
+<p>All of these can be found on most <strong>GNU/Linux</strong> distros.
+If you&#8217;re on the latest (or close to) <strong>Ubuntu</strong>, you can run:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo apt-get install python-dev python-numpy python-matplotlib python-scipy\
+python-mpltoolkits.basemap python-imaging mayavi2 cython python-pip
+</pre></div>
+</div>
+<p>You&#8217;ll need <tt class="docutils literal"><span class="pre">python-dev</span></tt> to build the optimized Cython modules and
+<tt class="docutils literal"><span class="pre">python-pip</span></tt> to install fatiando.
+All of these can also be found in the Software Center, Synaptic, etc.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The &#8216;2&#8217; in <tt class="docutils literal"><span class="pre">mayavi2</span></tt> is not a typo. It really is called that.</p>
+</div>
+<p>On <strong>Windows</strong>, I recommend downloading <a class="reference external" href="http://code.google.com/p/pythonxy/">PythonXY</a>.
+It comes with Python, all of our dependencies,
+plus a whole bunch of useful stuff!
+Trust me, it&#8217;s better than installing things separately.
+<strong>Warning</strong>: If you already have Python installed,
+you should uninstall it before installing PythonXY.
+When installing PythonXY,
+make sure the following are selected
+(or go with a full install to be sure):</p>
+<ul class="simple">
+<li>numpy</li>
+<li>scipy</li>
+<li>matplotlib</li>
+<li>PIL</li>
+<li>ETS (for mayavi)</li>
+<li>VTK (for mayavi)</li>
+</ul>
+</div>
+<div class="section" id="installing-on-linux">
+<h2>Installing on Linux<a class="headerlink" href="#installing-on-linux" title="Permalink to this headline">¶</a></h2>
+<p>After you&#8217;ve installed the dependencies you can proceed to install Fatiando
+using <a class="reference external" href="http://www.pip-installer.org">pip</a>:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo pip install fatiando
+</pre></div>
+</div>
+<p>That&#8217;s it!
+If you already have Fatiando installed and want to <strong>upgrade</strong> to a newer
+version, use:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo pip install fatiando --upgrade
+</pre></div>
+</div>
+<p>To uninstall simply run:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo pip uninstall fatiando
+</pre></div>
+</div>
+<p>If you don&#8217;t have root access (no <tt class="docutils literal"><span class="pre">sudo</span></tt> for you),
+you can install Fatiando on a <a class="reference external" href="http://pypi.python.org/pypi/virtualenv">virtualenv</a>.
+If you don&#8217;t know what that means,
+<a class="reference external" href="http://jontourage.com/2011/02/09/virtualenv-pip-basics/">read this</a>.</p>
+</div>
+<div class="section" id="installing-on-windows">
+<h2>Installing on Windows<a class="headerlink" href="#installing-on-windows" title="Permalink to this headline">¶</a></h2>
+<p>After you&#8217;ve installed PythonXY (or similar)
+with all the dependencies,
+download the latest Windows installer from <a class="reference external" href="http://pypi.python.org/pypi/fatiando">PyPI</a>.
+Just click through the installer and you should be done!</p>
+</div>
+<div class="section" id="testing-the-install">
+<h2>Testing the install<a class="headerlink" href="#testing-the-install" title="Permalink to this headline">¶</a></h2>
+<p>Try running one of the recipes from the <a class="reference internal" href="cookbook.html#cookbook"><em>Cookbook</em></a>.
+If you get an error message,
+please post to the <a class="reference external" href="https://groups.google.com/forum/#!forum/fatiando">mailing list</a>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Installing Fatiando</a><ul>
+<li><a class="reference internal" href="#install-the-dependencies">Install the dependencies</a></li>
+<li><a class="reference internal" href="#installing-on-linux">Installing on Linux</a></li>
+<li><a class="reference internal" href="#installing-on-windows">Installing on Windows</a></li>
+<li><a class="reference internal" href="#testing-the-install">Testing the install</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="changelog.html"
+                        title="previous chapter">Changelog</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="api/fatiando.html"
+                        title="next chapter">API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/install.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="api/fatiando.html" title="API Reference: The fatiando package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="changelog.html" title="Changelog"
+             >previous</a> |</li>
+        <li><a href="index.html">Fatiando a Terra v0.1</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

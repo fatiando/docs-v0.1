@@ -1,0 +1,815 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fatiando.gravmag._prism &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for fatiando.gravmag._prism</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. note::</span>
+
+<span class="sd">    This is a Python + Numpy implementation of the potential field effects of</span>
+<span class="sd">    right rectangular prisms. There is a Cython implementation in _cprism.pyx</span>
+<span class="sd">    It will be loaded automatically if it is compiled.</span>
+
+<span class="sd">----</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">sqrt</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">arctan2</span>
+
+<span class="kn">from</span> <span class="nn">fatiando.constants</span> <span class="kn">import</span> <span class="n">SI2EOTVOS</span><span class="p">,</span> <span class="n">SI2MGAL</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">CM</span><span class="p">,</span> <span class="n">T2NT</span>
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">utils</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;potential&#39;</span><span class="p">,</span> <span class="s">&#39;gx&#39;</span><span class="p">,</span> <span class="s">&#39;gy&#39;</span><span class="p">,</span> <span class="s">&#39;gz&#39;</span><span class="p">,</span> <span class="s">&#39;gxx&#39;</span><span class="p">,</span> <span class="s">&#39;gxy&#39;</span><span class="p">,</span> <span class="s">&#39;gxz&#39;</span><span class="p">,</span> <span class="s">&#39;gyy&#39;</span><span class="p">,</span> <span class="s">&#39;gyz&#39;</span><span class="p">,</span>
+    <span class="s">&#39;gzz&#39;</span><span class="p">,</span> <span class="s">&#39;tf&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="potential"><a class="viewcode-back" href="../../../api/gravmag.prism.html#fatiando.gravmag._prism.potential">[docs]</a><span class="k">def</span> <span class="nf">potential</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the gravitational potential.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: All input values in **SI** units(!) and output in **mGal**!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        Arrays with the x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`~fatiando.mesher.Prism`</span>
+<span class="sd">        The density model used to calculate the gravitational effect.</span>
+<span class="sd">        Prisms must have the property ``&#39;density&#39;``. Prisms that don&#39;t have this</span>
+<span class="sd">        property will be ignored in the computations. Elements of *prisms* that</span>
+<span class="sd">        are None will also be ignored. *prisms* can also be a</span>
+<span class="sd">        :class:`~fatiando.mesher.PrismMesh`.</span>
+<span class="sd">    * dens : float or None</span>
+<span class="sd">        If not None, will use this value instead of the ``&#39;density&#39;`` property</span>
+<span class="sd">        of the prisms. Use this, e.g., for sensitivity matrix building.</span>
+
+<span class="sd">        .. warning:: Uses this value for **all** prisms! Not only the ones that</span>
+<span class="sd">            have ``&#39;density&#39;`` as a property.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The field calculated on xp, yp, zp</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="p">(</span><span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span> <span class="ow">and</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">dens</span>
+        <span class="c"># First thing to do is make the computation point P the origin of the</span>
+        <span class="c"># coordinate system</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">x2</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">x1</span> <span class="o">-</span> <span class="n">xp</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">y2</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y1</span> <span class="o">-</span> <span class="n">yp</span><span class="p">]</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span><span class="p">]</span>
+        <span class="c"># Evaluate the integration limits</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">kernel</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">log</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+</span> <span class="n">r</span><span class="p">)</span>
+                              <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">log</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">r</span><span class="p">)</span>
+                              <span class="o">+</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">log</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">r</span><span class="p">)</span>
+                              <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">arctan2</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">r</span><span class="p">)</span>
+                              <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">arctan2</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">r</span><span class="p">)</span>
+                              <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">arctan2</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">r</span><span class="p">))</span>
+                    <span class="n">res</span> <span class="o">+=</span> <span class="p">((</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">j</span> <span class="o">+</span> <span class="n">k</span><span class="p">))</span><span class="o">*</span><span class="n">kernel</span><span class="o">*</span><span class="n">density</span>
+    <span class="c"># Now all that is left is to multiply res by the gravitational constant</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">G</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="gx"><a class="viewcode-back" href="../../../api/gravmag.prism.html#fatiando.gravmag._prism.gx">[docs]</a><span class="k">def</span> <span class="nf">gx</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the :math:`g_x` gravity acceleration component.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: All input values in **SI** units(!) and output in **mGal**!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        Arrays with the x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`~fatiando.mesher.Prism`</span>
+<span class="sd">        The density model used to calculate the gravitational effect.</span>
+<span class="sd">        Prisms must have the property ``&#39;density&#39;``. Prisms that don&#39;t have this</span>
+<span class="sd">        property will be ignored in the computations. Elements of *prisms* that</span>
+<span class="sd">        are None will also be ignored. *prisms* can also be a</span>
+<span class="sd">        :class:`~fatiando.mesher.PrismMesh`.</span>
+<span class="sd">    * dens : float or None</span>
+<span class="sd">        If not None, will use this value instead of the ``&#39;density&#39;`` property</span>
+<span class="sd">        of the prisms. Use this, e.g., for sensitivity matrix building.</span>
+
+<span class="sd">        .. warning:: Uses this value for **all** prisms! Not only the ones that</span>
+<span class="sd">            have ``&#39;density&#39;`` as a property.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The field calculated on xp, yp, zp</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="p">(</span><span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span> <span class="ow">and</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">dens</span>
+        <span class="c"># First thing to do is make the computation point P the origin of the</span>
+        <span class="c"># coordinate system</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">x2</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">x1</span> <span class="o">-</span> <span class="n">xp</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">y2</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y1</span> <span class="o">-</span> <span class="n">yp</span><span class="p">]</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span><span class="p">]</span>
+        <span class="c"># Evaluate the integration limits</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="c"># Minus because Nagy et al (2000) give the formula for the</span>
+                    <span class="c"># gradient of the potential. Gravity is -grad(V)</span>
+                    <span class="n">kernel</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">log</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+</span> <span class="n">r</span><span class="p">)</span>
+                               <span class="o">+</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">log</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">r</span><span class="p">)</span>
+                               <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">arctan2</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">r</span><span class="p">))</span>
+                    <span class="n">res</span> <span class="o">+=</span> <span class="p">((</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">j</span> <span class="o">+</span> <span class="n">k</span><span class="p">))</span><span class="o">*</span><span class="n">kernel</span><span class="o">*</span><span class="n">density</span>
+    <span class="c"># Now all that is left is to multiply res by the gravitational constant and</span>
+    <span class="c"># convert it to mGal units</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">G</span><span class="o">*</span><span class="n">SI2MGAL</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="gy"><a class="viewcode-back" href="../../../api/gravmag.prism.html#fatiando.gravmag._prism.gy">[docs]</a><span class="k">def</span> <span class="nf">gy</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the :math:`g_y` gravity acceleration component.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: All input values in **SI** units(!) and output in **mGal**!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        Arrays with the x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`~fatiando.mesher.Prism`</span>
+<span class="sd">        The density model used to calculate the gravitational effect.</span>
+<span class="sd">        Prisms must have the property ``&#39;density&#39;``. Prisms that don&#39;t have this</span>
+<span class="sd">        property will be ignored in the computations. Elements of *prisms* that</span>
+<span class="sd">        are None will also be ignored. *prisms* can also be a</span>
+<span class="sd">        :class:`~fatiando.mesher.PrismMesh`.</span>
+<span class="sd">    * dens : float or None</span>
+<span class="sd">        If not None, will use this value instead of the ``&#39;density&#39;`` property</span>
+<span class="sd">        of the prisms. Use this, e.g., for sensitivity matrix building.</span>
+
+<span class="sd">        .. warning:: Uses this value for **all** prisms! Not only the ones that</span>
+<span class="sd">            have ``&#39;density&#39;`` as a property.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The field calculated on xp, yp, zp</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="p">(</span><span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span> <span class="ow">and</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">dens</span>
+        <span class="c"># First thing to do is make the computation point P the origin of the</span>
+        <span class="c"># coordinate system</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">x2</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">x1</span> <span class="o">-</span> <span class="n">xp</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">y2</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y1</span> <span class="o">-</span> <span class="n">yp</span><span class="p">]</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span><span class="p">]</span>
+        <span class="c"># Evaluate the integration limits</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="c"># Minus because Nagy et al (2000) give the formula for the</span>
+                    <span class="c"># gradient of the potential. Gravity is -grad(V)</span>
+                    <span class="n">kernel</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">log</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">r</span><span class="p">)</span>
+                               <span class="o">+</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">log</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+</span> <span class="n">r</span><span class="p">)</span>
+                               <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">arctan2</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">r</span><span class="p">))</span>
+                    <span class="n">res</span> <span class="o">+=</span> <span class="p">((</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">j</span> <span class="o">+</span> <span class="n">k</span><span class="p">))</span><span class="o">*</span><span class="n">kernel</span><span class="o">*</span><span class="n">density</span>
+    <span class="c"># Now all that is left is to multiply res by the gravitational constant and</span>
+    <span class="c"># convert it to mGal units</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">G</span><span class="o">*</span><span class="n">SI2MGAL</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="gz"><a class="viewcode-back" href="../../../api/gravmag.prism.html#fatiando.gravmag._prism.gz">[docs]</a><span class="k">def</span> <span class="nf">gz</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the :math:`g_z` gravity acceleration component.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: All input values in **SI** units(!) and output in **mGal**!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        Arrays with the x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`~fatiando.mesher.Prism`</span>
+<span class="sd">        The density model used to calculate the gravitational effect.</span>
+<span class="sd">        Prisms must have the property ``&#39;density&#39;``. Prisms that don&#39;t have this</span>
+<span class="sd">        property will be ignored in the computations. Elements of *prisms* that</span>
+<span class="sd">        are None will also be ignored. *prisms* can also be a</span>
+<span class="sd">        :class:`~fatiando.mesher.PrismMesh`.</span>
+<span class="sd">    * dens : float or None</span>
+<span class="sd">        If not None, will use this value instead of the ``&#39;density&#39;`` property</span>
+<span class="sd">        of the prisms. Use this, e.g., for sensitivity matrix building.</span>
+
+<span class="sd">        .. warning:: Uses this value for **all** prisms! Not only the ones that</span>
+<span class="sd">            have ``&#39;density&#39;`` as a property.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The field calculated on xp, yp, zp</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="p">(</span><span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span> <span class="ow">and</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">dens</span>
+        <span class="c"># First thing to do is make the computation point P the origin of the</span>
+        <span class="c"># coordinate system</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">x2</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">x1</span> <span class="o">-</span> <span class="n">xp</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">y2</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y1</span> <span class="o">-</span> <span class="n">yp</span><span class="p">]</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span><span class="p">]</span>
+        <span class="c"># Evaluate the integration limits</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="c"># Minus because Nagy et al (2000) give the formula for the</span>
+                    <span class="c"># gradient of the potential. Gravity is -grad(V)</span>
+                    <span class="n">kernel</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">log</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">r</span><span class="p">)</span>
+                               <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">log</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">r</span><span class="p">)</span>
+                               <span class="o">-</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">arctan2</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">r</span><span class="p">))</span>
+                    <span class="n">res</span> <span class="o">+=</span> <span class="p">((</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">j</span> <span class="o">+</span> <span class="n">k</span><span class="p">))</span><span class="o">*</span><span class="n">kernel</span><span class="o">*</span><span class="n">density</span>
+    <span class="c"># Now all that is left is to multiply res by the gravitational constant and</span>
+    <span class="c"># convert it to mGal units</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">G</span><span class="o">*</span><span class="n">SI2MGAL</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="gxx"><a class="viewcode-back" href="../../../api/gravmag.prism.html#fatiando.gravmag._prism.gxx">[docs]</a><span class="k">def</span> <span class="nf">gxx</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the :math:`g_{xx}` gravity gradient tensor component.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: All input values in **SI** units(!) and output in **mGal**!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        Arrays with the x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`~fatiando.mesher.Prism`</span>
+<span class="sd">        The density model used to calculate the gravitational effect.</span>
+<span class="sd">        Prisms must have the property ``&#39;density&#39;``. Prisms that don&#39;t have this</span>
+<span class="sd">        property will be ignored in the computations. Elements of *prisms* that</span>
+<span class="sd">        are None will also be ignored. *prisms* can also be a</span>
+<span class="sd">        :class:`~fatiando.mesher.PrismMesh`.</span>
+<span class="sd">    * dens : float or None</span>
+<span class="sd">        If not None, will use this value instead of the ``&#39;density&#39;`` property</span>
+<span class="sd">        of the prisms. Use this, e.g., for sensitivity matrix building.</span>
+
+<span class="sd">        .. warning:: Uses this value for **all** prisms! Not only the ones that</span>
+<span class="sd">            have ``&#39;density&#39;`` as a property.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The field calculated on xp, yp, zp</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="p">(</span><span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span> <span class="ow">and</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">dens</span>
+        <span class="c"># First thing to do is make the computation point P the origin of the</span>
+        <span class="c"># coordinate system</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">x2</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">x1</span> <span class="o">-</span> <span class="n">xp</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">y2</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y1</span> <span class="o">-</span> <span class="n">yp</span><span class="p">]</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span><span class="p">]</span>
+        <span class="c"># Evaluate the integration limits</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">kernel</span> <span class="o">=</span> <span class="o">-</span><span class="n">arctan2</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">r</span><span class="p">)</span>
+                    <span class="n">res</span> <span class="o">+=</span> <span class="p">((</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">j</span> <span class="o">+</span> <span class="n">k</span><span class="p">))</span><span class="o">*</span><span class="n">kernel</span><span class="o">*</span><span class="n">density</span>
+    <span class="c"># Now all that is left is to multiply res by the gravitational constant and</span>
+    <span class="c"># convert it to Eotvos units</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">G</span><span class="o">*</span><span class="n">SI2EOTVOS</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="gxy"><a class="viewcode-back" href="../../../api/gravmag.prism.html#fatiando.gravmag._prism.gxy">[docs]</a><span class="k">def</span> <span class="nf">gxy</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the :math:`g_{xy}` gravity gradient tensor component.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: All input values in **SI** units(!) and output in **mGal**!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        Arrays with the x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`~fatiando.mesher.Prism`</span>
+<span class="sd">        The density model used to calculate the gravitational effect.</span>
+<span class="sd">        Prisms must have the property ``&#39;density&#39;``. Prisms that don&#39;t have this</span>
+<span class="sd">        property will be ignored in the computations. Elements of *prisms* that</span>
+<span class="sd">        are None will also be ignored. *prisms* can also be a</span>
+<span class="sd">        :class:`~fatiando.mesher.PrismMesh`.</span>
+<span class="sd">    * dens : float or None</span>
+<span class="sd">        If not None, will use this value instead of the ``&#39;density&#39;`` property</span>
+<span class="sd">        of the prisms. Use this, e.g., for sensitivity matrix building.</span>
+
+<span class="sd">        .. warning:: Uses this value for **all** prisms! Not only the ones that</span>
+<span class="sd">            have ``&#39;density&#39;`` as a property.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The field calculated on xp, yp, zp</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="p">(</span><span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span> <span class="ow">and</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">dens</span>
+        <span class="c"># First thing to do is make the computation point P the origin of the</span>
+        <span class="c"># coordinate system</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">x2</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">x1</span> <span class="o">-</span> <span class="n">xp</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">y2</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y1</span> <span class="o">-</span> <span class="n">yp</span><span class="p">]</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span><span class="p">]</span>
+        <span class="c"># Evaluate the integration limits</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">kernel</span> <span class="o">=</span> <span class="n">log</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+</span> <span class="n">r</span><span class="p">)</span>
+                    <span class="n">res</span> <span class="o">+=</span> <span class="p">((</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">j</span> <span class="o">+</span> <span class="n">k</span><span class="p">))</span><span class="o">*</span><span class="n">kernel</span><span class="o">*</span><span class="n">density</span>
+    <span class="c"># Now all that is left is to multiply res by the gravitational constant and</span>
+    <span class="c"># convert it to Eotvos units</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">G</span><span class="o">*</span><span class="n">SI2EOTVOS</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="gxz"><a class="viewcode-back" href="../../../api/gravmag.prism.html#fatiando.gravmag._prism.gxz">[docs]</a><span class="k">def</span> <span class="nf">gxz</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the :math:`g_{xz}` gravity gradient tensor component.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: All input values in **SI** units(!) and output in **mGal**!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        Arrays with the x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`~fatiando.mesher.Prism`</span>
+<span class="sd">        The density model used to calculate the gravitational effect.</span>
+<span class="sd">        Prisms must have the property ``&#39;density&#39;``. Prisms that don&#39;t have this</span>
+<span class="sd">        property will be ignored in the computations. Elements of *prisms* that</span>
+<span class="sd">        are None will also be ignored. *prisms* can also be a</span>
+<span class="sd">        :class:`~fatiando.mesher.PrismMesh`.</span>
+<span class="sd">    * dens : float or None</span>
+<span class="sd">        If not None, will use this value instead of the ``&#39;density&#39;`` property</span>
+<span class="sd">        of the prisms. Use this, e.g., for sensitivity matrix building.</span>
+
+<span class="sd">        .. warning:: Uses this value for **all** prisms! Not only the ones that</span>
+<span class="sd">            have ``&#39;density&#39;`` as a property.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The field calculated on xp, yp, zp</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="p">(</span><span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span> <span class="ow">and</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">dens</span>
+        <span class="c"># First thing to do is make the computation point P the origin of the</span>
+        <span class="c"># coordinate system</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">x2</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">x1</span> <span class="o">-</span> <span class="n">xp</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">y2</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y1</span> <span class="o">-</span> <span class="n">yp</span><span class="p">]</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span><span class="p">]</span>
+        <span class="c"># Evaluate the integration limits</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">kernel</span> <span class="o">=</span> <span class="n">log</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">r</span><span class="p">)</span>
+                    <span class="n">res</span> <span class="o">+=</span> <span class="p">((</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">j</span> <span class="o">+</span> <span class="n">k</span><span class="p">))</span><span class="o">*</span><span class="n">kernel</span><span class="o">*</span><span class="n">density</span>
+    <span class="c"># Now all that is left is to multiply res by the gravitational constant and</span>
+    <span class="c"># convert it to Eotvos units</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">G</span><span class="o">*</span><span class="n">SI2EOTVOS</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="gyy"><a class="viewcode-back" href="../../../api/gravmag.prism.html#fatiando.gravmag._prism.gyy">[docs]</a><span class="k">def</span> <span class="nf">gyy</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the :math:`g_{yy}` gravity gradient tensor component.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: All input values in **SI** units(!) and output in **mGal**!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        Arrays with the x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`~fatiando.mesher.Prism`</span>
+<span class="sd">        The density model used to calculate the gravitational effect.</span>
+<span class="sd">        Prisms must have the property ``&#39;density&#39;``. Prisms that don&#39;t have this</span>
+<span class="sd">        property will be ignored in the computations. Elements of *prisms* that</span>
+<span class="sd">        are None will also be ignored. *prisms* can also be a</span>
+<span class="sd">        :class:`~fatiando.mesher.PrismMesh`.</span>
+<span class="sd">    * dens : float or None</span>
+<span class="sd">        If not None, will use this value instead of the ``&#39;density&#39;`` property</span>
+<span class="sd">        of the prisms. Use this, e.g., for sensitivity matrix building.</span>
+
+<span class="sd">        .. warning:: Uses this value for **all** prisms! Not only the ones that</span>
+<span class="sd">            have ``&#39;density&#39;`` as a property.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The field calculated on xp, yp, zp</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="p">(</span><span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span> <span class="ow">and</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">dens</span>
+        <span class="c"># First thing to do is make the computation point P the origin of the</span>
+        <span class="c"># coordinate system</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">x2</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">x1</span> <span class="o">-</span> <span class="n">xp</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">y2</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y1</span> <span class="o">-</span> <span class="n">yp</span><span class="p">]</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span><span class="p">]</span>
+        <span class="c"># Evaluate the integration limits</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">kernel</span> <span class="o">=</span> <span class="o">-</span><span class="n">arctan2</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">r</span><span class="p">)</span>
+                    <span class="n">res</span> <span class="o">+=</span> <span class="p">((</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">j</span> <span class="o">+</span> <span class="n">k</span><span class="p">))</span><span class="o">*</span><span class="n">kernel</span><span class="o">*</span><span class="n">density</span>
+    <span class="c"># Now all that is left is to multiply res by the gravitational constant and</span>
+    <span class="c"># convert it to Eotvos units</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">G</span><span class="o">*</span><span class="n">SI2EOTVOS</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="gyz"><a class="viewcode-back" href="../../../api/gravmag.prism.html#fatiando.gravmag._prism.gyz">[docs]</a><span class="k">def</span> <span class="nf">gyz</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the :math:`g_{yz}` gravity gradient tensor component.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: All input values in **SI** units(!) and output in **mGal**!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        Arrays with the x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`~fatiando.mesher.Prism`</span>
+<span class="sd">        The density model used to calculate the gravitational effect.</span>
+<span class="sd">        Prisms must have the property ``&#39;density&#39;``. Prisms that don&#39;t have this</span>
+<span class="sd">        property will be ignored in the computations. Elements of *prisms* that</span>
+<span class="sd">        are None will also be ignored. *prisms* can also be a</span>
+<span class="sd">        :class:`~fatiando.mesher.PrismMesh`.</span>
+<span class="sd">    * dens : float or None</span>
+<span class="sd">        If not None, will use this value instead of the ``&#39;density&#39;`` property</span>
+<span class="sd">        of the prisms. Use this, e.g., for sensitivity matrix building.</span>
+
+<span class="sd">        .. warning:: Uses this value for **all** prisms! Not only the ones that</span>
+<span class="sd">            have ``&#39;density&#39;`` as a property.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The field calculated on xp, yp, zp</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="p">(</span><span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span> <span class="ow">and</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">dens</span>
+        <span class="c"># First thing to do is make the computation point P the origin of the</span>
+        <span class="c"># coordinate system</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">x2</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">x1</span> <span class="o">-</span> <span class="n">xp</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">y2</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y1</span> <span class="o">-</span> <span class="n">yp</span><span class="p">]</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span><span class="p">]</span>
+        <span class="c"># Evaluate the integration limits</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">kernel</span> <span class="o">=</span> <span class="n">log</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">r</span><span class="p">)</span>
+                    <span class="n">res</span> <span class="o">+=</span> <span class="p">((</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">j</span> <span class="o">+</span> <span class="n">k</span><span class="p">))</span><span class="o">*</span><span class="n">kernel</span><span class="o">*</span><span class="n">density</span>
+    <span class="c"># Now all that is left is to multiply res by the gravitational constant and</span>
+    <span class="c"># convert it to Eotvos units</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">G</span><span class="o">*</span><span class="n">SI2EOTVOS</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="gzz"><a class="viewcode-back" href="../../../api/gravmag.prism.html#fatiando.gravmag._prism.gzz">[docs]</a><span class="k">def</span> <span class="nf">gzz</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the :math:`g_{zz}` gravity gradient tensor component.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: All input values in **SI** units(!) and output in **mGal**!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        Arrays with the x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`~fatiando.mesher.Prism`</span>
+<span class="sd">        The density model used to calculate the gravitational effect.</span>
+<span class="sd">        Prisms must have the property ``&#39;density&#39;``. Prisms that don&#39;t have this</span>
+<span class="sd">        property will be ignored in the computations. Elements of *prisms* that</span>
+<span class="sd">        are None will also be ignored. *prisms* can also be a</span>
+<span class="sd">        :class:`~fatiando.mesher.PrismMesh`.</span>
+<span class="sd">    * dens : float or None</span>
+<span class="sd">        If not None, will use this value instead of the ``&#39;density&#39;`` property</span>
+<span class="sd">        of the prisms. Use this, e.g., for sensitivity matrix building.</span>
+
+<span class="sd">        .. warning:: Uses this value for **all** prisms! Not only the ones that</span>
+<span class="sd">            have ``&#39;density&#39;`` as a property.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The field calculated on xp, yp, zp</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="p">(</span><span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span> <span class="ow">and</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">dens</span>
+        <span class="c"># First thing to do is make the computation point P the origin of the</span>
+        <span class="c"># coordinate system</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">x2</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">x1</span> <span class="o">-</span> <span class="n">xp</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">y2</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y1</span> <span class="o">-</span> <span class="n">yp</span><span class="p">]</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span><span class="p">]</span>
+        <span class="c"># Evaluate the integration limits</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">kernel</span> <span class="o">=</span> <span class="o">-</span><span class="n">arctan2</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">r</span><span class="p">)</span>
+                    <span class="n">res</span> <span class="o">+=</span> <span class="p">((</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">j</span> <span class="o">+</span> <span class="n">k</span><span class="p">))</span><span class="o">*</span><span class="n">kernel</span><span class="o">*</span><span class="n">density</span>
+    <span class="c"># Now all that is left is to multiply res by the gravitational constant and</span>
+    <span class="c"># convert it to Eotvos units</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">G</span><span class="o">*</span><span class="n">SI2EOTVOS</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="tf"><a class="viewcode-back" href="../../../api/gravmag.prism.html#fatiando.gravmag._prism.tf">[docs]</a><span class="k">def</span> <span class="nf">tf</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">,</span> <span class="n">inc</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">pmag</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">pinc</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">pdec</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the total-field anomaly of prisms.</span>
+
+<span class="sd">    .. note:: Input units are SI. Output is in nT</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        Arrays with the x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`~fatiando.mesher.Prism`</span>
+<span class="sd">        The model used to calculate the total field anomaly.</span>
+<span class="sd">        Prisms must have the physical property ``&#39;magnetization&#39;`` will be</span>
+<span class="sd">        ignored. If the physical properties ``&#39;inclination&#39;`` and</span>
+<span class="sd">        ``&#39;declination&#39;`` are not present, will use the values of *inc* and</span>
+<span class="sd">        *dec* instead (regional field).</span>
+<span class="sd">        *prisms* can also be a :class:`~fatiando.mesher.PrismMesh`.</span>
+<span class="sd">    * inc : float</span>
+<span class="sd">        The inclination of the regional field (in degrees)</span>
+<span class="sd">    * dec : float</span>
+<span class="sd">        The declination of the regional field (in degrees)</span>
+<span class="sd">    * pmag : float or None</span>
+<span class="sd">        If not None, will use this value instead of the ``&#39;magnetization&#39;``</span>
+<span class="sd">        property of the prisms. Use this, e.g., for sensitivity matrix building.</span>
+<span class="sd">    * pinc : float or None</span>
+<span class="sd">        If not None, will use this value instead of the ``&#39;inclination&#39;``</span>
+<span class="sd">        property of the prisms. Use this, e.g., for sensitivity matrix building.</span>
+<span class="sd">    * pdec : float or None</span>
+<span class="sd">        If not None, will use this value instead of the ``&#39;declination&#39;``</span>
+<span class="sd">        property of the prisms. Use this, e.g., for sensitivity matrix building.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The field calculated on xp, yp, zp</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+    <span class="c"># Calculate the 3 components of the unit vector in the direction of the</span>
+    <span class="c"># regional field</span>
+    <span class="n">fx</span><span class="p">,</span> <span class="n">fy</span><span class="p">,</span> <span class="n">fz</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">dircos</span><span class="p">(</span><span class="n">inc</span><span class="p">,</span> <span class="n">dec</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="p">(</span><span class="s">&#39;magnetization&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span>
+                              <span class="ow">and</span> <span class="n">pmag</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">pmag</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">magnetization</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;magnetization&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">magnetization</span> <span class="o">=</span> <span class="n">pmag</span>
+        <span class="c"># First thing to do is make the computation point P the origin of the</span>
+        <span class="c"># coordinate system</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">x2</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">x1</span> <span class="o">-</span> <span class="n">xp</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">y2</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y1</span> <span class="o">-</span> <span class="n">yp</span><span class="p">]</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">[</span><span class="n">prism</span><span class="o">.</span><span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span><span class="p">]</span>
+        <span class="c"># Get the 3 components of the unit vector in the direction of the</span>
+        <span class="c"># magnetization from the inclination and declination</span>
+        <span class="c"># 1) given by the function</span>
+        <span class="k">if</span> <span class="n">pinc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">pdec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">mx</span><span class="p">,</span> <span class="n">my</span><span class="p">,</span> <span class="n">mz</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">dircos</span><span class="p">(</span><span class="n">pinc</span><span class="p">,</span> <span class="n">pdec</span><span class="p">)</span>
+        <span class="c"># 2) given by the prism</span>
+        <span class="k">elif</span> <span class="s">&#39;inclination&#39;</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span> <span class="ow">and</span> <span class="s">&#39;declination&#39;</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">:</span>
+            <span class="n">mx</span><span class="p">,</span> <span class="n">my</span><span class="p">,</span> <span class="n">mz</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">dircos</span><span class="p">(</span><span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;inclination&#39;</span><span class="p">],</span>
+                                      <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;declination&#39;</span><span class="p">])</span>
+        <span class="c"># 3) Use in the direction of the regional field</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mx</span><span class="p">,</span> <span class="n">my</span><span class="p">,</span> <span class="n">mz</span> <span class="o">=</span> <span class="n">fx</span><span class="p">,</span> <span class="n">fy</span><span class="p">,</span> <span class="n">fz</span>
+        <span class="c"># Now calculate the total field anomaly</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+            <span class="n">magnetization</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">z_sqr</span> <span class="o">=</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                <span class="n">y_sqr</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                    <span class="n">x_sqr</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span>
+                    <span class="n">xy</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                    <span class="n">r_sqr</span> <span class="o">=</span> <span class="n">x_sqr</span> <span class="o">+</span> <span class="n">y_sqr</span> <span class="o">+</span> <span class="n">z_sqr</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">r_sqr</span><span class="p">)</span>
+                    <span class="n">zr</span> <span class="o">=</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">r</span>
+                    <span class="n">res</span> <span class="o">+=</span> <span class="p">((</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">j</span><span class="p">))</span><span class="o">*</span><span class="n">magnetization</span><span class="o">*</span><span class="p">(</span>
+                          <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">my</span><span class="o">*</span><span class="n">fz</span> <span class="o">+</span> <span class="n">mz</span><span class="o">*</span><span class="n">fy</span><span class="p">)</span><span class="o">*</span><span class="n">log</span><span class="p">((</span><span class="n">r</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="n">r</span> <span class="o">+</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+                        <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">mx</span><span class="o">*</span><span class="n">fz</span> <span class="o">+</span> <span class="n">mz</span><span class="o">*</span><span class="n">fx</span><span class="p">)</span><span class="o">*</span><span class="n">log</span><span class="p">((</span><span class="n">r</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="n">r</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]))</span>
+                        <span class="o">-</span> <span class="p">(</span><span class="n">mx</span><span class="o">*</span><span class="n">fy</span> <span class="o">+</span> <span class="n">my</span><span class="o">*</span><span class="n">fx</span><span class="p">)</span><span class="o">*</span><span class="n">log</span><span class="p">(</span><span class="n">r</span> <span class="o">+</span> <span class="n">z</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                        <span class="o">-</span> <span class="n">mx</span><span class="o">*</span><span class="n">fx</span><span class="o">*</span><span class="n">arctan2</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="n">x_sqr</span> <span class="o">+</span> <span class="n">zr</span> <span class="o">+</span> <span class="n">z_sqr</span><span class="p">)</span>
+                        <span class="o">-</span> <span class="n">my</span><span class="o">*</span><span class="n">fy</span><span class="o">*</span><span class="n">arctan2</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="n">r_sqr</span> <span class="o">+</span> <span class="n">zr</span> <span class="o">-</span> <span class="n">x_sqr</span><span class="p">)</span>
+                        <span class="o">+</span> <span class="n">mz</span><span class="o">*</span><span class="n">fz</span><span class="o">*</span><span class="n">arctan2</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="n">zr</span><span class="p">))</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">CM</span><span class="o">*</span><span class="n">T2NT</span>
+    <span class="k">return</span> <span class="n">res</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

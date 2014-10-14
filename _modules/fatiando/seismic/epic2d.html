@@ -1,0 +1,406 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fatiando.seismic.epic2d &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for fatiando.seismic.epic2d</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Epicenter determination in 2D, i.e., assuming a flat Earth.</span>
+
+<span class="sd">**Homogeneous Earth**</span>
+
+<span class="sd">* :func:`~fatiando.seismic.epic2d.homogeneous`</span>
+
+<span class="sd">Estimates the (x, y) cartesian coordinates of the epicenter based on travel-time</span>
+<span class="sd">residuals between S and P waves, assuming a homogeneous velocity distribution.</span>
+
+<span class="sd">Example using synthetic data::</span>
+
+<span class="sd">    &gt;&gt;&gt; import fatiando as ft</span>
+<span class="sd">    &gt;&gt;&gt; # Generate synthetic travel-time residuals</span>
+<span class="sd">    &gt;&gt;&gt; area = (0, 10, 0, 10)</span>
+<span class="sd">    &gt;&gt;&gt; vp = 2</span>
+<span class="sd">    &gt;&gt;&gt; vs = 1</span>
+<span class="sd">    &gt;&gt;&gt; model = [ft.mesher.Square(area, props={&#39;vp&#39;:vp, &#39;vs&#39;:vs})]</span>
+<span class="sd">    &gt;&gt;&gt; # The true source (epicenter)</span>
+<span class="sd">    &gt;&gt;&gt; src = (5, 5)</span>
+<span class="sd">    &gt;&gt;&gt; recs = [(5, 0), (5, 10), (10, 0)]</span>
+<span class="sd">    &gt;&gt;&gt; srcs = [src, src, src]</span>
+<span class="sd">    &gt;&gt;&gt; ptime = ft.seismic.ttime2d.straight(model, &#39;vp&#39;, srcs, recs)</span>
+<span class="sd">    &gt;&gt;&gt; stime = ft.seismic.ttime2d.straight(model, &#39;vs&#39;, srcs, recs)</span>
+<span class="sd">    &gt;&gt;&gt; ttres = stime - ptime</span>
+<span class="sd">    &gt;&gt;&gt; # Solve using Newton&#39;s</span>
+<span class="sd">    &gt;&gt;&gt; # Generate synthetic travel-time residuals method</span>
+<span class="sd">    &gt;&gt;&gt; solver = ft.inversion.gradient.newton(initial=(1, 1), tol=10**(-3),</span>
+<span class="sd">    ...     maxit=1000)</span>
+<span class="sd">    &gt;&gt;&gt; # Estimate the epicenter</span>
+<span class="sd">    &gt;&gt;&gt; p, residuals = ft.seismic.epic2d.homogeneous(ttres, recs, vp, vs, solver)</span>
+<span class="sd">    &gt;&gt;&gt; print &quot;(%.4f, %.4f)&quot; % (p[0], p[1])</span>
+<span class="sd">    (5.0000, 5.0000)</span>
+
+<span class="sd">Example using ``iterate = True`` to step through the solver algorithm::</span>
+
+<span class="sd">    &gt;&gt;&gt; import fatiando as ft</span>
+<span class="sd">    &gt;&gt;&gt; # Generate synthetic travel-time residuals</span>
+<span class="sd">    &gt;&gt;&gt; area = (0, 10, 0, 10)</span>
+<span class="sd">    &gt;&gt;&gt; vp = 2</span>
+<span class="sd">    &gt;&gt;&gt; vs = 1</span>
+<span class="sd">    &gt;&gt;&gt; model = [ft.mesher.Square(area, props={&#39;vp&#39;:vp, &#39;vs&#39;:vs})]</span>
+<span class="sd">    &gt;&gt;&gt; # The true source (epicenter)</span>
+<span class="sd">    &gt;&gt;&gt; src = (5, 5)</span>
+<span class="sd">    &gt;&gt;&gt; recs = [(5, 0), (5, 10), (10, 0)]</span>
+<span class="sd">    &gt;&gt;&gt; srcs = [src, src, src]</span>
+<span class="sd">    &gt;&gt;&gt; ptime = ft.seismic.ttime2d.straight(model, &#39;vp&#39;, srcs, recs)</span>
+<span class="sd">    &gt;&gt;&gt; stime = ft.seismic.ttime2d.straight(model, &#39;vs&#39;, srcs, recs)</span>
+<span class="sd">    &gt;&gt;&gt; ttres = stime - ptime</span>
+<span class="sd">    &gt;&gt;&gt; # Solve using Newton&#39;s</span>
+<span class="sd">    &gt;&gt;&gt; # Generate synthetic travel-time residuals method</span>
+<span class="sd">    &gt;&gt;&gt; solver = ft.inversion.gradient.newton(initial=(1, 1), tol=10**(-3),</span>
+<span class="sd">    ...     maxit=5)</span>
+<span class="sd">    &gt;&gt;&gt; # Show the steps to estimate the epicenter</span>
+<span class="sd">    &gt;&gt;&gt; steps = ft.seismic.epic2d.homogeneous(ttres, recs, vp, vs, solver,</span>
+<span class="sd">    ...     iterate=True)</span>
+<span class="sd">    &gt;&gt;&gt; for p, r in steps:</span>
+<span class="sd">    ...     print &quot;(%.4f, %.4f)&quot; % (p[0], p[1])</span>
+<span class="sd">    (1.0000, 1.0000)</span>
+<span class="sd">    (2.4157, 5.8424)</span>
+<span class="sd">    (4.3279, 4.7485)</span>
+<span class="sd">    (4.9465, 4.9998)</span>
+<span class="sd">    (4.9998, 5.0000)</span>
+<span class="sd">    (5.0000, 5.0000)</span>
+
+<span class="sd">----</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">inversion</span><span class="p">,</span> <span class="n">utils</span>
+<span class="kn">import</span> <span class="nn">fatiando.logger</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">fatiando</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">dummy</span><span class="p">(</span><span class="s">&#39;fatiando.seismic.epic2d&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="TTRFlat"><a class="viewcode-back" href="../../../api/seismic.epic2d.html#fatiando.seismic.epic2d.TTRFlat">[docs]</a><span class="k">class</span> <span class="nc">TTRFlat</span><span class="p">(</span><span class="n">inversion</span><span class="o">.</span><span class="n">datamodule</span><span class="o">.</span><span class="n">DataModule</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Data module for epicenter estimation using travel-time residuals between</span>
+<span class="sd">    S and P waves, assuming a homogeneous Earth.</span>
+
+<span class="sd">    The travel-time residual measured by the ith receiver is a function of the</span>
+<span class="sd">    (x, y) coordinates of the epicenter:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        t_{S_i} - t_{P_i} = \\Delta t_i (x, y) =</span>
+<span class="sd">        \\left(\\frac{1}{V_S} - \\frac{1}{V_P} \\right)</span>
+<span class="sd">        \\sqrt{(x_i - x)^2 + (y_i - y)^2}</span>
+
+<span class="sd">    The elements :math:`G_{i1}` and :math:`G_{i2}` of the Jacobian matrix for</span>
+<span class="sd">    this data type are</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        G_{i1}(x, y) = -\\left(\\frac{1}{V_S} - \\frac{1}{V_P} \\right)</span>
+<span class="sd">        \\frac{x_i - x}{\\sqrt{(x_i - x)^2 + (y_i - y)^2}}</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        G_{i2}(x, y) = -\\left(\\frac{1}{V_S} - \\frac{1}{V_P} \\right)</span>
+<span class="sd">        \\frac{y_i - y}{\\sqrt{(x_i - x)^2 + (y_i - y)^2}}</span>
+
+<span class="sd">    The Hessian matrix is approximated by</span>
+<span class="sd">    :math:`2\\bar{\\bar{G}}^T\\bar{\\bar{G}}` (Gauss-Newton method).</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * ttres : array</span>
+<span class="sd">        Travel-time residuals between S and P waves</span>
+<span class="sd">    * recs : list of lists</span>
+<span class="sd">        List with the (x, y) coordinates of the receivers</span>
+<span class="sd">    * vp : float</span>
+<span class="sd">        Assumed velocity of P waves</span>
+<span class="sd">    * vs : float</span>
+<span class="sd">        Assumed velocity of S waves</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ttres</span><span class="p">,</span> <span class="n">recs</span><span class="p">,</span> <span class="n">vp</span><span class="p">,</span> <span class="n">vs</span><span class="p">):</span>
+        <span class="n">inversion</span><span class="o">.</span><span class="n">datamodule</span><span class="o">.</span><span class="n">DataModule</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ttres</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_rec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_rec</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">recs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vp</span> <span class="o">=</span> <span class="n">vp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vs</span> <span class="o">=</span> <span class="n">vs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">vs</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">vp</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_predicted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">p</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">x_rec</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_rec</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">sum_gradient</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">residuals</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">p</span>
+        <span class="n">sqrt</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">x_rec</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_rec</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">jac_T</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_rec</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span><span class="o">/</span><span class="n">sqrt</span><span class="p">,</span>
+                 <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_rec</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span><span class="o">/</span><span class="n">sqrt</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">gradient</span> <span class="o">-</span> <span class="mf">2.</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">jac_T</span><span class="p">,</span> <span class="n">residuals</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">sum_hessian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hessian</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">p</span>
+        <span class="n">sqrt</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">x_rec</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_rec</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">jac_T</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_rec</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span><span class="o">/</span><span class="n">sqrt</span><span class="p">,</span>
+                             <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_rec</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span><span class="o">/</span><span class="n">sqrt</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">hessian</span> <span class="o">+</span> <span class="mf">2.</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">jac_T</span><span class="p">,</span> <span class="n">jac_T</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="homogeneous"><a class="viewcode-back" href="../../../api/seismic.epic2d.html#fatiando.seismic.epic2d.homogeneous">[docs]</a><span class="k">def</span> <span class="nf">homogeneous</span><span class="p">(</span><span class="n">ttres</span><span class="p">,</span> <span class="n">recs</span><span class="p">,</span> <span class="n">vp</span><span class="p">,</span> <span class="n">vs</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">damping</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">equality</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="p">{},</span>
+    <span class="n">iterate</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimate the (x, y) coordinates of the epicenter of an event using</span>
+<span class="sd">    travel-time residuals between P and S waves and assuming a homogeneous Earth</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * ttres : array</span>
+<span class="sd">        Array with the travel-time residuals between S and P waves</span>
+<span class="sd">    * recs : list of lists</span>
+<span class="sd">        List with the (x, y) coordinates of the receivers</span>
+<span class="sd">    * vp : float</span>
+<span class="sd">        Assumed velocity of P waves</span>
+<span class="sd">    * vs : float</span>
+<span class="sd">        Assumed velocity of S waves</span>
+<span class="sd">    * solver : function</span>
+<span class="sd">        A non-linear inverse problem solver generated by a factory function</span>
+<span class="sd">        from a :mod:`~fatiando.inversion` inverse problem solver module.</span>
+<span class="sd">    * damping : float</span>
+<span class="sd">        Damping regularizing parameter (i.e., how much damping to apply).</span>
+<span class="sd">        Must be a positive scalar.</span>
+<span class="sd">    * equality : float</span>
+<span class="sd">        Positive scalar regularizing parameter for Equality constraints.</span>
+<span class="sd">        How much to impose the reference values on the coordinates of the</span>
+<span class="sd">        epicenter. A high value means strong constraints, a small value means</span>
+<span class="sd">        loose constraints.</span>
+<span class="sd">        (see :class:`~fatiando.inversion.regularizer.Equality`).</span>
+<span class="sd">    * ref : dict</span>
+<span class="sd">        The reference values for the x or y coordinates (or both). For example,</span>
+<span class="sd">        to impose that x be close to 8, use ``ref = {&#39;x&#39;:8}``. To impose a</span>
+<span class="sd">        constraint on both x and y, use ``ref = {&#39;x&#39;:8, &#39;y&#39;:12}``.</span>
+<span class="sd">    * iterate : True or False</span>
+<span class="sd">        If True, will yield the current estimate at each iteration yielded by</span>
+<span class="sd">        *solver*. In Python terms, ``iterate=True`` transforms this function</span>
+<span class="sd">        into a generator function.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * results : list = [estimate, residuals]</span>
+<span class="sd">        The estimated (x, y) coordinates and the residuals (difference between</span>
+<span class="sd">        measured and predicted travel-time residuals)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ttres</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">recs</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;Must have same number of travel-time residuals and receivers&quot;</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="n">msg</span>
+    <span class="k">if</span> <span class="n">damping</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;Damping must be positive&quot;</span>
+    <span class="k">if</span> <span class="n">equality</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;Equality must be positive&quot;</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">ref</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">,</span> <span class="s">&#39;y&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;Invalid key in ref: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
+    <span class="n">dms</span> <span class="o">=</span> <span class="p">[</span><span class="n">TTRFlat</span><span class="p">(</span><span class="n">ttres</span><span class="p">,</span> <span class="n">recs</span><span class="p">,</span> <span class="n">vp</span><span class="p">,</span> <span class="n">vs</span><span class="p">)]</span>
+    <span class="n">regs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">equality</span><span class="p">:</span>
+        <span class="n">reference</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="s">&#39;x&#39;</span> <span class="ow">in</span> <span class="n">ref</span><span class="p">:</span>
+            <span class="n">reference</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">ref</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s">&#39;y&#39;</span> <span class="ow">in</span> <span class="n">ref</span><span class="p">:</span>
+            <span class="n">reference</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">ref</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">]</span>
+        <span class="n">regs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inversion</span><span class="o">.</span><span class="n">regularizer</span><span class="o">.</span><span class="n">Equality</span><span class="p">(</span><span class="n">equality</span><span class="p">,</span> <span class="n">reference</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">damping</span><span class="p">:</span>
+        <span class="n">regs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inversion</span><span class="o">.</span><span class="n">regularizer</span><span class="o">.</span><span class="n">Damping</span><span class="p">(</span><span class="n">damping</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Estimating epicenter in 2D assuming a homogeneous Earth:&quot;</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  equality: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">equality</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  reference parameters: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ref</span><span class="p">)))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  damping: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">damping</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  iterate: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">iterate</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="n">iterate</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_iterator</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">regs</span><span class="p">,</span> <span class="n">solver</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_solver</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">regs</span><span class="p">,</span> <span class="n">solver</span><span class="p">)</span>
+</div>
+<span class="k">def</span> <span class="nf">_solver</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">regs</span><span class="p">,</span> <span class="n">solver</span><span class="p">):</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chset</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">solver</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">regs</span><span class="p">)):</span>
+            <span class="k">continue</span>
+    <span class="k">except</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">LinAlgError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="p">(</span><span class="s">&quot;Oops, the Hessian is a singular matrix.&quot;</span> <span class="o">+</span>
+                           <span class="s">&quot; Try applying more regularization&quot;</span><span class="p">)</span>
+    <span class="n">stop</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  number of iterations: </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  final data misfit: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chset</span><span class="p">[</span><span class="s">&#39;misfits&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  final goal function: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chset</span><span class="p">[</span><span class="s">&#39;goals&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  time: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">sec2hms</span><span class="p">(</span><span class="n">stop</span> <span class="o">-</span> <span class="n">start</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">chset</span><span class="p">[</span><span class="s">&#39;estimate&#39;</span><span class="p">],</span> <span class="n">chset</span><span class="p">[</span><span class="s">&#39;residuals&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">_iterator</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">regs</span><span class="p">,</span> <span class="n">solver</span><span class="p">):</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chset</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">solver</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">regs</span><span class="p">)):</span>
+            <span class="k">yield</span> <span class="n">chset</span><span class="p">[</span><span class="s">&#39;estimate&#39;</span><span class="p">],</span> <span class="n">chset</span><span class="p">[</span><span class="s">&#39;residuals&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">except</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">LinAlgError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="p">(</span><span class="s">&quot;Oops, the Hessian is a singular matrix.&quot;</span> <span class="o">+</span>
+                           <span class="s">&quot; Try applying more regularization&quot;</span><span class="p">)</span>
+    <span class="n">stop</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  number of iterations: </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  final data misfit: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chset</span><span class="p">[</span><span class="s">&#39;misfits&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  final goal function: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chset</span><span class="p">[</span><span class="s">&#39;goals&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  time: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">sec2hms</span><span class="p">(</span><span class="n">stop</span> <span class="o">-</span> <span class="n">start</span><span class="p">)))</span>
+
+<div class="viewcode-block" id="mapgoal"><a class="viewcode-back" href="../../../api/seismic.epic2d.html#fatiando.seismic.epic2d.mapgoal">[docs]</a><span class="k">def</span> <span class="nf">mapgoal</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">ys</span><span class="p">,</span> <span class="n">ttres</span><span class="p">,</span> <span class="n">recs</span><span class="p">,</span> <span class="n">vp</span><span class="p">,</span> <span class="n">vs</span><span class="p">,</span> <span class="n">damping</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">equality</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="p">{}):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make a map of the goal function for a given set of inversion parameters.</span>
+
+<span class="sd">    The goal function is define as:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \\Gamma(\\bar{p}) = \\phi(\\bar{p}) + \\sum\\limits_{r=1}^{R}</span>
+<span class="sd">        \\mu_r\\theta_r(\\bar{p})</span>
+
+<span class="sd">    where :math:`\\phi(\\bar{p})` is the data-misfit function,</span>
+<span class="sd">    :math:`\\theta_r(\\bar{p})` is the rth of the R regularizing function used,</span>
+<span class="sd">    and :math:`\\mu_r` is the rth regularizing parameter.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xs, ys : arrays</span>
+<span class="sd">        Lists of x and y values where the goal function will be calculated</span>
+<span class="sd">    * ttres : array</span>
+<span class="sd">        Array with the travel-time residuals between S and P waves</span>
+<span class="sd">    * recs : list of lists</span>
+<span class="sd">        List with the (x, y) coordinates of the receivers</span>
+<span class="sd">    * vp : float</span>
+<span class="sd">        Assumed velocity of P waves</span>
+<span class="sd">    * vs : float</span>
+<span class="sd">        Assumed velocity of S waves</span>
+<span class="sd">    * damping : float</span>
+<span class="sd">        Damping regularizing parameter (i.e., how much damping to apply).</span>
+<span class="sd">        Must be a positive scalar.</span>
+<span class="sd">    * equality : float</span>
+<span class="sd">        Positive scalar regularizing parameter for Equality constraints.</span>
+<span class="sd">        How much to impose the reference values on the coordinates of the</span>
+<span class="sd">        epicenter. A high value means strong constraints, a small value means</span>
+<span class="sd">        loose constraints.</span>
+<span class="sd">        (see :class:`~fatiando.inversion.regularizer.Equality`).</span>
+<span class="sd">    * ref : dict</span>
+<span class="sd">        The reference values for the x or y coordinates (or both). For example,</span>
+<span class="sd">        to impose that x be close to 8, use ``ref = {&#39;x&#39;:8}``. To impose a</span>
+<span class="sd">        constraint on both x and y, use ``ref = {&#39;x&#39;:8, &#39;y&#39;:12}``.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * goals : array</span>
+<span class="sd">        Array with the goal function values</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dm</span> <span class="o">=</span> <span class="n">TTRFlat</span><span class="p">(</span><span class="n">ttres</span><span class="p">,</span> <span class="n">recs</span><span class="p">,</span> <span class="n">vp</span><span class="p">,</span> <span class="n">vs</span><span class="p">)</span>
+    <span class="n">reference</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="s">&#39;x&#39;</span> <span class="ow">in</span> <span class="n">ref</span><span class="p">:</span>
+        <span class="n">reference</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">ref</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="s">&#39;y&#39;</span> <span class="ow">in</span> <span class="n">ref</span><span class="p">:</span>
+        <span class="n">reference</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">ref</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">]</span>
+    <span class="n">reg1</span> <span class="o">=</span> <span class="n">inversion</span><span class="o">.</span><span class="n">regularizer</span><span class="o">.</span><span class="n">Equality</span><span class="p">(</span><span class="n">equality</span><span class="p">,</span> <span class="n">reference</span><span class="p">)</span>
+    <span class="n">reg2</span> <span class="o">=</span> <span class="n">inversion</span><span class="o">.</span><span class="n">regularizer</span><span class="o">.</span><span class="n">Damping</span><span class="p">(</span><span class="n">damping</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">dm</span><span class="o">.</span><span class="n">get_misfit</span><span class="p">(</span><span class="n">ttres</span> <span class="o">-</span> <span class="n">dm</span><span class="o">.</span><span class="n">get_predicted</span><span class="p">(</span><span class="n">p</span><span class="p">))</span> <span class="o">+</span>
+                        <span class="n">reg1</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">+</span> <span class="n">reg2</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">ys</span><span class="p">)])</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

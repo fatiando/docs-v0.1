@@ -1,0 +1,12 @@
+.. _cookbook_seismic_wavefd_elastic_sh_homogeneous:
+
+Seismic: 2D finite difference simulation of elastic SH wave propagation in a homogeneous medium (no Love wave)
+===============================================================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/seismic_wavefd_elastic_sh_homogeneous.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/seismic_wavefd_elastic_sh_homogeneous.py
+    :language: python
+    :linenos:

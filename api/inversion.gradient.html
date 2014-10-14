@@ -1,0 +1,434 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Gradient solvers (fatiando.inversion.gradient) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Inverse problem solving tools (fatiando.inversion)" href="inversion.html" />
+    <link rel="next" title="Heuristic solvers (fatiando.inversion.heuristic)" href="inversion.heuristic.html" />
+    <link rel="prev" title="Solvers for linear problems (fatiando.inversion.linear)" href="inversion.linear.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="inversion.heuristic.html" title="Heuristic solvers (fatiando.inversion.heuristic)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="inversion.linear.html" title="Solvers for linear problems (fatiando.inversion.linear)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="inversion.html" accesskey="U">Inverse problem solving tools (<tt class="docutils literal"><span class="pre">fatiando.inversion</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.inversion.gradient">
+<span id="gradient-solvers-fatiando-inversion-gradient"></span><span id="fatiando-inversion-gradient"></span><h1>Gradient solvers (<tt class="docutils literal"><span class="pre">fatiando.inversion.gradient</span></tt>)<a class="headerlink" href="#module-fatiando.inversion.gradient" title="Permalink to this headline">¶</a></h1>
+<p>Factory functions for generic inverse problem solvers using gradient
+optimization methods.</p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.inversion.gradient.newton" title="fatiando.inversion.gradient.newton"><tt class="xref py py-func docutils literal"><span class="pre">newton</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.inversion.gradient.levmarq" title="fatiando.inversion.gradient.levmarq"><tt class="xref py py-func docutils literal"><span class="pre">levmarq</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.inversion.gradient.steepest" title="fatiando.inversion.gradient.steepest"><tt class="xref py py-func docutils literal"><span class="pre">steepest</span></tt></a></li>
+</ul>
+<p>This module uses dense matrices (<tt class="xref py py-mod docutils literal"><span class="pre">numpy</span></tt> arrays) by default. If you want
+to enable the use of sparse matrices from <tt class="xref py py-mod docutils literal"><span class="pre">scipy.sparse</span></tt>, call function
+<a class="reference internal" href="#fatiando.inversion.gradient.use_sparse" title="fatiando.inversion.gradient.use_sparse"><tt class="xref py py-func docutils literal"><span class="pre">fatiando.inversion.gradient.use_sparse</span></tt></a> <strong>before</strong> creating any solver
+functions!</p>
+<p>The factory functions produce the actual solver functions. Solver functions are
+Python generator functions that have the general format:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">solver</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">regs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="c"># Start-up</span>
+    <span class="o">...</span>
+    <span class="c"># yield the initial estimate</span>
+    <span class="k">yield</span> <span class="p">{</span><span class="s">&#39;estimate&#39;</span><span class="p">:</span><span class="n">p</span><span class="p">,</span> <span class="s">&#39;misfits&#39;</span><span class="p">:</span><span class="n">misfits</span><span class="p">,</span> <span class="s">&#39;goals&#39;</span><span class="p">:</span><span class="n">goals</span><span class="p">,</span>
+           <span class="s">&#39;residuals&#39;</span><span class="p">:</span><span class="n">residuals</span><span class="p">}</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">maxit</span><span class="p">):</span>
+        <span class="c"># Perform an iteration</span>
+        <span class="o">...</span>
+        <span class="k">yield</span> <span class="p">{</span><span class="s">&#39;estimate&#39;</span><span class="p">:</span><span class="n">p</span><span class="p">,</span> <span class="s">&#39;misfits&#39;</span><span class="p">:</span><span class="n">misfits</span><span class="p">,</span> <span class="s">&#39;goals&#39;</span><span class="p">:</span><span class="n">goals</span><span class="p">,</span>
+               <span class="s">&#39;residuals&#39;</span><span class="p">:</span><span class="n">residuals</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>dms <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">List of data modules. Data modules should be child-classes of the
+<a class="reference internal" href="inversion.datamodule.html#fatiando.inversion.datamodule.DataModule" title="fatiando.inversion.datamodule.DataModule"><tt class="xref py py-class docutils literal"><span class="pre">DataModule</span></tt></a> class.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>regs <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">List of regularizers. Regularizers should be child-classes of the
+<a class="reference internal" href="inversion.regularizer.html#fatiando.inversion.regularizer.Regularizer" title="fatiando.inversion.regularizer.Regularizer"><tt class="xref py py-class docutils literal"><span class="pre">Regularizer</span></tt></a> class.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>kwargs</dt>
+<dd><p class="first last">Are how the factory functions pass the needed parameters to the solvers.
+Not to be altered outside the factory functions.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Yields:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>changeset <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first">A dictionary with the solution at the current iteration:
+<tt class="docutils literal"><span class="pre">changeset</span> <span class="pre">=</span> <span class="pre">{'estimate':p,</span> <span class="pre">'misfits':misfits,</span> <span class="pre">'goals':goals,</span>
+<span class="pre">'residuals':residuals}</span></tt></p>
+<ul class="last">
+<li><dl class="first docutils">
+<dt>p <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The parameter vector.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>misfits <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The data-misfit function values per iteration</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>goals <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The goal function values per iteration</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>residuals <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">List with the residual vectors from each data module at this iteration</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<hr class="docutils" />
+<dl class="function">
+<dt id="fatiando.inversion.gradient.levmarq">
+<tt class="descclassname">fatiando.inversion.gradient.</tt><tt class="descname">levmarq</tt><big>(</big><em>initial</em>, <em>damp=1.0</em>, <em>factor=10.0</em>, <em>maxsteps=20</em>, <em>maxit=100</em>, <em>tol=1e-05</em>, <em>diag=False</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/gradient.html#levmarq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.gradient.levmarq" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory function for the non-linear inverse problem solver using the
+Levenberg-Marquardt algorithm.</p>
+<p>The increment to the parameter vector <span class="math">\(\bar{p}\)</span> is calculated by
+(Kelley, 1999)</p>
+<div class="math">
+\[\Delta\bar{p} = -[\bar{\bar{H}} +
+\lambda \bar{\bar{I}}]^{-1}\bar{g}\]</div>
+<p>where <span class="math">\(\lambda\)</span> is a damping factor (step size),
+<span class="math">\(\bar{\bar{H}}\)</span> is the Hessian matrix,
+<span class="math">\(\bar{\bar{I}}\)</span> is the identity matrix,
+and <span class="math">\(\bar{g}\)</span> is the gradient vector.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>initial <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The initial estimate of the parameters</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>damp <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The initial damping factor (<span class="math">\(\lambda\)</span>)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>factor <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The increment/decrement to the damping factor at each iteration.
+Should be <tt class="docutils literal"><span class="pre">factor</span> <span class="pre">&gt;</span> <span class="pre">1</span></tt></p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>maxsteps <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">The maximum number os times to try to take a step before giving up</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>maxit <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Maximum number of iterations</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>tol <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Relative tolerance for decreasing the goal function to before
+terminating</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>diag <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">If True, will use the diagonal of the Hessian matrix instead of the
+identity matrix. Only use this is the parameters are different physical
+quantities (like time and distance, for example)</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>solver <span class="classifier-delimiter">:</span> <span class="classifier">function</span></dt>
+<dd><p class="first last">A Python generator function that solves an inverse problem using the
+parameters given above.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>References:</p>
+<p>Kelley, C. T., 1999, Iterative methods for optimization: Raleigh: SIAM.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.inversion.gradient.newton">
+<tt class="descclassname">fatiando.inversion.gradient.</tt><tt class="descname">newton</tt><big>(</big><em>initial</em>, <em>maxit=100</em>, <em>tol=1e-05</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/gradient.html#newton"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.gradient.newton" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory function for the non-linear inverse problem solver using Newton&#8217;s
+method.</p>
+<p>The increment to the parameter vector <span class="math">\(\bar{p}\)</span> is calculated by
+(Kelley, 1999)</p>
+<div class="math">
+\[\Delta\bar{p} = -\bar{\bar{H}}^{-1}\bar{g}\]</div>
+<p>where <span class="math">\(\bar{\bar{H}}\)</span> is the Hessian matrix and <span class="math">\(\bar{g}\)</span> is
+the gradient vector.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>initial <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The initial estimate of the parameters</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>maxit <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Maximum number of iterations</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>tol <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Relative tolerance for decreasing the goal function to before
+terminating</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>solver <span class="classifier-delimiter">:</span> <span class="classifier">function</span></dt>
+<dd><p class="first last">A Python generator function that solves an inverse problem using the
+parameters given above.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>References:</p>
+<p>Kelley, C. T., 1999, Iterative methods for optimization: Raleigh: SIAM.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.inversion.gradient.steepest">
+<tt class="descclassname">fatiando.inversion.gradient.</tt><tt class="descname">steepest</tt><big>(</big><em>initial</em>, <em>step=0.1</em>, <em>maxit=500</em>, <em>tol=1e-05</em>, <em>armijo=True</em>, <em>maxsteps=20</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/gradient.html#steepest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.gradient.steepest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory function for the non-linear inverse problem solver using the
+Steepest Descent algorithm.</p>
+<p>The increment to the parameter vector <span class="math">\(\bar{p}\)</span> is calculated by
+(Kelley, 1999)</p>
+<div class="math">
+\[\Delta\bar{p} = -\lambda\bar{g}\]</div>
+<p>where <span class="math">\(\lambda\)</span> is the step size and <span class="math">\(\bar{g}\)</span> is the
+gradient vector.</p>
+<p>Optionally, the step size can be determined thought a line search algorithm
+using the Armijo rule (Kelley, 1999). In this case</p>
+<div class="math">
+\[\lambda = \beta^m\]</div>
+<p>where <span class="math">\(1 &gt; \beta &gt; 0\)</span> and <span class="math">\(m \ge 0\)</span> is an interger that
+controls the step size.
+The line search finds the smallest <span class="math">\(m\)</span> that satisfies the condition
+(Armijo rule)</p>
+<div class="math">
+\[\begin{split}\Gamma(\bar{p} + \Delta\bar{p}) - \Gamma(\bar{p}) &lt;
+\alpha\beta^m ||\bar{g}(\bar{p})||^2\end{split}\]</div>
+<p>where <span class="math">\(\Gamma(\bar{p})\)</span> is the goal function evaluated for parameter
+vector <span class="math">\(\bar{p}\)</span>, <span class="math">\(\alpha = 10^{-4}\)</span>, and
+<span class="math">\(\bar{g}(\bar{p})\)</span> is the gradient vector of
+<span class="math">\(\Gamma(\bar{p})\)</span>.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>initial <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The initial estimate of the parameters</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>step <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The step size (if using Armijo, <span class="math">\(\beta\)</span>, else <span class="math">\(\lambda\)</span>)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>maxit <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Maximum number of iterations</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>tol <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Relative tolerance for decreasing the goal function to before
+terminating</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>armijo <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">If True, will use the Armijo rule to determine the best step size at
+each iteration. It&#8217;s highly recommended to use this.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>maxsteps <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">If using Armijo, the maximum number os times to try to take a step
+before giving up (i.e., the maximum value of <span class="math">\(m\)</span>). If not using
+Armijo, maxsteps is ignored</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>solver <span class="classifier-delimiter">:</span> <span class="classifier">function</span></dt>
+<dd><p class="first last">A Python generator function that solves an inverse problem using the
+parameters given above.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>References:</p>
+<p>Kelley, C. T., 1999, Iterative methods for optimization: Raleigh: SIAM.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.inversion.gradient.use_sparse">
+<tt class="descclassname">fatiando.inversion.gradient.</tt><tt class="descname">use_sparse</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/gradient.html#use_sparse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.gradient.use_sparse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configure the gradient solvers to use the sparse conjugate gradient linear
+system solver from <cite>scipy.sparse</cite>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This does not make the data modules use sparse matrices! That must
+be implemented for each inverse problem separately.</p>
+</div>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="inversion.linear.html"
+                        title="previous chapter">Solvers for linear problems (<tt class="docutils literal"><span class="pre">fatiando.inversion.linear</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="inversion.heuristic.html"
+                        title="next chapter">Heuristic solvers (<tt class="docutils literal"><span class="pre">fatiando.inversion.heuristic</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/inversion.gradient.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="inversion.heuristic.html" title="Heuristic solvers (fatiando.inversion.heuristic)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="inversion.linear.html" title="Solvers for linear problems (fatiando.inversion.linear)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="inversion.html" >Inverse problem solving tools (<tt class="docutils literal"><span class="pre">fatiando.inversion</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

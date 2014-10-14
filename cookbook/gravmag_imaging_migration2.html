@@ -1,0 +1,210 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GravMag: 3D imaging using the migration method on synthetic gravity data (more complex model + noisy data) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Cookbook" href="../cookbook.html" />
+    <link rel="next" title="GravMag: 3D imaging using the sandwich model method on synthetic gravity data (simple example)" href="gravmag_imaging_sandwich.html" />
+    <link rel="prev" title="GravMag: 3D imaging using the migration method on synthetic gravity data (simple model)" href="gravmag_imaging_migration.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag_imaging_sandwich.html" title="GravMag: 3D imaging using the sandwich model method on synthetic gravity data (simple example)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gravmag_imaging_migration.html" title="GravMag: 3D imaging using the migration method on synthetic gravity data (simple model)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../cookbook.html" accesskey="U">Cookbook</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="gravmag-3d-imaging-using-the-migration-method-on-synthetic-gravity-data-more-complex-model-noisy-data">
+<span id="cookbook-gravmag-imaging-migration2"></span><h1>GravMag: 3D imaging using the migration method on synthetic gravity data (more complex model + noisy data)<a class="headerlink" href="#gravmag-3d-imaging-using-the-migration-method-on-synthetic-gravity-data-more-complex-model-noisy-data" title="Permalink to this headline">¶</a></h1>
+[<a href="../_static/cookbook/gravmag_imaging_migration2.py">source code</a>]<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42</pre></div></td><td class="code"><div class="highlight"><pre><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">GravMag: 3D imaging using the migration method on synthetic gravity data</span>
+<span class="sd">(more complex model + noisy data)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">logger</span><span class="p">,</span> <span class="n">gridder</span><span class="p">,</span> <span class="n">mesher</span><span class="p">,</span> <span class="n">gravmag</span><span class="p">,</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">fatiando.vis</span> <span class="kn">import</span> <span class="n">mpl</span><span class="p">,</span> <span class="n">myv</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">logger</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">header</span><span class="p">())</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">__doc__</span><span class="p">)</span>
+
+<span class="c"># Make some synthetic gravity data from a simple prism model</span>
+<span class="n">prisms</span> <span class="o">=</span> <span class="p">[</span><span class="n">mesher</span><span class="o">.</span><span class="n">Prism</span><span class="p">(</span><span class="o">-</span><span class="mi">4000</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">4000</span><span class="p">,</span><span class="o">-</span><span class="mi">2000</span><span class="p">,</span><span class="mi">2000</span><span class="p">,</span><span class="mi">5000</span><span class="p">,{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="mi">1200</span><span class="p">}),</span>
+          <span class="n">mesher</span><span class="o">.</span><span class="n">Prism</span><span class="p">(</span><span class="o">-</span><span class="mi">1000</span><span class="p">,</span><span class="mi">1000</span><span class="p">,</span><span class="o">-</span><span class="mi">1000</span><span class="p">,</span><span class="mi">1000</span><span class="p">,</span><span class="mi">1000</span><span class="p">,</span><span class="mi">7000</span><span class="p">,{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="o">-</span><span class="mi">800</span><span class="p">}),</span>
+          <span class="n">mesher</span><span class="o">.</span><span class="n">Prism</span><span class="p">(</span><span class="mi">2000</span><span class="p">,</span><span class="mi">4000</span><span class="p">,</span><span class="mi">3000</span><span class="p">,</span><span class="mi">4000</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">2000</span><span class="p">,{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="mi">600</span><span class="p">})]</span>
+<span class="c"># Calculate on a scatter of points to show that migration doesn&#39;t need gridded</span>
+<span class="c"># data</span>
+<span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span> <span class="o">=</span> <span class="n">gridder</span><span class="o">.</span><span class="n">scatter</span><span class="p">((</span><span class="o">-</span><span class="mi">6000</span><span class="p">,</span> <span class="mi">6000</span><span class="p">,</span> <span class="o">-</span><span class="mi">6000</span><span class="p">,</span> <span class="mi">6000</span><span class="p">),</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">z</span><span class="o">=-</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">gz</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">contaminate</span><span class="p">(</span><span class="n">gravmag</span><span class="o">.</span><span class="n">prism</span><span class="o">.</span><span class="n">gz</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">),</span> <span class="mf">0.1</span><span class="p">)</span>
+
+<span class="c"># Plot the data</span>
+<span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s">&#39;scaled&#39;</span><span class="p">)</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">yp</span><span class="p">,</span> <span class="n">xp</span><span class="p">,</span> <span class="n">gz</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">yp</span><span class="p">,</span> <span class="n">xp</span><span class="p">,</span> <span class="s">&#39;.k&#39;</span><span class="p">)</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;East (km)&#39;</span><span class="p">)</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;North (km)&#39;</span><span class="p">)</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">m2km</span><span class="p">()</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="n">mesh</span> <span class="o">=</span> <span class="n">gravmag</span><span class="o">.</span><span class="n">imaging</span><span class="o">.</span><span class="n">migrate</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">gz</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">10000</span><span class="p">,</span> <span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span> <span class="n">power</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+
+<span class="c"># Plot the results</span>
+<span class="n">myv</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">myv</span><span class="o">.</span><span class="n">prisms</span><span class="p">(</span><span class="n">prisms</span><span class="p">,</span> <span class="s">&#39;density&#39;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s">&#39;wireframe&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">myv</span><span class="o">.</span><span class="n">prisms</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="s">&#39;density&#39;</span><span class="p">,</span> <span class="n">edges</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="n">axes</span> <span class="o">=</span> <span class="n">myv</span><span class="o">.</span><span class="n">axes</span><span class="p">(</span><span class="n">myv</span><span class="o">.</span><span class="n">outline</span><span class="p">())</span>
+<span class="n">myv</span><span class="o">.</span><span class="n">wall_bottom</span><span class="p">(</span><span class="n">axes</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">bounds</span><span class="p">)</span>
+<span class="n">myv</span><span class="o">.</span><span class="n">wall_north</span><span class="p">(</span><span class="n">axes</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">bounds</span><span class="p">)</span>
+<span class="n">myv</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gravmag_imaging_migration.html"
+                        title="previous chapter">GravMag: 3D imaging using the migration method on synthetic gravity data (simple model)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gravmag_imaging_sandwich.html"
+                        title="next chapter">GravMag: 3D imaging using the sandwich model method on synthetic gravity data (simple example)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/cookbook/gravmag_imaging_migration2.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag_imaging_sandwich.html" title="GravMag: 3D imaging using the sandwich model method on synthetic gravity data (simple example)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gravmag_imaging_migration.html" title="GravMag: 3D imaging using the migration method on synthetic gravity data (simple model)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../cookbook.html" >Cookbook</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

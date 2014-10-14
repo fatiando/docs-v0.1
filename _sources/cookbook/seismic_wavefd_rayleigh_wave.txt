@@ -1,0 +1,12 @@
+.. _cookbook_seismic_wavefd_rayleigh_wave:
+
+Seismic: 2D finite difference simulation of elastic P and SV wave propagation in a medium with a discontinuity (i.e., Moho), generating Rayleigh waves
+=======================================================================================================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/seismic_wavefd_rayleigh_wave.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/seismic_wavefd_rayleigh_wave.py
+    :language: python
+    :linenos:

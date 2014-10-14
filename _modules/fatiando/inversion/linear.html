@@ -1,0 +1,292 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fatiando.inversion.linear &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for fatiando.inversion.linear</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Factory functions for generic linear inverse problem solvers.</span>
+
+<span class="sd">* :func:`~fatiando.inversion.linear.overdet`</span>
+<span class="sd">* :func:`~fatiando.inversion.linear.underdet`</span>
+
+<span class="sd">The factory functions produce the actual solver functions.</span>
+<span class="sd">These solver functions are Python generator functions that yield only once.</span>
+<span class="sd">This might seem unnecessary but it is done so that the linear solvers are</span>
+<span class="sd">compatible with the non-linear solvers (e.g.,</span>
+<span class="sd">:mod:`~fatiando.inversion.gradient` and :mod:`~fatiando.inversion.heuristic`).</span>
+
+<span class="sd">This module uses dense matrices (:mod:`numpy` arrays) by default. If you want</span>
+<span class="sd">to enable the use of sparse matrices from :mod:`scipy.sparse`, call function</span>
+<span class="sd">:func:`fatiando.inversion.linear.use_sparse` **before** creating any solver</span>
+<span class="sd">functions!</span>
+
+<span class="sd">In the case of linear problems, solver functions have the general format::</span>
+
+<span class="sd">    def solver(dms, regs):</span>
+<span class="sd">        # Start-up</span>
+<span class="sd">        ...</span>
+<span class="sd">        # Calculate the estimate</span>
+<span class="sd">        ...</span>
+<span class="sd">        # yield the results</span>
+<span class="sd">        yield {&#39;estimate&#39;:p, &#39;misfits&#39;:[misfit], &#39;goals&#39;:[goal],</span>
+<span class="sd">               &#39;residuals&#39;:residuals}</span>
+
+<span class="sd">Parameters:</span>
+
+<span class="sd">* dms : list</span>
+<span class="sd">    List of data modules. Data modules should be child-classes of the</span>
+<span class="sd">    :class:`~fatiando.inversion.datamodule.DataModule` class.</span>
+<span class="sd">* regs : list</span>
+<span class="sd">    List of regularizers. Regularizers should be child-classes of the</span>
+<span class="sd">    :class:`~fatiando.inversion.regularizer.Regularizer` class.</span>
+
+<span class="sd">    .. note:: The regularizing functions must also be linear!</span>
+
+<span class="sd">Yields:</span>
+
+<span class="sd">* changeset : dict</span>
+<span class="sd">    A dictionary with the final solution:</span>
+<span class="sd">    ``changeset = {&#39;estimate&#39;:p, &#39;misfits&#39;:[misfit], &#39;goals&#39;:[goal],</span>
+<span class="sd">    &#39;residuals&#39;:residuals}``</span>
+
+<span class="sd">    * p : array</span>
+<span class="sd">        The parameter vector.</span>
+<span class="sd">    * misfit : list</span>
+<span class="sd">        The data-misfit function value</span>
+<span class="sd">    * goal : list</span>
+<span class="sd">        The goal function value</span>
+<span class="sd">    * residuals : list</span>
+<span class="sd">        List with the residual vectors from each data module at this iteration</span>
+
+<span class="sd">----</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">itertools</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">numpy.linalg</span> <span class="kn">import</span> <span class="n">solve</span> <span class="k">as</span> <span class="n">linsys_solver</span>
+<span class="kn">import</span> <span class="nn">scipy.sparse</span>
+<span class="kn">import</span> <span class="nn">scipy.sparse.linalg</span>
+
+<span class="kn">import</span> <span class="nn">fatiando.logger</span>
+
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">fatiando</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">dummy</span><span class="p">(</span><span class="s">&#39;fatiando.inversion.linear&#39;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_sparse_linsys_solver</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cgs</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">res</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Conjugate Gradient convergence not achieved&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">res</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;Conjugate Gradient illegal input or breakdown&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">_zerovector</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_zeromatrix</span><span class="p">(</span><span class="n">shape</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+
+<div class="viewcode-block" id="use_sparse"><a class="viewcode-back" href="../../../api/inversion.linear.html#fatiando.inversion.linear.use_sparse">[docs]</a><span class="k">def</span> <span class="nf">use_sparse</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Configure the gradient solvers to use the sparse conjugate gradient linear</span>
+<span class="sd">    system solver from `scipy.sparse`.</span>
+
+<span class="sd">    .. note:: This does not make the data modules use sparse matrices! That must</span>
+<span class="sd">        be implemented for each inverse problem separately.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Using sparse conjugate gradient solver&quot;</span><span class="p">)</span>
+    <span class="k">global</span> <span class="n">linsys_solver</span><span class="p">,</span> <span class="n">_zeromatrix</span>
+    <span class="n">linsys_solver</span> <span class="o">=</span> <span class="n">_sparse_linsys_solver</span>
+    <span class="n">_zeromatrix</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">csr_matrix</span>
+</div>
+<div class="viewcode-block" id="overdet"><a class="viewcode-back" href="../../../api/inversion.linear.html#fatiando.inversion.linear.overdet">[docs]</a><span class="k">def</span> <span class="nf">overdet</span><span class="p">(</span><span class="n">nparams</span><span class="p">):</span>
+    <span class="sd">r&quot;&quot;&quot;</span>
+<span class="sd">    Factory function for a linear least-squares solver to an overdetermined</span>
+<span class="sd">    problem (more data than parameters).</span>
+
+<span class="sd">    The problem at hand is finding the vector :math:`\bar{p}` that produces a</span>
+<span class="sd">    predicted data vector :math:`\bar{d}` as close as possible to an observed</span>
+<span class="sd">    data vector :math:`\bar{d}^o`.</span>
+
+<span class="sd">    In linear problems, the relation between the parameters and the predicted</span>
+<span class="sd">    data are expressed through the linear system</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \bar{\bar{G}}\bar{p} = \bar{d}</span>
+
+<span class="sd">    where :math:`\bar{\bar{G}}` is the Jacobian (or sensitivity) matrix. In the</span>
+<span class="sd">    **over determined** case, matrix :math:`\bar{\bar{G}}` has more lines</span>
+<span class="sd">    than columns, i.e., more equations than unknowns.</span>
+
+<span class="sd">    The least-squares estimate of :math:`\bar{p}` can be found by minimizing</span>
+<span class="sd">    the goal function</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \Gamma(\bar{p}) = \bar{r}^T\bar{r} + \sum\limits_{k=1}^L</span>
+<span class="sd">        \mu_k\theta_k(\bar{p})</span>
+
+<span class="sd">    where :math:`\bar{r} = \bar{d}^o - \bar{d}` is the residual vector,</span>
+<span class="sd">    :math:`\theta_k(\bar{p})` are regularizing functions, and :math:`\mu_k` are</span>
+<span class="sd">    regularizing parameters (positive scalars).</span>
+
+<span class="sd">    The mininum of the goal function can be calculated by solving the linear</span>
+<span class="sd">    system</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \bar{\bar{H}}\hat{\bar{p}} = -\bar{g}</span>
+
+<span class="sd">    where :math:`\bar{\bar{H}}` is the Hessian matrix of the goal function,</span>
+<span class="sd">    :math:`\bar{g}` is the gradient vector of the goal function, and</span>
+<span class="sd">    :math:`\hat{\bar{p}}` is the estimated parameter vector.</span>
+
+<span class="sd">    The Hessian of the goal function is given by</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \bar{\bar{H}} = 2\bar{\bar{G}}^T\bar{\bar{G}} + \sum\limits_{k=1}^L</span>
+<span class="sd">        \mu_k \bar{\bar{H}}_k</span>
+
+<span class="sd">    where :math:`\bar{\bar{H}}_k` are the Hessian matrices of the regularizing</span>
+<span class="sd">    functions.</span>
+
+<span class="sd">    The gradient vector of the goal function is given by</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \bar{g} = -2\bar{\bar{G}}^T\bar{d}^o + \sum\limits_{k=1}^L</span>
+<span class="sd">        \mu_k \bar{g}_k</span>
+
+<span class="sd">    where :math:`\bar{g}_k` are the gradient vectors of the regularizing</span>
+<span class="sd">    functions.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * nparams : int</span>
+<span class="sd">        The number of parameters in vector :math:`\bar{p}` (usually something</span>
+<span class="sd">        like ``mesh.size``)</span>
+
+<span class="sd">    Returns</span>
+
+<span class="sd">    * solver : function</span>
+<span class="sd">        A Python generator function that solves an linear overdetermined inverse</span>
+<span class="sd">        problem using the parameters given above.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">nparams</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;nparams must be &gt; 0&quot;</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Generating linear solver for overdetermined problems&quot;</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  number of parameters: </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nparams</span><span class="p">))</span>
+    <span class="k">def</span> <span class="nf">solver</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">regs</span><span class="p">,</span> <span class="n">nparams</span><span class="o">=</span><span class="n">nparams</span><span class="p">):</span>
+        <span class="n">gradientchain</span> <span class="o">=</span> <span class="p">[</span><span class="n">_zerovector</span><span class="p">(</span><span class="n">nparams</span><span class="p">)]</span>
+        <span class="n">gradientchain</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">regs</span><span class="p">))</span>
+        <span class="n">gradient</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">g</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">sum_gradient</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="n">gradientchain</span><span class="p">)</span>
+        <span class="n">hessianchain</span> <span class="o">=</span> <span class="p">[</span><span class="n">_zeromatrix</span><span class="p">((</span><span class="n">nparams</span><span class="p">,</span> <span class="n">nparams</span><span class="p">))]</span>
+        <span class="n">hessianchain</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">regs</span><span class="p">))</span>
+        <span class="n">hessian</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">h</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">sum_hessian</span><span class="p">(</span><span class="n">h</span><span class="p">),</span> <span class="n">hessianchain</span><span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">linsys_solver</span><span class="p">(</span><span class="n">hessian</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">gradient</span><span class="p">)</span>
+        <span class="n">residuals</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span><span class="o">.</span><span class="n">data</span> <span class="o">-</span> <span class="n">d</span><span class="o">.</span><span class="n">get_predicted</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dms</span><span class="p">]</span>
+        <span class="n">misfit</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get_misfit</span><span class="p">(</span><span class="n">res</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">izip</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span>
+                     <span class="n">residuals</span><span class="p">))</span>
+        <span class="n">goal</span> <span class="o">=</span> <span class="n">misfit</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">regs</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="p">{</span><span class="s">&#39;estimate&#39;</span><span class="p">:</span><span class="n">p</span><span class="p">,</span> <span class="s">&#39;misfits&#39;</span><span class="p">:[</span><span class="n">misfit</span><span class="p">],</span> <span class="s">&#39;goals&#39;</span><span class="p">:[</span><span class="n">goal</span><span class="p">],</span>
+               <span class="s">&#39;residuals&#39;</span><span class="p">:</span><span class="n">residuals</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">solver</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

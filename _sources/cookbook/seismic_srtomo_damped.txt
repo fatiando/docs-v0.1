@@ -1,0 +1,12 @@
+.. _cookbook_seismic_srtomo_damped:
+
+Seismic: 2D straight-ray tomography using damping regularization
+=================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/seismic_srtomo_damped.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/seismic_srtomo_damped.py
+    :language: python
+    :linenos:

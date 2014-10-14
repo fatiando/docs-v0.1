@@ -1,0 +1,256 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fatiando.gravmag.sphere &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for fatiando.gravmag.sphere</h1><div class="highlight"><pre>
+<span class="sd">r&quot;&quot;&quot;</span>
+<span class="sd">Calculate the potential fields of a homogeneous sphere.</span>
+
+<span class="sd">**Magnetic**</span>
+
+<span class="sd">Calculates the total field anomaly. Uses the formula in Blakely (1995).</span>
+
+<span class="sd">* :func:`~fatiando.gravmag.sphere.tf`: calculates the total-field anomaly</span>
+
+<span class="sd">Remember that:</span>
+
+<span class="sd">The magnetization :math:`\mathbf{M}` and the dipole moment :math:`\mathbf{m}`</span>
+<span class="sd">are related with the volume V:</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">    \mathbf{M} = \dfrac{\mathbf{m}}{V}.</span>
+
+<span class="sd">The total-field anomaly is:</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">    \Delta T = |\mathbf{T}| - |\mathbf{F}|,</span>
+
+<span class="sd">where :math:`\mathbf{T}` is the measured field and :math:`\mathbf{F}` is a</span>
+<span class="sd">reference (regional) field. The forward modeling functions</span>
+<span class="sd">:func:`~fatiando.gravmag.sphere.bx`, :func:`~fatiando.gravmag.sphere.by`,</span>
+<span class="sd">and :func:`~fatiando.gravmag.sphere.bz` calculate the 3 components of the</span>
+<span class="sd">field perturbation :math:`\Delta\mathbf{F}`</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">    \Delta\mathbf{F} = \mathbf{T} - \mathbf{F}.</span>
+
+<span class="sd">Then the total-field anomaly caused by the sphere is</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">    \Delta T \approx \hat{\mathbf{F}}\cdot\Delta\mathbf{F}.</span>
+
+
+<span class="sd">**Gravity**</span>
+
+
+
+<span class="sd">**References**</span>
+
+
+<span class="sd">----</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="kn">from</span> <span class="nn">fatiando.constants</span> <span class="kn">import</span> <span class="n">SI2EOTVOS</span><span class="p">,</span> <span class="n">SI2MGAL</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">CM</span><span class="p">,</span> <span class="n">T2NT</span>
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">utils</span>
+
+
+<div class="viewcode-block" id="tf"><a class="viewcode-back" href="../../../api/gravmag.sphere.html#fatiando.gravmag.sphere.tf">[docs]</a><span class="k">def</span> <span class="nf">tf</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">spheres</span><span class="p">,</span> <span class="n">inc</span><span class="p">,</span> <span class="n">dec</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the total-field anomaly of spheres.</span>
+
+<span class="sd">    .. note:: Input units are SI. Output is in nT</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        The x, y, and z coordinates where the anomaly will be calculated</span>
+<span class="sd">    * spheres : list of :class:`fatiando.mesher.Sphere`</span>
+<span class="sd">        The spheres. Spheres must have the properties ``&#39;magnetization&#39;``,</span>
+<span class="sd">        ``&#39;inclination&#39;`` and ``&#39;declination&#39;``. If ``&#39;inclination&#39;`` and</span>
+<span class="sd">        ``&#39;declination&#39;`` are not present, will use the values of *inc* and</span>
+<span class="sd">        *dec* instead. Those without ``&#39;magnetization&#39;`` will be ignored.</span>
+<span class="sd">    * inc : float</span>
+<span class="sd">        The inclination of the regional field (in degrees)</span>
+<span class="sd">    * dec : float</span>
+<span class="sd">        The declination of the regional field (in degrees)</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * tf : array</span>
+<span class="sd">        The total-field anomaly</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">tf</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+    <span class="c"># Calculate the 3 components of the unit vector in the direction of the</span>
+    <span class="c"># regional field</span>
+    <span class="n">fx</span><span class="p">,</span> <span class="n">fy</span><span class="p">,</span> <span class="n">fz</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">dircos</span><span class="p">(</span><span class="n">inc</span><span class="p">,</span> <span class="n">dec</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">sphere</span> <span class="ow">in</span> <span class="n">spheres</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sphere</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="s">&#39;magnetization&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sphere</span><span class="o">.</span><span class="n">props</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="n">sphere</span><span class="o">.</span><span class="n">radius</span>
+        <span class="n">mag</span> <span class="o">=</span> <span class="n">sphere</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;magnetization&#39;</span><span class="p">]</span>
+        <span class="c"># Get the 3 components of the unit vector in the direction of the</span>
+        <span class="c"># magnetization from the inclination and declination</span>
+        <span class="k">if</span> <span class="s">&#39;inclination&#39;</span> <span class="ow">in</span> <span class="n">sphere</span><span class="o">.</span><span class="n">props</span> <span class="ow">and</span> <span class="s">&#39;declination&#39;</span> <span class="ow">in</span> <span class="n">sphere</span><span class="o">.</span><span class="n">props</span><span class="p">:</span>
+            <span class="n">inclination</span> <span class="o">=</span> <span class="n">sphere</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;inclination&#39;</span><span class="p">]</span>
+            <span class="n">declination</span> <span class="o">=</span> <span class="n">sphere</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;declination&#39;</span><span class="p">]</span>
+            <span class="n">mx</span><span class="p">,</span> <span class="n">my</span><span class="p">,</span> <span class="n">mz</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">dircos</span><span class="p">(</span><span class="n">inclination</span><span class="p">,</span> <span class="n">declination</span><span class="p">)</span>
+        <span class="c"># If not given, use in the direction of the regional field</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mx</span><span class="p">,</span> <span class="n">my</span><span class="p">,</span> <span class="n">mz</span> <span class="o">=</span> <span class="n">fx</span><span class="p">,</span> <span class="n">fy</span><span class="p">,</span> <span class="n">fz</span>
+        <span class="c"># First thing to do is make the computation point P the origin of the</span>
+        <span class="c"># coordinate system</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">sphere</span><span class="o">.</span><span class="n">x</span> <span class="o">-</span> <span class="n">xp</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">sphere</span><span class="o">.</span><span class="n">y</span> <span class="o">-</span> <span class="n">yp</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">sphere</span><span class="o">.</span><span class="n">z</span> <span class="o">-</span> <span class="n">zp</span>
+        <span class="c"># Calculate the 3 components of B</span>
+        <span class="n">dotprod</span> <span class="o">=</span> <span class="n">mx</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="n">my</span><span class="o">*</span><span class="n">y</span> <span class="o">+</span> <span class="n">mz</span><span class="o">*</span><span class="n">z</span>
+        <span class="n">r_sqr</span> <span class="o">=</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">z</span><span class="o">**</span><span class="mi">2</span>
+        <span class="n">r5</span> <span class="o">=</span> <span class="n">r_sqr</span><span class="o">**</span><span class="p">(</span><span class="mf">2.5</span><span class="p">)</span>
+        <span class="n">moment</span> <span class="o">=</span> <span class="n">mag</span><span class="o">*</span><span class="p">(</span><span class="mf">4.</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="p">(</span><span class="n">radius</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span>
+        <span class="n">bx</span> <span class="o">=</span> <span class="n">moment</span><span class="o">*</span><span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">dotprod</span><span class="o">*</span><span class="n">x</span> <span class="o">-</span> <span class="n">r_sqr</span><span class="o">*</span><span class="n">mx</span><span class="p">)</span><span class="o">/</span><span class="n">r5</span>
+        <span class="n">by</span> <span class="o">=</span> <span class="n">moment</span><span class="o">*</span><span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">dotprod</span><span class="o">*</span><span class="n">y</span> <span class="o">-</span> <span class="n">r_sqr</span><span class="o">*</span><span class="n">my</span><span class="p">)</span><span class="o">/</span><span class="n">r5</span>
+        <span class="n">bz</span> <span class="o">=</span> <span class="n">moment</span><span class="o">*</span><span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">dotprod</span><span class="o">*</span><span class="n">z</span> <span class="o">-</span> <span class="n">r_sqr</span><span class="o">*</span><span class="n">mz</span><span class="p">)</span><span class="o">/</span><span class="n">r5</span>
+        <span class="n">tf</span> <span class="o">=</span> <span class="n">tf</span> <span class="o">+</span> <span class="p">(</span><span class="n">fx</span><span class="o">*</span><span class="n">bx</span> <span class="o">+</span> <span class="n">fy</span><span class="o">*</span><span class="n">by</span> <span class="o">+</span> <span class="n">fz</span><span class="o">*</span><span class="n">bz</span><span class="p">)</span>
+    <span class="n">tf</span> <span class="o">*=</span> <span class="n">CM</span><span class="o">*</span><span class="n">T2NT</span>
+    <span class="k">return</span> <span class="n">tf</span>
+</div>
+<div class="viewcode-block" id="gz"><a class="viewcode-back" href="../../../api/gravmag.sphere.html#fatiando.gravmag.sphere.gz">[docs]</a><span class="k">def</span> <span class="nf">gz</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">spheres</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the :math:`g_z` gravity acceleration component.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: All input values in SI and output in mGal!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        The x, y, and z coordinates where the field will be calculated</span>
+<span class="sd">    * spheres : list of :class:`fatiando.mesher.Sphere`</span>
+<span class="sd">        The spheres. Spheres must have the property ``&#39;density&#39;``. Those without</span>
+<span class="sd">        will be ignored.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The field calculated on xp, yp, zp</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">sphere</span> <span class="ow">in</span> <span class="n">spheres</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sphere</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sphere</span><span class="o">.</span><span class="n">props</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="n">sphere</span><span class="o">.</span><span class="n">radius</span>
+        <span class="n">density</span> <span class="o">=</span> <span class="n">sphere</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="n">dx</span> <span class="o">=</span> <span class="n">sphere</span><span class="o">.</span><span class="n">x</span> <span class="o">-</span> <span class="n">xp</span>
+        <span class="n">dy</span> <span class="o">=</span> <span class="n">sphere</span><span class="o">.</span><span class="n">y</span> <span class="o">-</span> <span class="n">yp</span>
+        <span class="n">dz</span> <span class="o">=</span> <span class="n">sphere</span><span class="o">.</span><span class="n">z</span> <span class="o">-</span> <span class="n">zp</span>
+        <span class="n">r_cb</span> <span class="o">=</span> <span class="p">(</span><span class="n">dx</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">dy</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">dz</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">1.5</span><span class="p">)</span>
+        <span class="n">mass</span> <span class="o">=</span> <span class="n">density</span><span class="o">*</span><span class="mf">4.</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="p">(</span><span class="n">radius</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">/</span><span class="mf">3.</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">res</span> <span class="o">-</span> <span class="n">mass</span><span class="o">*</span><span class="n">dz</span><span class="o">/</span><span class="n">r_cb</span>
+    <span class="k">return</span> <span class="n">G</span><span class="o">*</span><span class="n">SI2MGAL</span><span class="o">*</span><span class="n">res</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

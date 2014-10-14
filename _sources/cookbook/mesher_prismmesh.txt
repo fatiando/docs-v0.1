@@ -1,0 +1,12 @@
+.. _cookbook_mesher_prismmesh:
+
+Meshing: Make and plot a 3D prism mesh
+=======================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/mesher_prismmesh.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/mesher_prismmesh.py
+    :language: python
+    :linenos:

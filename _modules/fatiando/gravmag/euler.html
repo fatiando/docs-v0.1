@@ -1,0 +1,230 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fatiando.gravmag.euler &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for fatiando.gravmag.euler</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Euler deconvolution methods for potential fields.</span>
+
+<span class="sd">* :func:`~fatiando.gravmag.euler.expanding_window`: Run a given solver for the</span>
+<span class="sd">  Euler deconvolution on an expanding window and return the best estimate</span>
+<span class="sd">* :func:`~fatiando.gravmag.euler.classic`: The classic solution to Euler&#39;s</span>
+<span class="sd">  equation for potential fields</span>
+
+<span class="sd">----</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="kn">import</span> <span class="nn">fatiando.logger</span>
+<span class="kn">import</span> <span class="nn">fatiando.gridder</span>
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">utils</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">fatiando</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">dummy</span><span class="p">(</span><span class="s">&#39;fatiando.gravmag.euler&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="expanding_window"><a class="viewcode-back" href="../../../api/gravmag.euler.html#fatiando.gravmag.euler.expanding_window">[docs]</a><span class="k">def</span> <span class="nf">expanding_window</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">xderiv</span><span class="p">,</span> <span class="n">yderiv</span><span class="p">,</span> <span class="n">zderiv</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span>
+    <span class="n">euler</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">minsize</span><span class="p">,</span> <span class="n">maxsize</span><span class="p">,</span> <span class="n">nwindows</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform the Euler deconvolution on windows of growing size and return the</span>
+<span class="sd">    best estimate.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        The x, y, and z coordinates of the observation points of the **whole**</span>
+<span class="sd">        data set</span>
+<span class="sd">    * field : array</span>
+<span class="sd">        The potential field measured at the observation points of the **whole**</span>
+<span class="sd">        data set</span>
+<span class="sd">    * xderiv, yderiv, zderiv : arrays</span>
+<span class="sd">        The x-, y-, and z-derivatives of the potential field measured</span>
+<span class="sd">        (calculated) at the observation points of the **whole** data set</span>
+<span class="sd">    * index : float</span>
+<span class="sd">        The structural index of the source</span>
+<span class="sd">    * euler : function</span>
+<span class="sd">        The Euler deconvolution solver function (like</span>
+<span class="sd">        :func:`fatiando.gravmag.euler.classic`)</span>
+<span class="sd">    * center : [x, y]</span>
+<span class="sd">        The coordinates of the center of the expanding window</span>
+<span class="sd">    * minsize, maxsize : floats</span>
+<span class="sd">        The minimum and maximum size of the expanding window</span>
+<span class="sd">    * nwindows : int</span>
+<span class="sd">        Number of windows between minsize and maxsize</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * results : dict</span>
+<span class="sd">        The best results in a dictionary::</span>
+
+<span class="sd">            {&#39;point&#39;:[x, y, z], # The estimated coordinates of source</span>
+<span class="sd">             &#39;baselevel&#39;:baselevel, # The estimated baselevel</span>
+<span class="sd">             &#39;mean error&#39;:mean_error, # The mean error of the estimated location</span>
+<span class="sd">             &#39;uncertainty&#39;:[sx, sy, sz] # The uncertainty in x, y, and z</span>
+<span class="sd">            }</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">center</span>
+    <span class="n">best</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">for</span> <span class="n">size</span> <span class="ow">in</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">minsize</span><span class="p">,</span> <span class="n">maxsize</span><span class="p">,</span> <span class="n">nwindows</span><span class="p">):</span>
+        <span class="n">area</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">size</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">size</span><span class="p">,</span> <span class="n">y</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">size</span><span class="p">,</span> <span class="n">y</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">size</span><span class="p">]</span>
+        <span class="n">subx</span><span class="p">,</span> <span class="n">suby</span><span class="p">,</span> <span class="n">scalars</span> <span class="o">=</span> <span class="n">fatiando</span><span class="o">.</span><span class="n">gridder</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span>
+            <span class="p">[</span><span class="n">zp</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">xderiv</span><span class="p">,</span> <span class="n">yderiv</span><span class="p">,</span> <span class="n">zderiv</span><span class="p">],</span> <span class="n">area</span><span class="p">)</span>
+        <span class="n">subz</span><span class="p">,</span> <span class="n">subfield</span><span class="p">,</span> <span class="n">subxderiv</span><span class="p">,</span> <span class="n">subyderiv</span><span class="p">,</span> <span class="n">subzderiv</span>  <span class="o">=</span> <span class="n">scalars</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">euler</span><span class="p">(</span><span class="n">subx</span><span class="p">,</span> <span class="n">suby</span><span class="p">,</span> <span class="n">subz</span><span class="p">,</span> <span class="n">subfield</span><span class="p">,</span> <span class="n">subxderiv</span><span class="p">,</span> <span class="n">subyderiv</span><span class="p">,</span>
+            <span class="n">subzderiv</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">best</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">results</span><span class="p">[</span><span class="s">&#39;mean error&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">best</span><span class="p">[</span><span class="s">&#39;mean error&#39;</span><span class="p">]:</span>
+            <span class="n">best</span> <span class="o">=</span> <span class="n">results</span>
+    <span class="k">return</span> <span class="n">best</span>
+</div>
+<div class="viewcode-block" id="classic"><a class="viewcode-back" href="../../../api/gravmag.euler.html#fatiando.gravmag.euler.classic">[docs]</a><span class="k">def</span> <span class="nf">classic</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">xderiv</span><span class="p">,</span> <span class="n">yderiv</span><span class="p">,</span> <span class="n">zderiv</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Classic 3D Euler deconvolution of potential field data.</span>
+
+<span class="sd">    Works on any potential field that satisfies Euler&#39;s homogeneity equation.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        The x, y, and z coordinates of the observation points</span>
+<span class="sd">    * field : array</span>
+<span class="sd">        The potential field measured at the observation points</span>
+<span class="sd">    * xderiv, yderiv, zderiv : arrays</span>
+<span class="sd">        The x-, y-, and z-derivatives of the potential field measured</span>
+<span class="sd">        (calculated) at the observation points</span>
+<span class="sd">    * index : float</span>
+<span class="sd">        The structural index of the source</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * results : dict</span>
+<span class="sd">        The results in a dictionary::</span>
+
+<span class="sd">            {&#39;point&#39;:[x, y, z], # The estimated coordinates of source</span>
+<span class="sd">             &#39;baselevel&#39;:baselevel, # The estimated baselevel</span>
+<span class="sd">             &#39;mean error&#39;:mean_error, # The mean error of the estimated location</span>
+<span class="sd">             &#39;uncertainty&#39;:[sx, sy, sz] # The uncertainty in x, y, and z</span>
+<span class="sd">            }</span>
+
+
+<span class="sd">    .. note:: The uncertainty estimate is not very reliable.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">yp</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">zp</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">field</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">xderiv</span><span class="p">)</span>
+        <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">yderiv</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">zderiv</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;xp, yp, zp, field, xderiv, yderiv, zderiv need to &quot;</span> <span class="o">+</span>
+            <span class="s">&quot;have the same number of elements&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Invalid structural index &#39;</span><span class="si">%g</span><span class="s">&#39;. Should be &gt;= 0&quot;</span>
+            <span class="o">%</span> <span class="p">(</span><span class="n">index</span><span class="p">))</span>
+    <span class="c"># Using (xp - x) not (x - xp)</span>
+    <span class="n">jacobian</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="n">xderiv</span><span class="p">,</span> <span class="o">-</span><span class="n">yderiv</span><span class="p">,</span> <span class="o">-</span><span class="n">zderiv</span><span class="p">,</span>
+        <span class="o">-</span><span class="n">index</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">field</span><span class="p">)])</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="o">-</span><span class="n">xp</span><span class="o">*</span><span class="n">xderiv</span> <span class="o">-</span> <span class="n">yp</span><span class="o">*</span><span class="n">yderiv</span> <span class="o">-</span> <span class="n">zp</span><span class="o">*</span><span class="n">zderiv</span> <span class="o">-</span> <span class="n">index</span><span class="o">*</span><span class="n">field</span>
+    <span class="n">GGT_inv</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">jacobian</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">jacobian</span><span class="p">))</span>
+    <span class="n">estimate</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">GGT_inv</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">jacobian</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+    <span class="n">residuals</span> <span class="o">=</span> <span class="n">data</span> <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">jacobian</span><span class="p">,</span> <span class="n">estimate</span><span class="p">)</span>
+    <span class="n">variance</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">residuals</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-</span> <span class="mi">4</span><span class="p">)</span> <span class="c"># 4 parameters</span>
+    <span class="n">covar</span> <span class="o">=</span> <span class="n">variance</span><span class="o">*</span><span class="n">GGT_inv</span>
+    <span class="n">uncertainty</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">diagonal</span><span class="p">(</span><span class="n">covar</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">mean_error</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">uncertainty</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">base</span> <span class="o">=</span> <span class="n">estimate</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;point&#39;</span><span class="p">:[</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">],</span> <span class="s">&#39;baselevel&#39;</span><span class="p">:</span><span class="n">base</span><span class="p">,</span> <span class="s">&#39;mean error&#39;</span><span class="p">:</span><span class="n">mean_error</span><span class="p">,</span>
+               <span class="s">&#39;uncertainty&#39;</span><span class="p">:</span><span class="n">uncertainty</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">results</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

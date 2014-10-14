@@ -1,0 +1,268 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3D Euler deconvolution methods (fatiando.gravmag.euler) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Gravity and magnetics (fatiando.gravmag)" href="gravmag.html" />
+    <link rel="next" title="Space domain processing (fatiando.gravmag.transform)" href="gravmag.transform.html" />
+    <link rel="prev" title="Utilities for operating on the gradient tensor (fatiando.gravmag.tensor)" href="gravmag.tensor.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag.transform.html" title="Space domain processing (fatiando.gravmag.transform)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gravmag.tensor.html" title="Utilities for operating on the gradient tensor (fatiando.gravmag.tensor)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="gravmag.html" accesskey="U">Gravity and magnetics (<tt class="docutils literal"><span class="pre">fatiando.gravmag</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.gravmag.euler">
+<span id="d-euler-deconvolution-methods-fatiando-gravmag-euler"></span><span id="fatiando-gravmag-euler"></span><h1>3D Euler deconvolution methods (<tt class="docutils literal"><span class="pre">fatiando.gravmag.euler</span></tt>)<a class="headerlink" href="#module-fatiando.gravmag.euler" title="Permalink to this headline">¶</a></h1>
+<p>Euler deconvolution methods for potential fields.</p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.gravmag.euler.expanding_window" title="fatiando.gravmag.euler.expanding_window"><tt class="xref py py-func docutils literal"><span class="pre">expanding_window</span></tt></a>: Run a given solver for the
+Euler deconvolution on an expanding window and return the best estimate</li>
+<li><a class="reference internal" href="#fatiando.gravmag.euler.classic" title="fatiando.gravmag.euler.classic"><tt class="xref py py-func docutils literal"><span class="pre">classic</span></tt></a>: The classic solution to Euler&#8217;s
+equation for potential fields</li>
+</ul>
+<hr class="docutils" />
+<dl class="function">
+<dt id="fatiando.gravmag.euler.classic">
+<tt class="descclassname">fatiando.gravmag.euler.</tt><tt class="descname">classic</tt><big>(</big><em>xp</em>, <em>yp</em>, <em>zp</em>, <em>field</em>, <em>xderiv</em>, <em>yderiv</em>, <em>zderiv</em>, <em>index</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/euler.html#classic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.euler.classic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Classic 3D Euler deconvolution of potential field data.</p>
+<p>Works on any potential field that satisfies Euler&#8217;s homogeneity equation.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>xp, yp, zp <span class="classifier-delimiter">:</span> <span class="classifier">arrays</span></dt>
+<dd><p class="first last">The x, y, and z coordinates of the observation points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>field <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The potential field measured at the observation points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>xderiv, yderiv, zderiv <span class="classifier-delimiter">:</span> <span class="classifier">arrays</span></dt>
+<dd><p class="first last">The x-, y-, and z-derivatives of the potential field measured
+(calculated) at the observation points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>index <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The structural index of the source</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>results <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first">The results in a dictionary:</p>
+<div class="last highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;point&#39;</span><span class="p">:[</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">],</span> <span class="c"># The estimated coordinates of source</span>
+ <span class="s">&#39;baselevel&#39;</span><span class="p">:</span><span class="n">baselevel</span><span class="p">,</span> <span class="c"># The estimated baselevel</span>
+ <span class="s">&#39;mean error&#39;</span><span class="p">:</span><span class="n">mean_error</span><span class="p">,</span> <span class="c"># The mean error of the estimated location</span>
+ <span class="s">&#39;uncertainty&#39;</span><span class="p">:[</span><span class="n">sx</span><span class="p">,</span> <span class="n">sy</span><span class="p">,</span> <span class="n">sz</span><span class="p">]</span> <span class="c"># The uncertainty in x, y, and z</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The uncertainty estimate is not very reliable.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.euler.expanding_window">
+<tt class="descclassname">fatiando.gravmag.euler.</tt><tt class="descname">expanding_window</tt><big>(</big><em>xp</em>, <em>yp</em>, <em>zp</em>, <em>field</em>, <em>xderiv</em>, <em>yderiv</em>, <em>zderiv</em>, <em>index</em>, <em>euler</em>, <em>center</em>, <em>minsize</em>, <em>maxsize</em>, <em>nwindows=20</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/euler.html#expanding_window"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.euler.expanding_window" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform the Euler deconvolution on windows of growing size and return the
+best estimate.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>xp, yp, zp <span class="classifier-delimiter">:</span> <span class="classifier">arrays</span></dt>
+<dd><p class="first last">The x, y, and z coordinates of the observation points of the <strong>whole</strong>
+data set</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>field <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The potential field measured at the observation points of the <strong>whole</strong>
+data set</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>xderiv, yderiv, zderiv <span class="classifier-delimiter">:</span> <span class="classifier">arrays</span></dt>
+<dd><p class="first last">The x-, y-, and z-derivatives of the potential field measured
+(calculated) at the observation points of the <strong>whole</strong> data set</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>index <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The structural index of the source</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>euler <span class="classifier-delimiter">:</span> <span class="classifier">function</span></dt>
+<dd><p class="first last">The Euler deconvolution solver function (like
+<a class="reference internal" href="#fatiando.gravmag.euler.classic" title="fatiando.gravmag.euler.classic"><tt class="xref py py-func docutils literal"><span class="pre">fatiando.gravmag.euler.classic</span></tt></a>)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>center <span class="classifier-delimiter">:</span> <span class="classifier">[x, y]</span></dt>
+<dd><p class="first last">The coordinates of the center of the expanding window</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>minsize, maxsize <span class="classifier-delimiter">:</span> <span class="classifier">floats</span></dt>
+<dd><p class="first last">The minimum and maximum size of the expanding window</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>nwindows <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Number of windows between minsize and maxsize</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>results <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first">The best results in a dictionary:</p>
+<div class="last highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;point&#39;</span><span class="p">:[</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">],</span> <span class="c"># The estimated coordinates of source</span>
+ <span class="s">&#39;baselevel&#39;</span><span class="p">:</span><span class="n">baselevel</span><span class="p">,</span> <span class="c"># The estimated baselevel</span>
+ <span class="s">&#39;mean error&#39;</span><span class="p">:</span><span class="n">mean_error</span><span class="p">,</span> <span class="c"># The mean error of the estimated location</span>
+ <span class="s">&#39;uncertainty&#39;</span><span class="p">:[</span><span class="n">sx</span><span class="p">,</span> <span class="n">sy</span><span class="p">,</span> <span class="n">sz</span><span class="p">]</span> <span class="c"># The uncertainty in x, y, and z</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gravmag.tensor.html"
+                        title="previous chapter">Utilities for operating on the gradient tensor (<tt class="docutils literal"><span class="pre">fatiando.gravmag.tensor</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gravmag.transform.html"
+                        title="next chapter">Space domain processing (<tt class="docutils literal"><span class="pre">fatiando.gravmag.transform</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/gravmag.euler.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag.transform.html" title="Space domain processing (fatiando.gravmag.transform)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gravmag.tensor.html" title="Utilities for operating on the gradient tensor (fatiando.gravmag.tensor)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="gravmag.html" >Gravity and magnetics (<tt class="docutils literal"><span class="pre">fatiando.gravmag</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

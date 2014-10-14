@@ -1,0 +1,698 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fatiando.gui.simple &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for fatiando.gui.simple</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Simple GUIs using the interactive capabilities of :mod:`matplotlib`</span>
+
+<span class="sd">**Interactive gravimetric modeling**</span>
+
+<span class="sd">* :class:`~fatiando.gui.simple.Moulder`</span>
+<span class="sd">* :class:`~fatiando.gui.simple.BasinTrap`</span>
+<span class="sd">* :class:`~fatiando.gui.simple.BasinTri`</span>
+
+<span class="sd">**Interactive modeling of layered media**</span>
+
+<span class="sd">* :class:`~fatiando.gui.simple.Lasagne`</span>
+
+<span class="sd">----</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">bisect</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span><span class="p">,</span> <span class="n">widgets</span>
+
+<span class="kn">from</span> <span class="nn">fatiando.gravmag</span> <span class="kn">import</span> <span class="n">talwani</span>
+<span class="kn">from</span> <span class="nn">fatiando.mesher</span> <span class="kn">import</span> <span class="n">Polygon</span>
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">import</span> <span class="nn">fatiando.seismic</span>
+<span class="kn">import</span> <span class="nn">fatiando.logger</span>
+
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">fatiando</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">dummy</span><span class="p">(</span><span class="s">&#39;fatiando.gui.simple&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Moulder"><a class="viewcode-back" href="../../../api/gui.simple.html#fatiando.gui.simple.Moulder">[docs]</a><span class="k">class</span> <span class="nc">Moulder</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Interactive potential field direct modeling in 2D using polygons.</span>
+
+<span class="sd">    Uses module :mod:`~fatiando.gravmag.talwani` for computations.</span>
+
+<span class="sd">    For the moment only works for the gravity anomaly.</span>
+
+<span class="sd">    To run this in a script, use::</span>
+
+<span class="sd">        # Define the area of modeling</span>
+<span class="sd">        area = (0, 1000, 0, 1000)</span>
+<span class="sd">        # Where the gravity effect is calculated</span>
+<span class="sd">        xp = range(0, 1000, 10)</span>
+<span class="sd">        zp = [0]*len(xp)</span>
+<span class="sd">        # Create the application</span>
+<span class="sd">        app = Moulder(area, xp, zp)</span>
+<span class="sd">        # Run it (close the window to finish)</span>
+<span class="sd">        app.run()</span>
+<span class="sd">        # and save the calculated gravity anomaly profile</span>
+<span class="sd">        app.savedata(&quot;mydata.txt&quot;)</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * area : list = [xmin, xmax, zmin, zmax]</span>
+<span class="sd">        Are of the subsuface to use for modeling. Remember, z is positive</span>
+<span class="sd">        downward</span>
+<span class="sd">    * xp, zp : array</span>
+<span class="sd">        Arrays with the x and z coordinates of the computation points</span>
+<span class="sd">    * gz : array</span>
+<span class="sd">        The observed gravity values at the computation points.</span>
+<span class="sd">        Will be plotted as black points together with the modeled (predicted)</span>
+<span class="sd">        data. If None, will ignore this.</span>
+
+<span class="sd">    &quot;The truth is out there&quot;</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">instructions</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;Click to start drawing - Choose density using the slider&quot;</span> <span class="o">+</span>
+                    <span class="s">&quot; - Left click to close polygon - &#39;e&#39; to delete&quot;</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;Moulder - Direct gravimetric modeling&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">xp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">gz</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">zp</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">xp</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;xp and zp must have same size&quot;</span>
+        <span class="c"># Get the data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">area</span> <span class="o">=</span> <span class="n">area</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x2</span><span class="p">,</span> <span class="n">z1</span><span class="p">,</span> <span class="n">z2</span> <span class="o">=</span> <span class="mf">0.001</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">area</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">gz</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">gz</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">xp</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;xp, zp and gz must have same size&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gz</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">gz</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gz</span> <span class="o">=</span> <span class="n">gz</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">zp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span>
+        <span class="c"># Make the figure</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">pyplot</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">set_window_title</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">instructions</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span>
+        <span class="c"># Make the data and model canvas</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dcanvas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dcanvas</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&quot;mGal&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dcanvas</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dcanvas</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&quot;Depth (km)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&quot;x (km)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">z2</span><span class="p">,</span> <span class="n">z1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">top</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span> <span class="n">left</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="mf">0.18</span><span class="p">,</span>
+                                 <span class="n">hspace</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+        <span class="c"># Make the sliders</span>
+        <span class="n">sliderax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.20</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">,</span> <span class="mf">0.60</span><span class="p">,</span> <span class="mf">0.03</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">densslider</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">sliderax</span><span class="p">,</span> <span class="s">&#39;Density&#39;</span><span class="p">,</span>
+            <span class="o">-</span><span class="mi">9</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="n">valinit</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">valfmt</span><span class="o">=</span><span class="s">&#39;</span><span class="si">%1.2f</span><span class="s"> (g/cm3)&#39;</span><span class="p">)</span>
+        <span class="n">sliderax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.20</span><span class="p">,</span> <span class="mf">0.03</span><span class="p">,</span> <span class="mf">0.60</span><span class="p">,</span> <span class="mf">0.03</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errslider</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">sliderax</span><span class="p">,</span> <span class="s">&#39;Error&#39;</span><span class="p">,</span>
+            <span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">valinit</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">valfmt</span><span class="o">=</span><span class="s">&#39;</span><span class="si">%1.2f</span><span class="s"> (mGal)&#39;</span><span class="p">)</span>
+        <span class="c"># Initialize the data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">leg</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predgz</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predplot</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dcanvas</span><span class="o">.</span><span class="n">plot</span><span class="p">([],</span> <span class="p">[],</span> <span class="s">&#39;-r&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gz</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gzplot</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dcanvas</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xp</span><span class="o">*</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">gz</span><span class="p">,</span> <span class="s">&#39;ok&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nextdens</span> <span class="o">=</span> <span class="mf">1000.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">densslider</span><span class="o">.</span><span class="n">set_val</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nextdens</span><span class="o">*</span><span class="mf">0.001</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">densities</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nextpoly</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plotx</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">polyplots</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">polyline</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="o">.</span><span class="n">plot</span><span class="p">([],</span> <span class="p">[],</span> <span class="n">marker</span><span class="o">=</span><span class="s">&#39;o&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># Connect the event handlers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">picking</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+        <span class="n">pyplot</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predgz</span>
+
+    <span class="k">def</span> <span class="nf">savedata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">xp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">predgz</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">numpy</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s">&#39;</span><span class="si">%.5f</span><span class="s">&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">densslider</span><span class="o">.</span><span class="n">on_changed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">set_density</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errslider</span><span class="o">.</span><span class="n">on_changed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">set_error</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">mpl_connect</span><span class="p">(</span><span class="s">&#39;button_press_event&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pick</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">mpl_connect</span><span class="p">(</span><span class="s">&#39;key_press_event&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">key_press</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">mpl_connect</span><span class="p">(</span><span class="s">&#39;motion_notify_event&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">move</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span><span class="p">:</span>
+            <span class="n">polys</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">polygons</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">densities</span><span class="p">):</span>
+                <span class="n">polys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Polygon</span><span class="p">(</span><span class="mf">1000.</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">p</span><span class="p">),</span> <span class="p">{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="n">d</span><span class="p">}))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">predgz</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">contaminate</span><span class="p">(</span><span class="n">talwani</span><span class="o">.</span><span class="n">gz</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">,</span> <span class="n">polys</span><span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">predgz</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predplot</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xp</span><span class="o">*</span><span class="mf">0.001</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">predgz</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gz</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">ymin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predgz</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">gz</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
+            <span class="n">ymax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predgz</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">gz</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ymin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predgz</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+            <span class="n">ymax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predgz</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">ymin</span> <span class="o">!=</span> <span class="n">ymax</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dcanvas</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">set_density</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nextdens</span> <span class="o">=</span> <span class="mf">1000.</span><span class="o">*</span><span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">set_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">pick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">inaxes</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">xdata</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">ydata</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">button</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">picking</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nextpoly</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">polyline</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">button</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">or</span> <span class="n">event</span><span class="o">.</span><span class="n">button</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nextpoly</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nextpoly</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">densities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nextdens</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">picking</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nextpoly</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nextpoly</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">polyline</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="p">)</span>
+                <span class="n">fill</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="p">,</span>
+                    <span class="n">color</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">polyline</span><span class="o">.</span><span class="n">get_color</span><span class="p">(),</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">polyline</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%1.2f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="mf">0.001</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nextdens</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">polyplots</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">polyline</span><span class="p">,</span> <span class="n">fill</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nextpoly</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">polyline</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="o">.</span><span class="n">plot</span><span class="p">([],</span> <span class="p">[],</span> <span class="n">marker</span><span class="o">=</span><span class="s">&#39;o&#39;</span><span class="p">,</span>
+                    <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">legend</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">leg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s">&#39;lower right&#39;</span><span class="p">,</span> <span class="n">numpoints</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                  <span class="n">prop</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;size&#39;</span><span class="p">:</span><span class="mi">9</span><span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">leg</span><span class="o">.</span><span class="n">get_frame</span><span class="p">()</span><span class="o">.</span><span class="n">set_alpha</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">key_press</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s">&#39;e&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">picking</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nextpoly</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">picking</span> <span class="o">=</span> <span class="bp">False</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+                    <span class="k">return</span> <span class="mi">0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nextpoly</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">polyline</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">polygons</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="mi">0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">densities</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="n">line</span><span class="p">,</span> <span class="n">fill</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">polyplots</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="n">line</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+                <span class="n">fill</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="BasinTrap"><a class="viewcode-back" href="../../../api/gui.simple.html#fatiando.gui.simple.BasinTrap">[docs]</a><span class="k">class</span> <span class="nc">BasinTrap</span><span class="p">(</span><span class="n">Moulder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Interactive gravity modeling using a trapezoidal model.</span>
+
+<span class="sd">    The trapezoid has two surface nodes with fixed position. The bottom two have</span>
+<span class="sd">    fixed x coordinates but movable z. The x coordinates for the bottom nodes</span>
+<span class="sd">    are the same as the ones for the surface nodes. The user can then model by</span>
+<span class="sd">    controling the depths of the two bottom nodes.</span>
+
+<span class="sd">    Example::</span>
+
+<span class="sd">        # Define the area of modeling</span>
+<span class="sd">        area = (0, 1000, 0, 1000)</span>
+<span class="sd">        # Where the gravity effect is calculated</span>
+<span class="sd">        xp = range(0, 1000, 10)</span>
+<span class="sd">        zp = [0]*len(xp)</span>
+<span class="sd">        # Where the two surface nodes are. Use depth = 1 because direct modeling</span>
+<span class="sd">        # doesn&#39;t like it when the model and computation points coincide</span>
+<span class="sd">        nodes = [[100, 1], [900, 1]]</span>
+<span class="sd">        # Create the application</span>
+<span class="sd">        app = BasinTrap(area, nodes, xp, zp)</span>
+<span class="sd">        # Run it (close the window to finish)</span>
+<span class="sd">        app.run()</span>
+<span class="sd">        # and save the calculated gravity anomaly profile</span>
+<span class="sd">        app.savedata(&quot;mydata.txt&quot;)</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * area : list = [xmin, xmax, zmin, zmax]</span>
+<span class="sd">        Are of the subsuface to use for modeling. Remember, z is positive</span>
+<span class="sd">        downward.</span>
+<span class="sd">    * nodes : list of lists = [[x1, z1], [x2, z2]]</span>
+<span class="sd">        x and z coordinates of the two top nodes. Must be in clockwise order!</span>
+<span class="sd">    * xp, zp : array</span>
+<span class="sd">        Arrays with the x and z coordinates of the computation points</span>
+<span class="sd">    * gz : array</span>
+<span class="sd">        The observed gravity values at the computation points.</span>
+<span class="sd">        Will be plotted as black points together with the modeled (predicted)</span>
+<span class="sd">        data. If None, will ignore this.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">instructions</span> <span class="o">=</span> <span class="s">&quot;Click to set node depth - Left click to change nodes&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;BasinTrap&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">xp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">gz</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">Moulder</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">xp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">gz</span><span class="p">)</span>
+        <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span><span class="o">*</span><span class="mf">0.001</span>
+        <span class="n">z1</span> <span class="o">=</span> <span class="n">z2</span> <span class="o">=</span> <span class="mf">0.001</span><span class="o">*</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">area</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">area</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span> <span class="o">=</span> <span class="p">[[</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="p">[</span><span class="n">right</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">z1</span><span class="p">],</span> <span class="p">[</span><span class="n">left</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">z2</span><span class="p">]]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nextdens</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1000</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">densslider</span><span class="o">.</span><span class="n">set_val</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nextdens</span><span class="o">*</span><span class="mf">0.001</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">densities</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">nextdens</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plotx</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">left</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">left</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">polyline</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">polyline</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s">&#39;k&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">isleft</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">guide</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="o">.</span><span class="n">plot</span><span class="p">([],</span> <span class="p">[],</span> <span class="n">marker</span><span class="o">=</span><span class="s">&#39;o&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s">&#39;--&#39;</span><span class="p">,</span>
+                 <span class="n">color</span><span class="o">=</span><span class="s">&#39;red&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">draw_guide</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isleft</span><span class="p">:</span>
+            <span class="n">x0</span><span class="p">,</span> <span class="n">z0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span>
+            <span class="n">x1</span><span class="p">,</span> <span class="n">z1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x0</span><span class="p">,</span> <span class="n">z0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">x1</span><span class="p">,</span> <span class="n">z1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">guide</span><span class="o">.</span><span class="n">set_data</span><span class="p">([</span><span class="n">x0</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">],</span> <span class="p">[</span><span class="n">z0</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">z1</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">inaxes</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw_guide</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">xdata</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">ydata</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">set_density</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">densities</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1000.</span><span class="o">*</span><span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">pick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">inaxes</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">xdata</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">ydata</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">button</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isleft</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">3</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">polyline</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">guide</span><span class="o">.</span><span class="n">set_data</span><span class="p">([],</span> <span class="p">[])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">button</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">or</span> <span class="n">event</span><span class="o">.</span><span class="n">button</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">isleft</span> <span class="o">=</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">isleft</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">draw_guide</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">key_press</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="BasinTri"><a class="viewcode-back" href="../../../api/gui.simple.html#fatiando.gui.simple.BasinTri">[docs]</a><span class="k">class</span> <span class="nc">BasinTri</span><span class="p">(</span><span class="n">Moulder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Interactive gravity modeling using a triangular model.</span>
+
+<span class="sd">    The triangle has two surface nodes with fixed positions. The user can then</span>
+<span class="sd">    model by controling the bottom node.</span>
+
+<span class="sd">    Example::</span>
+
+<span class="sd">        # Define the area of modeling</span>
+<span class="sd">        area = (0, 1000, 0, 1000)</span>
+<span class="sd">        # Where the gravity effect is calculated</span>
+<span class="sd">        xp = range(0, 1000, 10)</span>
+<span class="sd">        zp = [0]*len(xp)</span>
+<span class="sd">        # Where the two surface nodes are. Use depth = 1 because direct modeling</span>
+<span class="sd">        # doesn&#39;t like it when the model and computation points coincide</span>
+<span class="sd">        nodes = [[100, 1], [900, 1]]</span>
+<span class="sd">        # Create the application</span>
+<span class="sd">        app = BasinTri(area, nodes, xp, zp)</span>
+<span class="sd">        # Run it (close the window to finish)</span>
+<span class="sd">        app.run()</span>
+<span class="sd">        # and save the calculated gravity anomaly profile</span>
+<span class="sd">        app.savedata(&quot;mydata.txt&quot;)</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * area : list = [xmin, xmax, zmin, zmax]</span>
+<span class="sd">        Are of the subsuface to use for modeling. Remember, z is positive</span>
+<span class="sd">        downward.</span>
+<span class="sd">    * nodes : list of lists = [[x1, z1], [x2, z2]]</span>
+<span class="sd">        x and z coordinates of the two top nodes. Must be in clockwise order!</span>
+<span class="sd">    * xp, zp : array</span>
+<span class="sd">        Arrays with the x and z coordinates of the computation points</span>
+<span class="sd">    * gz : array</span>
+<span class="sd">        The observed gravity values at the computation points.</span>
+<span class="sd">        Will be plotted as black points together with the modeled (predicted)</span>
+<span class="sd">        data. If None, will ignore this.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">instructions</span> <span class="o">=</span> <span class="s">&quot;Click to set node location&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;BasinTri&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">xp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">gz</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">Moulder</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">xp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">gz</span><span class="p">)</span>
+        <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span><span class="o">*</span><span class="mf">0.001</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="mf">0.001</span><span class="o">*</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">area</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">area</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">right</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">left</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span> <span class="o">=</span> <span class="p">[[</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">]]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nextdens</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1000</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">densslider</span><span class="o">.</span><span class="n">set_val</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nextdens</span><span class="o">*</span><span class="mf">0.001</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">densities</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">nextdens</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plotx</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">left</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">left</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">polyline</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">polyline</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s">&#39;k&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">guide</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="o">.</span><span class="n">plot</span><span class="p">([],</span> <span class="p">[],</span> <span class="n">marker</span><span class="o">=</span><span class="s">&#39;o&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s">&#39;--&#39;</span><span class="p">,</span>
+                 <span class="n">color</span><span class="o">=</span><span class="s">&#39;red&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">draw_guide</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
+        <span class="n">x0</span><span class="p">,</span> <span class="n">z0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">x1</span><span class="p">,</span> <span class="n">z1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">guide</span><span class="o">.</span><span class="n">set_data</span><span class="p">([</span><span class="n">x0</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">x1</span><span class="p">],</span> <span class="p">[</span><span class="n">z0</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">z1</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">inaxes</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw_guide</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">xdata</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">ydata</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">set_density</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">densities</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1000.</span><span class="o">*</span><span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">pick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">inaxes</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">xdata</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">ydata</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">button</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">polygons</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">polyline</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">guide</span><span class="o">.</span><span class="n">set_data</span><span class="p">([],</span> <span class="p">[])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">key_press</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="Lasagne"><a class="viewcode-back" href="../../../api/gui.simple.html#fatiando.gui.simple.Lasagne">[docs]</a><span class="k">class</span> <span class="nc">Lasagne</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Interactive modeling of vertical seismic profiling for 1D layered media.</span>
+
+<span class="sd">    The wave source is assumed to be on the surface of a vertical borehole. The</span>
+<span class="sd">    receivers are at given depths. What is measured is the travel-time of</span>
+<span class="sd">    first arrivals.</span>
+
+<span class="sd">    Assumes that the thickness of the layers are known. The user then only needs</span>
+<span class="sd">    to choose the velocities.</span>
+
+<span class="sd">    Example::</span>
+
+<span class="sd">        # Define the thickness of the layers</span>
+<span class="sd">        thickness = [10, 20, 5, 10]</span>
+<span class="sd">        # Define the measuring points along the well</span>
+<span class="sd">        zp = range(1, sum(thickness), 1)</span>
+<span class="sd">        # Define the velocity range</span>
+<span class="sd">        vmin, vmax = 1, 10000</span>
+<span class="sd">        # Run the application</span>
+<span class="sd">        app = Lasagne(thickness, zp, vmin, vmax)</span>
+<span class="sd">        app.run()</span>
+<span class="sd">        # Save the modeled data</span>
+<span class="sd">        app.savedata(&quot;mydata.txt&quot;)</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * thickness : list</span>
+<span class="sd">        The thickness of each layer in order of increasing depth</span>
+<span class="sd">    * zp : list</span>
+<span class="sd">        The depths of the measurement stations (seismometers)</span>
+<span class="sd">    * vmin, vmax : float</span>
+<span class="sd">        Range of velocities to allow</span>
+<span class="sd">    * tts : array</span>
+<span class="sd">        The observed travel-time values at the measurement stations. Will be</span>
+<span class="sd">        plotted as black points together with the modeled (predicted) data.</span>
+<span class="sd">        If None, will ignore this.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">instructions</span> <span class="o">=</span> <span class="s">&quot;Click to set the velocity of the layers&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;Lasagne - Vertical seismic profiling for 1D layered media&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">thickness</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="p">,</span> <span class="n">tts</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">tts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tts</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">zp</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;zp and tts must have same size&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">vmin</span> <span class="o">&lt;=</span> <span class="mf">0.</span> <span class="ow">or</span> <span class="n">vmax</span> <span class="o">&lt;=</span> <span class="mf">0.</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Can&#39;t have velocity vmin or vmax &lt;= 0&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tts</span> <span class="o">=</span> <span class="n">tts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zp</span> <span class="o">=</span> <span class="n">zp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thickness</span> <span class="o">=</span> <span class="n">thickness</span>
+        <span class="c"># Make the figure</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">pyplot</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">set_window_title</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">instructions</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span>
+        <span class="c"># Make the data and model canvas</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dcanvas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dcanvas</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&quot;Depth (m)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dcanvas</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&quot;Travel-time (s)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dcanvas</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">thickness</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dcanvas</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dcanvas</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">thickness</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&quot;Depth (m)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&quot;Velocity (m/s2)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">thickness</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">top</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span> <span class="n">left</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="mf">0.15</span><span class="p">,</span>
+                                 <span class="n">hspace</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+        <span class="c"># Make the sliders</span>
+        <span class="n">sliderax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.20</span><span class="p">,</span> <span class="mf">0.03</span><span class="p">,</span> <span class="mf">0.60</span><span class="p">,</span> <span class="mf">0.03</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errslider</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">sliderax</span><span class="p">,</span> <span class="s">&#39;Error&#39;</span><span class="p">,</span>
+            <span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">valinit</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">valfmt</span><span class="o">=</span><span class="s">&#39;</span><span class="si">%2.1f</span><span class="s"> (percent)&#39;</span><span class="p">)</span>
+        <span class="c"># Initialize the data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">velocity</span> <span class="o">=</span> <span class="n">vmin</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">thickness</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predtts</span> <span class="o">=</span> <span class="n">fatiando</span><span class="o">.</span><span class="n">seismic</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">vertical</span><span class="p">(</span><span class="n">thickness</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">velocity</span><span class="p">,</span>
+                                                      <span class="n">zp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="p">[</span><span class="nb">sum</span><span class="p">(</span><span class="n">thickness</span><span class="p">[:</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">thickness</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predplot</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dcanvas</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predtts</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="s">&#39;-r&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ttsplot</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dcanvas</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">,</span> <span class="s">&#39;ok&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plotx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layerplot</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="p">,</span> <span class="s">&#39;o-k&#39;</span><span class="p">,</span>
+            <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">guide</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="o">.</span><span class="n">plot</span><span class="p">([],</span> <span class="p">[],</span> <span class="n">marker</span><span class="o">=</span><span class="s">&#39;o&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s">&#39;--&#39;</span><span class="p">,</span>
+                 <span class="n">color</span><span class="o">=</span><span class="s">&#39;red&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+        <span class="n">pyplot</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predtts</span>
+
+    <span class="k">def</span> <span class="nf">savedata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">predtts</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">numpy</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s">&#39;</span><span class="si">%.5f</span><span class="s">&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errslider</span><span class="o">.</span><span class="n">on_changed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">set_error</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">mpl_connect</span><span class="p">(</span><span class="s">&#39;button_press_event&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pick</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">mpl_connect</span><span class="p">(</span><span class="s">&#39;key_press_event&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">key_press</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">mpl_connect</span><span class="p">(</span><span class="s">&#39;motion_notify_event&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">move</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">set_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="mf">0.01</span><span class="o">*</span><span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predtts</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">contaminate</span><span class="p">(</span>
+            <span class="n">fatiando</span><span class="o">.</span><span class="n">seismic</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">vertical</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">thickness</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">velocity</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">,</span> <span class="n">percent</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predplot</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predtts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">xmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predtts</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">tts</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
+            <span class="n">xmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predtts</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">tts</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">xmin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predtts</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+            <span class="n">xmax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predtts</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">xmin</span> <span class="o">!=</span> <span class="n">xmax</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dcanvas</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">draw_guide</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">bisect</span><span class="o">.</span><span class="n">bisect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">z1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">z2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">x1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">velocity</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">guide</span><span class="o">.</span><span class="n">set_data</span><span class="p">([</span><span class="n">x1</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">x1</span><span class="p">],</span> <span class="p">[</span><span class="n">z1</span><span class="p">,</span> <span class="n">z1</span><span class="p">,</span> <span class="n">z2</span><span class="p">,</span> <span class="n">z2</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">inaxes</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw_guide</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">xdata</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">ydata</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">pick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">inaxes</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcanvas</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">xdata</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">ydata</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">button</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">bisect</span><span class="o">.</span><span class="n">bisect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">velocity</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layerplot</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plotx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ploty</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">guide</span><span class="o">.</span><span class="n">set_data</span><span class="p">([],</span> <span class="p">[])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">key_press</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

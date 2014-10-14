@@ -1,0 +1,1241 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Meshing (fatiando.mesher) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="API Reference: The fatiando package" href="fatiando.html" />
+    <link rel="next" title="Gridding (fatiando.gridder)" href="gridder.html" />
+    <link rel="prev" title="Climate change signal in well temperature logs (fatiando.geothermal.climsig)" href="geothermal.climsig.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gridder.html" title="Gridding (fatiando.gridder)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="geothermal.climsig.html" title="Climate change signal in well temperature logs (fatiando.geothermal.climsig)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" accesskey="U">API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.mesher">
+<span id="meshing-fatiando-mesher"></span><span id="fatiando-mesher"></span><h1>Meshing (<tt class="docutils literal"><span class="pre">fatiando.mesher</span></tt>)<a class="headerlink" href="#module-fatiando.mesher" title="Permalink to this headline">¶</a></h1>
+<p>Generate and operate on various kinds of meshes and geometric elements</p>
+<p><strong>Geometric elements</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.mesher.Polygon" title="fatiando.mesher.Polygon"><tt class="xref py py-class docutils literal"><span class="pre">Polygon</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.mesher.Square" title="fatiando.mesher.Square"><tt class="xref py py-class docutils literal"><span class="pre">Square</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.mesher.Prism" title="fatiando.mesher.Prism"><tt class="xref py py-class docutils literal"><span class="pre">Prism</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.mesher.PolygonalPrism" title="fatiando.mesher.PolygonalPrism"><tt class="xref py py-class docutils literal"><span class="pre">PolygonalPrism</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.mesher.Sphere" title="fatiando.mesher.Sphere"><tt class="xref py py-class docutils literal"><span class="pre">Sphere</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.mesher.Tesseroid" title="fatiando.mesher.Tesseroid"><tt class="xref py py-class docutils literal"><span class="pre">Tesseroid</span></tt></a></li>
+</ul>
+<p><strong>Meshes</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.mesher.SquareMesh" title="fatiando.mesher.SquareMesh"><tt class="xref py py-class docutils literal"><span class="pre">SquareMesh</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.mesher.PrismMesh" title="fatiando.mesher.PrismMesh"><tt class="xref py py-class docutils literal"><span class="pre">PrismMesh</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.mesher.PrismRelief" title="fatiando.mesher.PrismRelief"><tt class="xref py py-class docutils literal"><span class="pre">PrismRelief</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.mesher.TesseroidMesh" title="fatiando.mesher.TesseroidMesh"><tt class="xref py py-class docutils literal"><span class="pre">TesseroidMesh</span></tt></a></li>
+</ul>
+<p><strong>Utility functions</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.mesher.extract" title="fatiando.mesher.extract"><tt class="xref py py-func docutils literal"><span class="pre">extract</span></tt></a>: Extract the values of a physicalr
+property from the cells in a list</li>
+<li><a class="reference internal" href="#fatiando.mesher.vfilter" title="fatiando.mesher.vfilter"><tt class="xref py py-func docutils literal"><span class="pre">vfilter</span></tt></a>: Remove cells whose physical property
+value falls outside a given range</li>
+<li><a class="reference internal" href="#fatiando.mesher.vremove" title="fatiando.mesher.vremove"><tt class="xref py py-func docutils literal"><span class="pre">vremove</span></tt></a>: Remove the cells with a given physical
+property value</li>
+</ul>
+<hr class="docutils" />
+<dl class="class">
+<dt id="fatiando.mesher.GeometricElement">
+<em class="property">class </em><tt class="descclassname">fatiando.mesher.</tt><tt class="descname">GeometricElement</tt><big>(</big><em>props</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#GeometricElement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.GeometricElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>Base class for all geometric elements.</p>
+<dl class="method">
+<dt id="fatiando.mesher.GeometricElement.addprop">
+<tt class="descname">addprop</tt><big>(</big><em>prop</em>, <em>value</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#GeometricElement.addprop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.GeometricElement.addprop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a physical property to this geometric element.</p>
+<p>If it already has the property, the given value will overwrite the
+existing one.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>prop <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Name of the physical property.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>value <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The value of this physical property.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.mesher.Polygon">
+<em class="property">class </em><tt class="descclassname">fatiando.mesher.</tt><tt class="descname">Polygon</tt><big>(</big><em>vertices</em>, <em>props=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#Polygon"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.Polygon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fatiando.mesher.GeometricElement" title="fatiando.mesher.GeometricElement"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.GeometricElement</span></tt></a></p>
+<p>Create a polygon object.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Most applications require the vertices to be <strong>clockwise</strong>!</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>vertices <span class="classifier-delimiter">:</span> <span class="classifier">list of lists</span></dt>
+<dd><p class="first last">List of [x, y] pairs with the coordinates of the vertices.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>props <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first last">Physical properties assigned to the polygon.
+Ex: <tt class="docutils literal"><span class="pre">props={'density':10,</span> <span class="pre">'susceptibility':10000}</span></tt></p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.mesher.PolygonalPrism">
+<em class="property">class </em><tt class="descclassname">fatiando.mesher.</tt><tt class="descname">PolygonalPrism</tt><big>(</big><em>vertices</em>, <em>z1</em>, <em>z2</em>, <em>props=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#PolygonalPrism"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.PolygonalPrism" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fatiando.mesher.GeometricElement" title="fatiando.mesher.GeometricElement"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.GeometricElement</span></tt></a></p>
+<p>Create a 3D prism with polygonal crossection.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The coordinate system used is x -&gt; North, y -&gt; East and z -&gt; Down</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><em>vertices</em> must be <strong>CLOCKWISE</strong> or will give inverse result.</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>vertices <span class="classifier-delimiter">:</span> <span class="classifier">list of lists</span></dt>
+<dd><p class="first last">Coordinates of the vertices. A list of <tt class="docutils literal"><span class="pre">[x,</span> <span class="pre">y]</span></tt> pairs.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>z1, z2 <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Top and bottom of the prism</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>props <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first last">Physical properties assigned to the prism.
+Ex: <tt class="docutils literal"><span class="pre">props={'density':10,</span> <span class="pre">'magnetization':10000}</span></tt></p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">verts</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span> <span class="o">=</span> <span class="n">PolygonalPrism</span><span class="p">(</span><span class="n">verts</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;temperature&#39;</span><span class="p">:</span><span class="mi">25</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;temperature&#39;</span><span class="p">]</span>
+<span class="go">25</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">p</span><span class="o">.</span><span class="n">x</span>
+<span class="go">[ 1.  1.  2.  2.]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">p</span><span class="o">.</span><span class="n">y</span>
+<span class="go">[ 1.  2.  2.  1.]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">p</span><span class="o">.</span><span class="n">z1</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">z2</span>
+<span class="go">0.0 3.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span><span class="o">.</span><span class="n">addprop</span><span class="p">(</span><span class="s">&#39;density&#39;</span><span class="p">,</span> <span class="mi">2670</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">p</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+<span class="go">2670</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="fatiando.mesher.PolygonalPrism.topolygon">
+<tt class="descname">topolygon</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#PolygonalPrism.topolygon"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.PolygonalPrism.topolygon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the polygon describing the prism viewed from above.</p>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>polygon <span class="classifier-delimiter">:</span> <span class="classifier"><a class="reference internal" href="#fatiando.mesher.Polygon" title="fatiando.mesher.Polygon"><tt class="xref py py-func docutils literal"><span class="pre">fatiando.mesher.Polygon</span></tt></a></span></dt>
+<dd><p class="first last">The polygon</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">verts</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span> <span class="o">=</span> <span class="n">PolygonalPrism</span><span class="p">(</span><span class="n">verts</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">poly</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">topolygon</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">poly</span><span class="o">.</span><span class="n">x</span>
+<span class="go">[ 1.  1.  2.  2.]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">poly</span><span class="o">.</span><span class="n">y</span>
+<span class="go">[ 1.  2.  2.  1.]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.mesher.Prism">
+<em class="property">class </em><tt class="descclassname">fatiando.mesher.</tt><tt class="descname">Prism</tt><big>(</big><em>x1</em>, <em>x2</em>, <em>y1</em>, <em>y2</em>, <em>z1</em>, <em>z2</em>, <em>props=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#Prism"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.Prism" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fatiando.mesher.GeometricElement" title="fatiando.mesher.GeometricElement"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.GeometricElement</span></tt></a></p>
+<p>Create a 3D right rectangular prism.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The coordinate system used is x -&gt; North, y -&gt; East and z -&gt; Down</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>x1, x2 <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">South and north borders of the prism</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>y1, y2 <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">West and east borders of the prism</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>z1, z2 <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Top and bottom of the prism</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>props <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first last">Physical properties assigned to the prism.
+Ex: <tt class="docutils literal"><span class="pre">props={'density':10,</span> <span class="pre">'magnetization':10000}</span></tt></p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">fatiando.mesher</span> <span class="kn">import</span> <span class="n">Prism</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span> <span class="o">=</span> <span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="mi">200</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+<span class="go">200</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">p</span><span class="o">.</span><span class="n">get_bounds</span><span class="p">()</span>
+<span class="go">[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">p</span>
+<span class="go">x1:1 | x2:2 | y1:3 | y2:4 | z1:5 | z2:6 | density:200</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span> <span class="o">=</span> <span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">p</span>
+<span class="go">x1:1 | x2:2 | y1:3 | y2:4 | z1:5 | z2:6</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span><span class="o">.</span><span class="n">addprop</span><span class="p">(</span><span class="s">&#39;density&#39;</span><span class="p">,</span> <span class="mi">2670</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">p</span>
+<span class="go">x1:1 | x2:2 | y1:3 | y2:4 | z1:5 | z2:6 | density:2670</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="fatiando.mesher.Prism.center">
+<tt class="descname">center</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#Prism.center"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.Prism.center" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the coordinates of the center of the prism.</p>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>coords <span class="classifier-delimiter">:</span> <span class="classifier">list = [xc, yc, zc]</span></dt>
+<dd><p class="first last">Coordinates of the center</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">prism</span> <span class="o">=</span> <span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">prism</span><span class="o">.</span><span class="n">center</span><span class="p">()</span>
+<span class="go">[1.5, 2.0, 1.0]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="fatiando.mesher.Prism.get_bounds">
+<tt class="descname">get_bounds</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#Prism.get_bounds"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.Prism.get_bounds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the bounding box of the prism (i.e., the borders of the prism).</p>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>bounds <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last"><tt class="docutils literal"><span class="pre">[x1,</span> <span class="pre">x2,</span> <span class="pre">y1,</span> <span class="pre">y2,</span> <span class="pre">z1,</span> <span class="pre">z2]</span></tt>, the bounds of the prism</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">p</span> <span class="o">=</span> <span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">p</span><span class="o">.</span><span class="n">get_bounds</span><span class="p">()</span>
+<span class="go">[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.mesher.PrismMesh">
+<em class="property">class </em><tt class="descclassname">fatiando.mesher.</tt><tt class="descname">PrismMesh</tt><big>(</big><em>bounds</em>, <em>shape</em>, <em>props=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#PrismMesh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.PrismMesh" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>Generate a 3D regular mesh of right rectangular prisms.</p>
+<p>Prisms are ordered as follows: first layers (z coordinate), then EW rows (y)
+and finaly x coordinate (NS).</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Remember that the coordinate system is x-&gt;North, y-&gt;East and
+z-&gt;Down</p>
+</div>
+<p>Ex: in a mesh with shape <tt class="docutils literal"><span class="pre">(3,3,3)</span></tt> the 15th element (index 14) has z index
+1 (second layer), y index 1 (second row), and x index 2 (third element in
+the column).</p>
+<p><a class="reference internal" href="#fatiando.mesher.PrismMesh" title="fatiando.mesher.PrismMesh"><tt class="xref py py-class docutils literal"><span class="pre">PrismMesh</span></tt></a> can used as list of prisms. It acts
+as an iteratior (so you can loop over prisms). It also has a <tt class="docutils literal"><span class="pre">__getitem__</span></tt>
+method to access individual elements in the mesh.
+In practice, <a class="reference internal" href="#fatiando.mesher.PrismMesh" title="fatiando.mesher.PrismMesh"><tt class="xref py py-class docutils literal"><span class="pre">PrismMesh</span></tt></a> should be able to be
+passed to any function that asks for a list of prisms, like
+<tt class="xref py py-func docutils literal"><span class="pre">fatiando.gravmag.prism.gz</span></tt>.</p>
+<p>To make the mesh incorporate a topography, use
+<a class="reference internal" href="#fatiando.mesher.PrismMesh.carvetopo" title="fatiando.mesher.PrismMesh.carvetopo"><tt class="xref py py-meth docutils literal"><span class="pre">carvetopo</span></tt></a></p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>bounds <span class="classifier-delimiter">:</span> <span class="classifier">list = [xmin, xmax, ymin, ymax, zmin, zmax]</span></dt>
+<dd><p class="first last">Boundaries of the mesh.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>shape <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (nz, ny, nx)</span></dt>
+<dd><p class="first last">Number of prisms in the x, y, and z directions.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>props <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first last">Physical properties of each prism in the mesh.
+Each key should be the name of a physical property. The corresponding
+value should be a list with the values of that particular property on
+each prism of the mesh.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">fatiando.mesher</span> <span class="kn">import</span> <span class="n">PrismMesh</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mesh</span> <span class="o">=</span> <span class="n">PrismMesh</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">),(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">mesh</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="n">p</span>
+<span class="go">x1:0 | x2:0.5 | y1:0 | y2:1 | z1:0 | z2:3</span>
+<span class="go">x1:0.5 | x2:1 | y1:0 | y2:1 | z1:0 | z2:3</span>
+<span class="go">x1:0 | x2:0.5 | y1:1 | y2:2 | z1:0 | z2:3</span>
+<span class="go">x1:0.5 | x2:1 | y1:1 | y2:2 | z1:0 | z2:3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mesh</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="go">x1:0 | x2:0.5 | y1:0 | y2:1 | z1:0 | z2:3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mesh</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="go">x1:0.5 | x2:1 | y1:1 | y2:2 | z1:0 | z2:3</span>
+</pre></div>
+</div>
+<p>One with physical properties:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">props</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;density&#39;</span><span class="p">:[</span><span class="mf">2670.0</span><span class="p">,</span> <span class="mf">1000.0</span><span class="p">]}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mesh</span> <span class="o">=</span> <span class="n">PrismMesh</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">props</span><span class="o">=</span><span class="n">props</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">mesh</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="n">p</span>
+<span class="go">x1:0 | x2:1 | y1:0 | y2:4 | z1:0 | z2:3 | density:2670</span>
+<span class="go">x1:1 | x2:2 | y1:0 | y2:4 | z1:0 | z2:3 | density:1000</span>
+</pre></div>
+</div>
+<p>You can use <a class="reference internal" href="#fatiando.mesher.PrismMesh.get_xs" title="fatiando.mesher.PrismMesh.get_xs"><tt class="xref py py-meth docutils literal"><span class="pre">get_xs</span></tt></a> (and similar
+methods for y and z) to get the x coordinates os the prisms in the mesh:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mesh</span> <span class="o">=</span> <span class="n">PrismMesh</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mesh</span><span class="o">.</span><span class="n">get_xs</span><span class="p">()</span>
+<span class="go">[ 0.  1.  2.]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mesh</span><span class="o">.</span><span class="n">get_ys</span><span class="p">()</span>
+<span class="go">[ 0.  4.]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mesh</span><span class="o">.</span><span class="n">get_zs</span><span class="p">()</span>
+<span class="go">[ 0.  3.]</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="fatiando.mesher.PrismMesh.addprop">
+<tt class="descname">addprop</tt><big>(</big><em>prop</em>, <em>values</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#PrismMesh.addprop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.PrismMesh.addprop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add physical property values to the cells in the mesh.</p>
+<p>Different physical properties of the mesh are stored in a dictionary.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>prop <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Name of the physical property.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>values <span class="classifier-delimiter">:</span> <span class="classifier">list or array</span></dt>
+<dd><p class="first last">Value of this physical property in each prism of the mesh. For the
+ordering of prisms in the mesh see
+<a class="reference internal" href="#fatiando.mesher.PrismMesh" title="fatiando.mesher.PrismMesh"><tt class="xref py py-class docutils literal"><span class="pre">PrismMesh</span></tt></a></p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="fatiando.mesher.PrismMesh.carvetopo">
+<tt class="descname">carvetopo</tt><big>(</big><em>x</em>, <em>y</em>, <em>height</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#PrismMesh.carvetopo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.PrismMesh.carvetopo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mask (remove) prisms from the mesh that are above the topography.</p>
+<p>Accessing the ith prism will return None if it was masked (above the
+topography).
+Also mask prisms outside of the topography grid provided.
+The topography height information does not need to be on a regular grid,
+it will be interpolated.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>x, y <span class="classifier-delimiter">:</span> <span class="classifier">lists</span></dt>
+<dd><p class="first last">x and y coordinates of the grid points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>height <span class="classifier-delimiter">:</span> <span class="classifier">list or array</span></dt>
+<dd><p class="first last">Array with the height of the topography</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="fatiando.mesher.PrismMesh.celltype">
+<tt class="descname">celltype</tt><a class="headerlink" href="#fatiando.mesher.PrismMesh.celltype" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#fatiando.mesher.Prism" title="fatiando.mesher.Prism"><tt class="xref py py-class docutils literal"><span class="pre">Prism</span></tt></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fatiando.mesher.PrismMesh.dump">
+<tt class="descname">dump</tt><big>(</big><em>meshfile</em>, <em>propfile</em>, <em>prop</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#PrismMesh.dump"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.PrismMesh.dump" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dump the mesh to a file in the format required by UBC-GIF program
+MeshTools3D.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>meshfile <span class="classifier-delimiter">:</span> <span class="classifier">str or file</span></dt>
+<dd><p class="first last">Output file to save the mesh. Can be a file name or an open file.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>propfile <span class="classifier-delimiter">:</span> <span class="classifier">str or file</span></dt>
+<dd><p class="first last">Output file to save the physical properties <em>prop</em>. Can be a file
+name or an open file.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>prop <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">The name of the physical property in the mesh that will be saved to
+<em>propfile</em>.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Uses -10000000 as the dummy value for plotting topography</p>
+</div>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">StringIO</span> <span class="kn">import</span> <span class="n">StringIO</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">meshfile</span> <span class="o">=</span> <span class="n">StringIO</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">densfile</span> <span class="o">=</span> <span class="n">StringIO</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mesh</span> <span class="o">=</span> <span class="n">PrismMesh</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mesh</span><span class="o">.</span><span class="n">addprop</span><span class="p">(</span><span class="s">&#39;density&#39;</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mesh</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">meshfile</span><span class="p">,</span> <span class="n">densfile</span><span class="p">,</span> <span class="s">&#39;density&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">meshfile</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+<span class="go">2 2 1</span>
+<span class="go">0 0 0</span>
+<span class="go">2*10</span>
+<span class="go">2*5</span>
+<span class="go">1*5</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">densfile</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+<span class="go">1.0000</span>
+<span class="go">3.0000</span>
+<span class="go">2.0000</span>
+<span class="go">4.0000</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="fatiando.mesher.PrismMesh.get_layer">
+<tt class="descname">get_layer</tt><big>(</big><em>i</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#PrismMesh.get_layer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.PrismMesh.get_layer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the set of prisms corresponding to the ith layer of the mesh.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>i <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">The index of the layer</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>prisms <span class="classifier-delimiter">:</span> <span class="classifier">list of <a class="reference internal" href="#fatiando.mesher.Prism" title="fatiando.mesher.Prism"><tt class="xref py py-class docutils literal"><span class="pre">Prism</span></tt></a></span></dt>
+<dd><p class="first last">The prisms in the ith layer</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mesh</span> <span class="o">=</span> <span class="n">PrismMesh</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">layer</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">get_layer</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">layer</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="n">p</span>
+<span class="go">x1:0 | x2:1 | y1:0 | y2:1 | z1:0 | z2:1</span>
+<span class="go">x1:1 | x2:2 | y1:0 | y2:1 | z1:0 | z2:1</span>
+<span class="go">x1:0 | x2:1 | y1:1 | y2:2 | z1:0 | z2:1</span>
+<span class="go">x1:1 | x2:2 | y1:1 | y2:2 | z1:0 | z2:1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">layer</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">get_layer</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">layer</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="n">p</span>
+<span class="go">x1:0 | x2:1 | y1:0 | y2:1 | z1:1 | z2:2</span>
+<span class="go">x1:1 | x2:2 | y1:0 | y2:1 | z1:1 | z2:2</span>
+<span class="go">x1:0 | x2:1 | y1:1 | y2:2 | z1:1 | z2:2</span>
+<span class="go">x1:1 | x2:2 | y1:1 | y2:2 | z1:1 | z2:2</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="fatiando.mesher.PrismMesh.get_xs">
+<tt class="descname">get_xs</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#PrismMesh.get_xs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.PrismMesh.get_xs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an array with the x coordinates of the prisms in mesh.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fatiando.mesher.PrismMesh.get_ys">
+<tt class="descname">get_ys</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#PrismMesh.get_ys"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.PrismMesh.get_ys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an array with the y coordinates of the prisms in mesh.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fatiando.mesher.PrismMesh.get_zs">
+<tt class="descname">get_zs</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#PrismMesh.get_zs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.PrismMesh.get_zs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an array with the z coordinates of the prisms in mesh.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.mesher.PrismRelief">
+<em class="property">class </em><tt class="descclassname">fatiando.mesher.</tt><tt class="descname">PrismRelief</tt><big>(</big><em>ref</em>, <em>dims</em>, <em>nodes</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#PrismRelief"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.PrismRelief" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>Generate a 3D model of a relief (topography) using prisms.</p>
+<p>Use to generate:
+* topographic model
+* basin model
+* Moho model
+* etc</p>
+<p>PrismRelief can used as list of prisms. It acts as an iteratior (so you
+can loop over prisms). It also has a <tt class="docutils literal"><span class="pre">__getitem__</span></tt> method to access
+individual elements in the mesh.
+In practice, PrismRelief should be able to be passed to any function that
+asks for a list of prisms, like <tt class="xref py py-func docutils literal"><span class="pre">fatiando.gravmag.prism.gz</span></tt>.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>ref <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><dl class="first last docutils">
+<dt>Reference level. Prisms will have:</dt>
+<dd><ul class="first last simple">
+<li>bottom on zref and top on z if z &gt; zref;</li>
+<li>bottom on z and top on zref otherwise.</li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>dims <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (dy, dx)</span></dt>
+<dd><p class="first last">Dimensions of the prisms in the y and x directions</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>nodes <span class="classifier-delimiter">:</span> <span class="classifier">list of lists = [x, y, z]</span></dt>
+<dd><p class="first last">Coordinates of the center of the top face of each prism.x, y, and z are
+lists with the x, y and z coordinates on a regular grid.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="method">
+<dt id="fatiando.mesher.PrismRelief.addprop">
+<tt class="descname">addprop</tt><big>(</big><em>prop</em>, <em>values</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#PrismRelief.addprop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.PrismRelief.addprop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add physical property values to the prisms.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">If the z value of any point in the relief is below the
+reference level, its corresponding prism will have the physical
+property value with oposite sign than was assigned to it.</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>prop <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Name of the physical property.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>values <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">List or array with the value of this physical property in each
+prism of the relief.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.mesher.Sphere">
+<em class="property">class </em><tt class="descclassname">fatiando.mesher.</tt><tt class="descname">Sphere</tt><big>(</big><em>x</em>, <em>y</em>, <em>z</em>, <em>radius</em>, <em>props=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#Sphere"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.Sphere" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fatiando.mesher.GeometricElement" title="fatiando.mesher.GeometricElement"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.GeometricElement</span></tt></a></p>
+<p>Create a sphere.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The coordinate system used is x -&gt; North, y -&gt; East and z -&gt; Down</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>x, y, z <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The coordinates of the center of the sphere</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>props <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first last">Physical properties assigned to the prism.
+Ex: <tt class="docutils literal"><span class="pre">props={'density':10,</span> <span class="pre">'magnetization':10000}</span></tt></p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">Sphere</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;magnetization&#39;</span><span class="p">:</span><span class="mi">200</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;magnetization&#39;</span><span class="p">]</span>
+<span class="go">200</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">addprop</span><span class="p">(</span><span class="s">&#39;density&#39;</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">s</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+<span class="go">20</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">s</span>
+<span class="go">x:1 | y:2 | z:3 | radius:10 | density:20 | magnetization:200</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">Sphere</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">s</span>
+<span class="go">x:1 | y:2 | z:3 | radius:4</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">addprop</span><span class="p">(</span><span class="s">&#39;density&#39;</span><span class="p">,</span> <span class="mi">2670</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">s</span>
+<span class="go">x:1 | y:2 | z:3 | radius:4 | density:2670</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.mesher.Square">
+<em class="property">class </em><tt class="descclassname">fatiando.mesher.</tt><tt class="descname">Square</tt><big>(</big><em>bounds</em>, <em>props=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#Square"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.Square" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fatiando.mesher.GeometricElement" title="fatiando.mesher.GeometricElement"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.GeometricElement</span></tt></a></p>
+<p>Create a square object.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>bounds <span class="classifier-delimiter">:</span> <span class="classifier">list = [x1, x2, y1, y2]</span></dt>
+<dd><p class="first last">Coordinates of the top right and bottom left corners of the square</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>props <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first last">Physical properties assigned to the square.
+Ex: <tt class="docutils literal"><span class="pre">props={'density':10,</span> <span class="pre">'slowness':10000}</span></tt></p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">sq</span> <span class="o">=</span> <span class="n">Square</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="p">{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="mi">750</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">sq</span>
+<span class="go">x1:0 | x2:1 | y1:2 | y2:4 | density:750</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sq</span><span class="o">.</span><span class="n">addprop</span><span class="p">(</span><span class="s">&#39;magnetization&#39;</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">sq</span>
+<span class="go">x1:0 | x2:1 | y1:2 | y2:4 | density:750 | magnetization:100</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="fatiando.mesher.Square.topolygon">
+<tt class="descname">topolygon</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#Square.topolygon"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.Square.topolygon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert this square into a polygon representation.</p>
+<p>Vertices are ordered clockwise considering that x is North.</p>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>polygon <span class="classifier-delimiter">:</span> <span class="classifier"><a class="reference internal" href="#fatiando.mesher.Polygon" title="fatiando.mesher.Polygon"><tt class="xref py py-class docutils literal"><span class="pre">Polygon</span></tt></a></span></dt>
+<dd><p class="first last">The polygon equivalente of the square</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">square</span> <span class="o">=</span> <span class="n">Square</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="p">{</span><span class="s">&#39;vp&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">poly</span> <span class="o">=</span> <span class="n">square</span><span class="o">.</span><span class="n">topolygon</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">poly</span><span class="o">.</span><span class="n">x</span>
+<span class="go">[ 0.  1.  1.  0.]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">poly</span><span class="o">.</span><span class="n">y</span>
+<span class="go">[ 0.  0.  3.  3.]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">poly</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;vp&#39;</span><span class="p">]</span>
+<span class="go">1000</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.mesher.SquareMesh">
+<em class="property">class </em><tt class="descclassname">fatiando.mesher.</tt><tt class="descname">SquareMesh</tt><big>(</big><em>bounds</em>, <em>shape</em>, <em>props=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#SquareMesh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.SquareMesh" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>Generate a 2D regular mesh of squares.</p>
+<p>For all purposes, <a class="reference internal" href="#fatiando.mesher.SquareMesh" title="fatiando.mesher.SquareMesh"><tt class="xref py py-class docutils literal"><span class="pre">SquareMesh</span></tt></a> can be used as a
+list of <a class="reference internal" href="#fatiando.mesher.Square" title="fatiando.mesher.Square"><tt class="xref py py-class docutils literal"><span class="pre">Square</span></tt></a>. The order of the squares in the
+list is: x directions varies first, then y.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>bounds <span class="classifier-delimiter">:</span> <span class="classifier">list = [x1, x2, y1, y2]</span></dt>
+<dd><p class="first last">Boundaries of the mesh</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>shape <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (ny, nx)</span></dt>
+<dd><p class="first last">Number of squares in the y and x dimension, respectively</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>props <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first last">Physical properties of each square in the mesh.
+Each key should be the name of a physical property. The corresponding
+value should be a list with the values of that particular property on
+each square of the mesh.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mesh</span> <span class="o">=</span> <span class="n">SquareMesh</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">mesh</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="n">s</span>
+<span class="go">x1:0 | x2:2 | y1:0 | y2:3</span>
+<span class="go">x1:2 | x2:4 | y1:0 | y2:3</span>
+<span class="go">x1:0 | x2:2 | y1:3 | y2:6</span>
+<span class="go">x1:2 | x2:4 | y1:3 | y2:6</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mesh</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="go">x1:2 | x2:4 | y1:0 | y2:3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">mesh</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="go">x1:2 | x2:4 | y1:3 | y2:6</span>
+</pre></div>
+</div>
+<p>With physical properties:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mesh</span> <span class="o">=</span> <span class="n">SquareMesh</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">{</span><span class="s">&#39;slowness&#39;</span><span class="p">:[</span><span class="mf">3.4</span><span class="p">,</span> <span class="mf">8.6</span><span class="p">]})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">mesh</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="n">s</span>
+<span class="go">x1:0 | x2:4 | y1:0 | y2:3 | slowness:3.4</span>
+<span class="go">x1:0 | x2:4 | y1:3 | y2:6 | slowness:8.6</span>
+</pre></div>
+</div>
+<p>Or:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">mesh</span> <span class="o">=</span> <span class="n">SquareMesh</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mesh</span><span class="o">.</span><span class="n">addprop</span><span class="p">(</span><span class="s">&#39;slowness&#39;</span><span class="p">,</span> <span class="p">[</span><span class="mf">3.4</span><span class="p">,</span> <span class="mf">8.6</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">mesh</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="n">s</span>
+<span class="go">x1:0 | x2:4 | y1:0 | y2:3 | slowness:3.4</span>
+<span class="go">x1:0 | x2:4 | y1:3 | y2:6 | slowness:8.6</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="fatiando.mesher.SquareMesh.addprop">
+<tt class="descname">addprop</tt><big>(</big><em>prop</em>, <em>values</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#SquareMesh.addprop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.SquareMesh.addprop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add physical property values to the cells in the mesh.</p>
+<p>Different physical properties of the mesh are stored in a dictionary.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>prop <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Name of the physical property</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>values <span class="classifier-delimiter">:</span> <span class="classifier">list or array</span></dt>
+<dd><p class="first last">The value of this physical property in each square of the mesh.
+For the ordering of squares in the mesh see
+<a class="reference internal" href="#fatiando.mesher.SquareMesh" title="fatiando.mesher.SquareMesh"><tt class="xref py py-class docutils literal"><span class="pre">SquareMesh</span></tt></a></p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="fatiando.mesher.SquareMesh.get_xs">
+<tt class="descname">get_xs</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#SquareMesh.get_xs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.SquareMesh.get_xs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a list of the x coordinates of the corners of the cells in the
+mesh.</p>
+<p>If the mesh has nx cells, get_xs() will return nx + 1 values.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fatiando.mesher.SquareMesh.get_ys">
+<tt class="descname">get_ys</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#SquareMesh.get_ys"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.SquareMesh.get_ys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a list of the y coordinates of the corners of the cells in the
+mesh.</p>
+<p>If the mesh has ny cells, get_ys() will return ny + 1 values.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fatiando.mesher.SquareMesh.img2prop">
+<tt class="descname">img2prop</tt><big>(</big><em>fname</em>, <em>vmin</em>, <em>vmax</em>, <em>prop</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#SquareMesh.img2prop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.SquareMesh.img2prop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the physical property value from an image file.</p>
+<p>The image is converted to gray scale and the gray intensity of each
+pixel is used to set the value of the physical property of the
+cells in the mesh. Gray intensity values are scaled to the range
+<tt class="docutils literal"><span class="pre">[vmin,</span> <span class="pre">vmax]</span></tt>.</p>
+<p>If the shape of image (number of pixels in y and x) is different from
+the shape of the mesh, the image will be interpolated to match the shape
+of the mesh.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>fname <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Name of the image file</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>vmax, vmin <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Range of physical property values (used to convert the gray scale to
+physical property values)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>prop <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Name of the physical property</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.mesher.Tesseroid">
+<em class="property">class </em><tt class="descclassname">fatiando.mesher.</tt><tt class="descname">Tesseroid</tt><big>(</big><em>w</em>, <em>e</em>, <em>s</em>, <em>n</em>, <em>top</em>, <em>bottom</em>, <em>props=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#Tesseroid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.Tesseroid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fatiando.mesher.GeometricElement" title="fatiando.mesher.GeometricElement"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.GeometricElement</span></tt></a></p>
+<p>Create a tesseroid (spherical prism).</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>w, e <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">West and east borders of the tesseroid in decimal degrees</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>s, n <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">South and north borders of the tesseroid in decimal degrees</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>top, bottom <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Bottom and top of the tesseroid with respect to the mean earth radius
+in meters. Ex: if the top is 100 meters above the mean earth radius,
+<tt class="docutils literal"><span class="pre">top=100</span></tt>, if 100 meters below <tt class="docutils literal"><span class="pre">top=-100</span></tt>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>props <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first last">Physical properties assigned to the tesseroid.
+Ex: <tt class="docutils literal"><span class="pre">props={'density':10,</span> <span class="pre">'magnetization':10000}</span></tt></p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">fatiando.mesher</span> <span class="kn">import</span> <span class="n">Tesseroid</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">Tesseroid</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="mi">200</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+<span class="go">200</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">t</span><span class="o">.</span><span class="n">get_bounds</span><span class="p">()</span>
+<span class="go">[1.0, 2.0, 3.0, 4.0, 6.0, 5.0]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">t</span>
+<span class="go">w:1 | e:2 | s:3 | n:4 | top:6 | bottom:5 | density:200</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">Tesseroid</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">t</span>
+<span class="go">w:1 | e:2 | s:3 | n:4 | top:6 | bottom:5</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">addprop</span><span class="p">(</span><span class="s">&#39;density&#39;</span><span class="p">,</span> <span class="mi">2670</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">t</span>
+<span class="go">w:1 | e:2 | s:3 | n:4 | top:6 | bottom:5 | density:2670</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="fatiando.mesher.Tesseroid.get_bounds">
+<tt class="descname">get_bounds</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#Tesseroid.get_bounds"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.Tesseroid.get_bounds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the bounding box of the tesseroid (i.e., the borders).</p>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>bounds <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last"><tt class="docutils literal"><span class="pre">[w,</span> <span class="pre">e,</span> <span class="pre">s,</span> <span class="pre">n,</span> <span class="pre">top,</span> <span class="pre">bottom]</span></tt>, the bounds of the tesseroid</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">Tesseroid</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">t</span><span class="o">.</span><span class="n">get_bounds</span><span class="p">()</span>
+<span class="go">[1.0, 2.0, 3.0, 4.0, 6.0, 5.0]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.mesher.TesseroidMesh">
+<em class="property">class </em><tt class="descclassname">fatiando.mesher.</tt><tt class="descname">TesseroidMesh</tt><big>(</big><em>bounds</em>, <em>shape</em>, <em>props=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#TesseroidMesh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.TesseroidMesh" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fatiando.mesher.PrismMesh" title="fatiando.mesher.PrismMesh"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.PrismMesh</span></tt></a></p>
+<p>Generate a 3D regular mesh of tesseroids.</p>
+<p>Tesseroids are ordered as follows: first layers (height coordinate), 
+then N-S rows and finaly E-W.</p>
+<p>Ex: in a mesh with shape <tt class="docutils literal"><span class="pre">(3,3,3)</span></tt> the 15th element (index 14) has height 
+index 1 (second layer), y index 1 (second row), and x index 2 (
+third element in the column).</p>
+<p>This class can used as list of tesseroids. It acts
+as an iteratior (so you can loop over tesseroids). 
+It also has a <tt class="docutils literal"><span class="pre">__getitem__</span></tt>
+method to access individual elements in the mesh.
+In practice, it should be able to be
+passed to any function that asks for a list of tesseroids, like
+<a class="reference internal" href="gravmag.tesseroid.html#fatiando.gravmag.tesseroid.gz" title="fatiando.gravmag.tesseroid.gz"><tt class="xref py py-func docutils literal"><span class="pre">fatiando.gravmag.tesseroid.gz</span></tt></a>.</p>
+<p>To make the mesh incorporate a topography, use
+<tt class="xref py py-meth docutils literal"><span class="pre">carvetopo</span></tt></p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>bounds <span class="classifier-delimiter">:</span> <span class="classifier">list = [w, e, s, n, top, bottom]</span></dt>
+<dd><p class="first last">Boundaries of the mesh. <tt class="docutils literal"><span class="pre">w,</span> <span class="pre">e,</span> <span class="pre">s,</span> <span class="pre">n</span></tt> in degrees, <tt class="docutils literal"><span class="pre">top</span></tt> and 
+<tt class="docutils literal"><span class="pre">bottom</span></tt> are heights (positive upward) and in meters.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>shape <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (nr, nlat, nlon)</span></dt>
+<dd><p class="first last">Number of tesseroids in the radial, latitude, and longitude directions.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>props <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first last">Physical properties of each tesseroid in the mesh.
+Each key should be the name of a physical property. The corresponding
+value should be a list with the values of that particular property on
+each tesseroid of the mesh.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="attribute">
+<dt id="fatiando.mesher.TesseroidMesh.celltype">
+<tt class="descname">celltype</tt><a class="headerlink" href="#fatiando.mesher.TesseroidMesh.celltype" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#fatiando.mesher.Tesseroid" title="fatiando.mesher.Tesseroid"><tt class="xref py py-class docutils literal"><span class="pre">Tesseroid</span></tt></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.mesher.extract">
+<tt class="descclassname">fatiando.mesher.</tt><tt class="descname">extract</tt><big>(</big><em>prop</em>, <em>prisms</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#extract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.extract" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract the values of a physical property from the cells in a list.</p>
+<p>If a cell is <cite>None</cite> or doesn&#8217;t have the physical property, a value of <cite>None</cite>
+will be put in it&#8217;s place.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>prop <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">The name of the physical property to extract</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>cells <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">A list of cells (e.g., <a class="reference internal" href="#fatiando.mesher.Prism" title="fatiando.mesher.Prism"><tt class="xref py py-class docutils literal"><span class="pre">Prism</span></tt></a>,
+<a class="reference internal" href="#fatiando.mesher.PolygonalPrism" title="fatiando.mesher.PolygonalPrism"><tt class="xref py py-class docutils literal"><span class="pre">PolygonalPrism</span></tt></a>, etc)</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>values <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The extracted values</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">cells</span> <span class="o">=</span> <span class="p">[</span><span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;foo&#39;</span><span class="p">:</span><span class="mi">1</span><span class="p">}),</span>
+<span class="gp">... </span>         <span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;foo&#39;</span><span class="p">:</span><span class="mi">10</span><span class="p">}),</span>
+<span class="gp">... </span>         <span class="bp">None</span><span class="p">,</span>
+<span class="gp">... </span>         <span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;bar&#39;</span><span class="p">:</span><span class="mi">2000</span><span class="p">})]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">extract</span><span class="p">(</span><span class="s">&#39;foo&#39;</span><span class="p">,</span> <span class="n">cells</span><span class="p">)</span>
+<span class="go">[1, 10, None, None]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.mesher.vfilter">
+<tt class="descclassname">fatiando.mesher.</tt><tt class="descname">vfilter</tt><big>(</big><em>vmin</em>, <em>vmax</em>, <em>prop</em>, <em>cells</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#vfilter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.vfilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove cells whose physical property value falls outside a given range.</p>
+<p>If a cell is <cite>None</cite> or doesn&#8217;t have the physical property, it will be not
+be included in the result.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>vmin <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Minimum value</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>vmax <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Maximum value</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>prop <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">The name of the physical property used to filter</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>cells <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">A list of cells (e.g., <a class="reference internal" href="#fatiando.mesher.Prism" title="fatiando.mesher.Prism"><tt class="xref py py-class docutils literal"><span class="pre">Prism</span></tt></a>,
+<a class="reference internal" href="#fatiando.mesher.PolygonalPrism" title="fatiando.mesher.PolygonalPrism"><tt class="xref py py-class docutils literal"><span class="pre">PolygonalPrism</span></tt></a>, etc)</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>filtered <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The cells that fall within the desired range</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">cells</span> <span class="o">=</span> <span class="p">[</span><span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;foo&#39;</span><span class="p">:</span><span class="mi">1</span><span class="p">}),</span>
+<span class="gp">... </span>         <span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;foo&#39;</span><span class="p">:</span><span class="mi">20</span><span class="p">}),</span>
+<span class="gp">... </span>         <span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;foo&#39;</span><span class="p">:</span><span class="mi">3</span><span class="p">}),</span>
+<span class="gp">... </span>         <span class="bp">None</span><span class="p">,</span>
+<span class="gp">... </span>         <span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;foo&#39;</span><span class="p">:</span><span class="mi">4</span><span class="p">}),</span>
+<span class="gp">... </span>         <span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;foo&#39;</span><span class="p">:</span><span class="mi">200</span><span class="p">}),</span>
+<span class="gp">... </span>         <span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;bar&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">})]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">vfilter</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="s">&#39;foo&#39;</span><span class="p">,</span> <span class="n">cells</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="n">cell</span>
+<span class="go">x1:1 | x2:2 | y1:3 | y2:4 | z1:5 | z2:6 | foo:1</span>
+<span class="go">x1:1 | x2:2 | y1:3 | y2:4 | z1:5 | z2:6 | foo:3</span>
+<span class="go">x1:1 | x2:2 | y1:3 | y2:4 | z1:5 | z2:6 | foo:4</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.mesher.vremove">
+<tt class="descclassname">fatiando.mesher.</tt><tt class="descname">vremove</tt><big>(</big><em>value</em>, <em>prop</em>, <em>cells</em><big>)</big><a class="reference internal" href="../_modules/fatiando/mesher.html#vremove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.mesher.vremove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove the cells with a given physical property value.</p>
+<p>If a cell is <cite>None</cite> it will be not be included in the result.</p>
+<p>If a cell doesn&#8217;t have the physical property, it will be included in the
+result.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>value <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The value of the physical property to remove</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>prop <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">The name of the physicaRemove cells whose physical property value falls outside a given rangel property</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>cells <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">A list of cells (e.g., <a class="reference internal" href="#fatiando.mesher.Prism" title="fatiando.mesher.Prism"><tt class="xref py py-class docutils literal"><span class="pre">Prism</span></tt></a>,
+<a class="reference internal" href="#fatiando.mesher.PolygonalPrism" title="fatiando.mesher.PolygonalPrism"><tt class="xref py py-class docutils literal"><span class="pre">PolygonalPrism</span></tt></a>, etc)</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>removed <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">A list of cells that have <em>prop</em> != <em>value</em></p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">cells</span> <span class="o">=</span> <span class="p">[</span><span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;foo&#39;</span><span class="p">:</span><span class="mi">1</span><span class="p">}),</span>
+<span class="gp">... </span>         <span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;foo&#39;</span><span class="p">:</span><span class="mi">20</span><span class="p">}),</span>
+<span class="gp">... </span>         <span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;foo&#39;</span><span class="p">:</span><span class="mi">3</span><span class="p">}),</span>
+<span class="gp">... </span>         <span class="bp">None</span><span class="p">,</span>
+<span class="gp">... </span>         <span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;foo&#39;</span><span class="p">:</span><span class="mi">1</span><span class="p">}),</span>
+<span class="gp">... </span>         <span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;foo&#39;</span><span class="p">:</span><span class="mi">200</span><span class="p">}),</span>
+<span class="gp">... </span>         <span class="n">Prism</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;bar&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">})]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">vremove</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#39;foo&#39;</span><span class="p">,</span> <span class="n">cells</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="n">cell</span>
+<span class="go">x1:1 | x2:2 | y1:3 | y2:4 | z1:5 | z2:6 | foo:20</span>
+<span class="go">x1:1 | x2:2 | y1:3 | y2:4 | z1:5 | z2:6 | foo:3</span>
+<span class="go">x1:1 | x2:2 | y1:3 | y2:4 | z1:5 | z2:6 | foo:200</span>
+<span class="go">x1:1 | x2:2 | y1:3 | y2:4 | z1:5 | z2:6 | bar:1000</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="geothermal.climsig.html"
+                        title="previous chapter">Climate change signal in well temperature logs (<tt class="docutils literal"><span class="pre">fatiando.geothermal.climsig</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gridder.html"
+                        title="next chapter">Gridding (<tt class="docutils literal"><span class="pre">fatiando.gridder</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/mesher.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gridder.html" title="Gridding (fatiando.gridder)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="geothermal.climsig.html" title="Climate change signal in well temperature logs (fatiando.geothermal.climsig)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

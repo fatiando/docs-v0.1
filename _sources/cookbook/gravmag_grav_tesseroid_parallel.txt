@@ -1,0 +1,12 @@
+.. _cookbook_gravmag_grav_tesseroid_parallel:
+
+GravMag: Forward modeling of the gravity anomaly using tesseroids in parallel using ``multiprocessing``
+========================================================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/gravmag_grav_tesseroid_parallel.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/gravmag_grav_tesseroid_parallel.py
+    :language: python
+    :linenos:

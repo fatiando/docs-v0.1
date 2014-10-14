@@ -1,0 +1,354 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Simple GUIs using matplotlib (fatiando.gui.simple) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Graphical user interfaces (fatiando.gui)" href="gui.html" />
+    <link rel="next" title="Miscellaneous Utilities (fatiando.utils)" href="utils.html" />
+    <link rel="prev" title="Graphical user interfaces (fatiando.gui)" href="gui.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="utils.html" title="Miscellaneous Utilities (fatiando.utils)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gui.html" title="Graphical user interfaces (fatiando.gui)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="gui.html" accesskey="U">Graphical user interfaces (<tt class="docutils literal"><span class="pre">fatiando.gui</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.gui.simple">
+<span id="simple-guis-using-matplotlib-fatiando-gui-simple"></span><span id="fatiando-gui-simple"></span><h1>Simple GUIs using <tt class="xref py py-mod docutils literal"><span class="pre">matplotlib</span></tt> (<tt class="docutils literal"><span class="pre">fatiando.gui.simple</span></tt>)<a class="headerlink" href="#module-fatiando.gui.simple" title="Permalink to this headline">¶</a></h1>
+<p>Simple GUIs using the interactive capabilities of <tt class="xref py py-mod docutils literal"><span class="pre">matplotlib</span></tt></p>
+<p><strong>Interactive gravimetric modeling</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.gui.simple.Moulder" title="fatiando.gui.simple.Moulder"><tt class="xref py py-class docutils literal"><span class="pre">Moulder</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.gui.simple.BasinTrap" title="fatiando.gui.simple.BasinTrap"><tt class="xref py py-class docutils literal"><span class="pre">BasinTrap</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.gui.simple.BasinTri" title="fatiando.gui.simple.BasinTri"><tt class="xref py py-class docutils literal"><span class="pre">BasinTri</span></tt></a></li>
+</ul>
+<p><strong>Interactive modeling of layered media</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.gui.simple.Lasagne" title="fatiando.gui.simple.Lasagne"><tt class="xref py py-class docutils literal"><span class="pre">Lasagne</span></tt></a></li>
+</ul>
+<hr class="docutils" />
+<dl class="class">
+<dt id="fatiando.gui.simple.BasinTrap">
+<em class="property">class </em><tt class="descclassname">fatiando.gui.simple.</tt><tt class="descname">BasinTrap</tt><big>(</big><em>area</em>, <em>nodes</em>, <em>xp</em>, <em>zp</em>, <em>gz=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gui/simple.html#BasinTrap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gui.simple.BasinTrap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fatiando.gui.simple.Moulder" title="fatiando.gui.simple.Moulder"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.gui.simple.Moulder</span></tt></a></p>
+<p>Interactive gravity modeling using a trapezoidal model.</p>
+<p>The trapezoid has two surface nodes with fixed position. The bottom two have
+fixed x coordinates but movable z. The x coordinates for the bottom nodes
+are the same as the ones for the surface nodes. The user can then model by
+controling the depths of the two bottom nodes.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Define the area of modeling</span>
+<span class="n">area</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+<span class="c"># Where the gravity effect is calculated</span>
+<span class="n">xp</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">zp</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+<span class="c"># Where the two surface nodes are. Use depth = 1 because direct modeling</span>
+<span class="c"># doesn&#39;t like it when the model and computation points coincide</span>
+<span class="n">nodes</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">900</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+<span class="c"># Create the application</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">BasinTrap</span><span class="p">(</span><span class="n">area</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">xp</span><span class="p">,</span> <span class="n">zp</span><span class="p">)</span>
+<span class="c"># Run it (close the window to finish)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="c"># and save the calculated gravity anomaly profile</span>
+<span class="n">app</span><span class="o">.</span><span class="n">savedata</span><span class="p">(</span><span class="s">&quot;mydata.txt&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>area <span class="classifier-delimiter">:</span> <span class="classifier">list = [xmin, xmax, zmin, zmax]</span></dt>
+<dd><p class="first last">Are of the subsuface to use for modeling. Remember, z is positive
+downward.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>nodes <span class="classifier-delimiter">:</span> <span class="classifier">list of lists = [[x1, z1], [x2, z2]]</span></dt>
+<dd><p class="first last">x and z coordinates of the two top nodes. Must be in clockwise order!</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>xp, zp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">Arrays with the x and z coordinates of the computation points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>gz <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The observed gravity values at the computation points.
+Will be plotted as black points together with the modeled (predicted)
+data. If None, will ignore this.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.gui.simple.BasinTri">
+<em class="property">class </em><tt class="descclassname">fatiando.gui.simple.</tt><tt class="descname">BasinTri</tt><big>(</big><em>area</em>, <em>nodes</em>, <em>xp</em>, <em>zp</em>, <em>gz=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gui/simple.html#BasinTri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gui.simple.BasinTri" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fatiando.gui.simple.Moulder" title="fatiando.gui.simple.Moulder"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.gui.simple.Moulder</span></tt></a></p>
+<p>Interactive gravity modeling using a triangular model.</p>
+<p>The triangle has two surface nodes with fixed positions. The user can then
+model by controling the bottom node.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Define the area of modeling</span>
+<span class="n">area</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+<span class="c"># Where the gravity effect is calculated</span>
+<span class="n">xp</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">zp</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+<span class="c"># Where the two surface nodes are. Use depth = 1 because direct modeling</span>
+<span class="c"># doesn&#39;t like it when the model and computation points coincide</span>
+<span class="n">nodes</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">900</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+<span class="c"># Create the application</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">BasinTri</span><span class="p">(</span><span class="n">area</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">xp</span><span class="p">,</span> <span class="n">zp</span><span class="p">)</span>
+<span class="c"># Run it (close the window to finish)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="c"># and save the calculated gravity anomaly profile</span>
+<span class="n">app</span><span class="o">.</span><span class="n">savedata</span><span class="p">(</span><span class="s">&quot;mydata.txt&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>area <span class="classifier-delimiter">:</span> <span class="classifier">list = [xmin, xmax, zmin, zmax]</span></dt>
+<dd><p class="first last">Are of the subsuface to use for modeling. Remember, z is positive
+downward.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>nodes <span class="classifier-delimiter">:</span> <span class="classifier">list of lists = [[x1, z1], [x2, z2]]</span></dt>
+<dd><p class="first last">x and z coordinates of the two top nodes. Must be in clockwise order!</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>xp, zp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">Arrays with the x and z coordinates of the computation points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>gz <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The observed gravity values at the computation points.
+Will be plotted as black points together with the modeled (predicted)
+data. If None, will ignore this.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.gui.simple.Lasagne">
+<em class="property">class </em><tt class="descclassname">fatiando.gui.simple.</tt><tt class="descname">Lasagne</tt><big>(</big><em>thickness</em>, <em>zp</em>, <em>vmin</em>, <em>vmax</em>, <em>tts=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gui/simple.html#Lasagne"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gui.simple.Lasagne" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interactive modeling of vertical seismic profiling for 1D layered media.</p>
+<p>The wave source is assumed to be on the surface of a vertical borehole. The
+receivers are at given depths. What is measured is the travel-time of
+first arrivals.</p>
+<p>Assumes that the thickness of the layers are known. The user then only needs
+to choose the velocities.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Define the thickness of the layers</span>
+<span class="n">thickness</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">]</span>
+<span class="c"># Define the measuring points along the well</span>
+<span class="n">zp</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="n">thickness</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+<span class="c"># Define the velocity range</span>
+<span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10000</span>
+<span class="c"># Run the application</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">Lasagne</span><span class="p">(</span><span class="n">thickness</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="p">)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="c"># Save the modeled data</span>
+<span class="n">app</span><span class="o">.</span><span class="n">savedata</span><span class="p">(</span><span class="s">&quot;mydata.txt&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>thickness <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The thickness of each layer in order of increasing depth</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>zp <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The depths of the measurement stations (seismometers)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>vmin, vmax <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Range of velocities to allow</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>tts <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The observed travel-time values at the measurement stations. Will be
+plotted as black points together with the modeled (predicted) data.
+If None, will ignore this.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.gui.simple.Moulder">
+<em class="property">class </em><tt class="descclassname">fatiando.gui.simple.</tt><tt class="descname">Moulder</tt><big>(</big><em>area</em>, <em>xp</em>, <em>zp</em>, <em>gz=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gui/simple.html#Moulder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gui.simple.Moulder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interactive potential field direct modeling in 2D using polygons.</p>
+<p>Uses module <a class="reference internal" href="gravmag.talwani.html#module-fatiando.gravmag.talwani" title="fatiando.gravmag.talwani"><tt class="xref py py-mod docutils literal"><span class="pre">talwani</span></tt></a> for computations.</p>
+<p>For the moment only works for the gravity anomaly.</p>
+<p>To run this in a script, use:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Define the area of modeling</span>
+<span class="n">area</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+<span class="c"># Where the gravity effect is calculated</span>
+<span class="n">xp</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">zp</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+<span class="c"># Create the application</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">Moulder</span><span class="p">(</span><span class="n">area</span><span class="p">,</span> <span class="n">xp</span><span class="p">,</span> <span class="n">zp</span><span class="p">)</span>
+<span class="c"># Run it (close the window to finish)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="c"># and save the calculated gravity anomaly profile</span>
+<span class="n">app</span><span class="o">.</span><span class="n">savedata</span><span class="p">(</span><span class="s">&quot;mydata.txt&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>area <span class="classifier-delimiter">:</span> <span class="classifier">list = [xmin, xmax, zmin, zmax]</span></dt>
+<dd><p class="first last">Are of the subsuface to use for modeling. Remember, z is positive
+downward</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>xp, zp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">Arrays with the x and z coordinates of the computation points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>gz <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The observed gravity values at the computation points.
+Will be plotted as black points together with the modeled (predicted)
+data. If None, will ignore this.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>&#8220;The truth is out there&#8221;</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gui.html"
+                        title="previous chapter">Graphical user interfaces (<tt class="docutils literal"><span class="pre">fatiando.gui</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="utils.html"
+                        title="next chapter">Miscellaneous Utilities (<tt class="docutils literal"><span class="pre">fatiando.utils</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/gui.simple.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="utils.html" title="Miscellaneous Utilities (fatiando.utils)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gui.html" title="Graphical user interfaces (fatiando.gui)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="gui.html" >Graphical user interfaces (<tt class="docutils literal"><span class="pre">fatiando.gui</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

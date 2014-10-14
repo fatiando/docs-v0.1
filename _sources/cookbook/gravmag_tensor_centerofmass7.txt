@@ -1,0 +1,12 @@
+.. _cookbook_gravmag_tensor_centerofmass7:
+
+GravMag: Center of mass estimation using the first eigenvector of the gravity gradient tensor (large flat slab model)
+======================================================================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/gravmag_tensor_centerofmass7.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/gravmag_tensor_centerofmass7.py
+    :language: python
+    :linenos:

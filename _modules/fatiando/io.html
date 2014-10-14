@@ -1,0 +1,236 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fatiando.io &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for fatiando.io</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Input/Output utilities for grids, models, etc</span>
+
+<span class="sd">**CRUST2.0**</span>
+
+<span class="sd">Load and convert the `CRUST2.0 global crustal model </span>
+<span class="sd">&lt;http://igppweb.ucsd.edu/~gabi/rem.html&gt;`_ (Bassin et al., 2000).</span>
+
+<span class="sd">* :func:`~fatiando.io.fetch_crust2`: Download the .tar.gz archive with the model</span>
+<span class="sd">  from the website</span>
+<span class="sd">* :func:`~fatiando.io.crust2_to_tesseroids`: Convert the CRUST2.0 model to </span>
+<span class="sd">  tesseroids </span>
+
+<span class="sd">**References**</span>
+
+<span class="sd">Bassin, C., Laske, G. and Masters, G., The Current Limits of Resolution for </span>
+<span class="sd">Surface Wave Tomography in North America, EOS Trans AGU, 81, F897, 2000.</span>
+
+<span class="sd">----</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">urllib</span>
+<span class="kn">import</span> <span class="nn">tarfile</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="kn">from</span> <span class="nn">fatiando.mesher</span> <span class="kn">import</span> <span class="n">Tesseroid</span>
+
+
+<div class="viewcode-block" id="fetch_crust2"><a class="viewcode-back" href="../../api/io.html#fatiando.io.fetch_crust2">[docs]</a><span class="k">def</span> <span class="nf">fetch_crust2</span><span class="p">(</span><span class="n">fname</span><span class="o">=</span><span class="s">&#39;crust2.tar.gz&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Download the CRUST2.0 model from http://igppweb.ucsd.edu/~gabi/crust2.html</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * fname : str</span>
+<span class="sd">        The name that the archive file will be saved when downloaded</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    </span>
+<span class="sd">    * fname : str</span>
+<span class="sd">        The downloaded file name</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">urllib</span><span class="o">.</span><span class="n">urlretrieve</span><span class="p">(</span><span class="s">&#39;http://igpppublic.ucsd.edu/~gabi/ftp/crust2.tar.gz&#39;</span><span class="p">,</span>
+        <span class="n">filename</span><span class="o">=</span><span class="n">fname</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fname</span>
+</div>
+<div class="viewcode-block" id="crust2_to_tesseroids"><a class="viewcode-back" href="../../api/io.html#fatiando.io.crust2_to_tesseroids">[docs]</a><span class="k">def</span> <span class="nf">crust2_to_tesseroids</span><span class="p">(</span><span class="n">fname</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert the CRUST2.0 model to tesseroids.</span>
+
+<span class="sd">    Opens the .tar.gz archive and converts the model to </span>
+<span class="sd">    :class:`fatiando.mesher.Tesseroid`. </span>
+<span class="sd">    Each tesseroid will have its ``props`` set to the apropriate Vp, Vs and </span>
+<span class="sd">    density.</span>
+
+<span class="sd">    The CRUST2.0 model includes 7 layers: ice, water, soft sediments, hard</span>
+<span class="sd">    sediments, upper crust, middle curst and lower crust. It also includes the</span>
+<span class="sd">    mantle below the Moho. The mantle portion is not included in this </span>
+<span class="sd">    conversion because there is no way to place a bottom on it.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * fname : str</span>
+<span class="sd">        Name of the model .tar.gz archive (see </span>
+<span class="sd">        :func:`~fatiando.io.fetch_crust2`)</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * model : list of :class:`fatiando.mesher.Tesseroid`</span>
+<span class="sd">        The converted model</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">archive</span> <span class="o">=</span> <span class="n">tarfile</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="s">&#39;r:gz&#39;</span><span class="p">)</span>
+    <span class="c"># First get the topography and bathymetry information</span>
+    <span class="n">topogrd</span> <span class="o">=</span> <span class="n">_crust2_get_topo</span><span class="p">(</span><span class="n">archive</span><span class="p">)</span>
+    <span class="c"># Now make a dict with the codec for each type code</span>
+    <span class="n">codec</span> <span class="o">=</span> <span class="n">_crust2_get_codec</span><span class="p">(</span><span class="n">archive</span><span class="p">)</span>
+    <span class="c"># Get the type codes with the actual model</span>
+    <span class="n">types</span> <span class="o">=</span> <span class="n">_crust2_get_types</span><span class="p">(</span><span class="n">archive</span><span class="p">)</span>
+    <span class="c"># Convert to tesseroids</span>
+    <span class="n">size</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">lons</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+    <span class="n">lats</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">90</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="o">-</span><span class="n">size</span><span class="p">)</span> <span class="c"># This is how lats are in the file</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lats</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lons</span><span class="p">)):</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">types</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span>
+            <span class="n">top</span> <span class="o">=</span> <span class="n">topogrd</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">7</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">codec</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="s">&#39;thickness&#39;</span><span class="p">][</span><span class="n">layer</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">w</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="n">lons</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">lons</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">size</span><span class="p">,</span> <span class="n">lats</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">size</span><span class="p">,</span> <span class="n">lats</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">bottom</span> <span class="o">=</span> <span class="n">top</span> <span class="o">-</span> <span class="n">codec</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="s">&#39;thickness&#39;</span><span class="p">][</span><span class="n">layer</span><span class="p">]</span>
+                <span class="n">props</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="n">codec</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="s">&#39;density&#39;</span><span class="p">][</span><span class="n">layer</span><span class="p">],</span>
+                         <span class="s">&#39;vp&#39;</span><span class="p">:</span><span class="n">codec</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="s">&#39;vp&#39;</span><span class="p">][</span><span class="n">layer</span><span class="p">],</span>
+                         <span class="s">&#39;vs&#39;</span><span class="p">:</span><span class="n">codec</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="s">&#39;vs&#39;</span><span class="p">][</span><span class="n">layer</span><span class="p">]}</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Tesseroid</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">top</span><span class="p">,</span> <span class="n">bottom</span><span class="p">,</span> <span class="n">props</span><span class="p">))</span>
+                <span class="n">top</span> <span class="o">=</span> <span class="n">bottom</span>
+    <span class="k">return</span> <span class="n">model</span>
+</div>
+<span class="k">def</span> <span class="nf">_crust2_get_topo</span><span class="p">(</span><span class="n">archive</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fetch the matrix of topography and bathymetry from the CRUST2.0 archive.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">archive</span><span class="o">.</span><span class="n">extractfile</span><span class="p">(</span><span class="s">&#39;./CNelevatio2.txt&#39;</span><span class="p">)</span>
+    <span class="n">topogrd</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">skiprows</span><span class="o">=</span><span class="mi">1</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">:]</span>
+    <span class="k">return</span> <span class="n">topogrd</span>
+
+<span class="k">def</span> <span class="nf">_crust2_get_types</span><span class="p">(</span><span class="n">archive</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fetch a matrix with the type code for each 2x2 degree cell.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">archive</span><span class="o">.</span><span class="n">extractfile</span><span class="p">(</span><span class="s">&#39;./CNtype2.txt&#39;</span><span class="p">)</span>
+    <span class="n">typegrd</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">str</span><span class="p">,</span> <span class="n">skiprows</span><span class="o">=</span><span class="mi">1</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">:]</span>
+    <span class="k">return</span> <span class="n">typegrd</span>
+
+<span class="k">def</span> <span class="nf">_crust2_get_codec</span><span class="p">(</span><span class="n">archive</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fetch the type code traslation codec from the archive and convert it to a </span>
+<span class="sd">    dict.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">archive</span><span class="o">.</span><span class="n">extractfile</span><span class="p">(</span><span class="s">&#39;./CNtype2_key.txt&#39;</span><span class="p">)</span>
+    <span class="c"># Skip the first 5 lines which are the header</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">l</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()[</span><span class="mi">5</span><span class="p">:]</span> <span class="k">if</span> <span class="n">l</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+    <span class="c"># Each type code is 5 lines: code, vp, vs, density, thickness</span>
+    <span class="n">codec</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span><span class="o">/</span><span class="mi">5</span><span class="p">):</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="mi">5</span><span class="p">][:</span><span class="mi">2</span><span class="p">]</span>
+        <span class="c"># Get the values and convert them to SI units</span>
+        <span class="n">vp</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">*</span><span class="mi">1000</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="mi">5</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
+        <span class="n">vs</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">*</span><span class="mi">1000</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="mi">5</span> <span class="o">+</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
+        <span class="n">density</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">*</span><span class="mi">1000</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="mi">5</span> <span class="o">+</span> <span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
+        <span class="c"># Skip the last thickness because it is an inf indicating the mantle</span>
+        <span class="n">thickness</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">*</span><span class="mi">1000</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="mi">5</span> <span class="o">+</span> <span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[:</span><span class="mi">7</span><span class="p">]]</span>
+        <span class="n">codec</span><span class="p">[</span><span class="n">code</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;vp&#39;</span><span class="p">:</span><span class="n">vp</span><span class="p">,</span> <span class="s">&#39;vs&#39;</span><span class="p">:</span><span class="n">vs</span><span class="p">,</span> <span class="s">&#39;density&#39;</span><span class="p">:</span><span class="n">density</span><span class="p">,</span> 
+                       <span class="s">&#39;thickness&#39;</span><span class="p">:</span><span class="n">thickness</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">codec</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

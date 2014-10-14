@@ -1,0 +1,216 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>API Reference: The fatiando package &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="next" title="Gravity and magnetics (fatiando.gravmag)" href="gravmag.html" />
+    <link rel="prev" title="Installing Fatiando" href="../install.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag.html" title="Gravity and magnetics (fatiando.gravmag)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../install.html" title="Installing Fatiando"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando">
+<span id="api-reference-the-fatiando-package"></span><span id="fatiando"></span><h1>API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package<a class="headerlink" href="#module-fatiando" title="Permalink to this headline">¶</a></h1>
+<p>The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package contains all the subpackages and modules required for
+most tasks.</p>
+<p>Modules for each geophysical method are group in subpackages:</p>
+<ul class="simple">
+<li><a class="reference internal" href="gravmag.html#module-fatiando.gravmag" title="fatiando.gravmag"><tt class="xref py py-mod docutils literal"><span class="pre">gravmag</span></tt></a>:
+Gravity and magnetics (i.e., potential fields)</li>
+<li><a class="reference internal" href="seismic.html#module-fatiando.seismic" title="fatiando.seismic"><tt class="xref py py-mod docutils literal"><span class="pre">seismic</span></tt></a>:
+Seismics and seismology</li>
+<li><a class="reference internal" href="geothermal.html#module-fatiando.geothermal" title="fatiando.geothermal"><tt class="xref py py-mod docutils literal"><span class="pre">geothermal</span></tt></a>:
+Geothermal heat transfer modeling</li>
+</ul>
+<p>Modules for gridding, meshing, visualization, user interface, input/output etc:</p>
+<ul class="simple">
+<li><a class="reference internal" href="mesher.html#module-fatiando.mesher" title="fatiando.mesher"><tt class="xref py py-mod docutils literal"><span class="pre">mesher</span></tt></a>:
+Mesh generation and definition of geometric elements</li>
+<li><a class="reference internal" href="gridder.html#module-fatiando.gridder" title="fatiando.gridder"><tt class="xref py py-mod docutils literal"><span class="pre">gridder</span></tt></a>:
+Grid generation and operations (e.g., interpolation)</li>
+<li><a class="reference internal" href="vis.html#module-fatiando.vis" title="fatiando.vis"><tt class="xref py py-mod docutils literal"><span class="pre">vis</span></tt></a>:
+Plotting utilities for 2D (using matplotlib) and 3D (using mayavi)</li>
+<li><a class="reference internal" href="io.html#module-fatiando.io" title="fatiando.io"><tt class="xref py py-mod docutils literal"><span class="pre">io</span></tt></a>:
+Input/Output of models, data sets, etc (fetch from web repositories)</li>
+<li><a class="reference internal" href="gui.html#module-fatiando.gui" title="fatiando.gui"><tt class="xref py py-mod docutils literal"><span class="pre">gui</span></tt></a>:
+Graphical user interfaces (still very primitive)</li>
+<li><a class="reference internal" href="utils.html#module-fatiando.utils" title="fatiando.utils"><tt class="xref py py-mod docutils literal"><span class="pre">utils</span></tt></a>:
+Miscelaneous utilities, like mathematical functions, unit conversion, etc</li>
+<li><a class="reference internal" href="logger.html#module-fatiando.logger" title="fatiando.logger"><tt class="xref py py-mod docutils literal"><span class="pre">logger</span></tt></a>:
+A simpler interface to the Python <tt class="xref py py-mod docutils literal"><span class="pre">logging</span></tt> module for log files</li>
+<li><a class="reference internal" href="constants.html#module-fatiando.constants" title="fatiando.constants"><tt class="xref py py-mod docutils literal"><span class="pre">constants</span></tt></a>:
+Physical constants and unit conversions</li>
+</ul>
+<p>Also included is the <a class="reference internal" href="inversion.html#module-fatiando.inversion" title="fatiando.inversion"><tt class="xref py py-mod docutils literal"><span class="pre">fatiando.inversion</span></tt></a> package with utilities for
+implementing inverse problems. There you&#8217;ll find common regularizing functions,
+linear inverse problem solvers, and non-linear gradient solvers. This package
+is generaly only used from inside Fatiando itself, not when using Fatiando in
+scripts. For usage examples, see the source of modules
+<a class="reference internal" href="seismic.epic2d.html#module-fatiando.seismic.epic2d" title="fatiando.seismic.epic2d"><tt class="xref py py-mod docutils literal"><span class="pre">fatiando.seismic.epic2d</span></tt></a> and <a class="reference internal" href="gravmag.basin2d.html#module-fatiando.gravmag.basin2d" title="fatiando.gravmag.basin2d"><tt class="xref py py-mod docutils literal"><span class="pre">fatiando.gravmag.basin2d</span></tt></a>.</p>
+<p>See the documentation for each module to find out more about what they do and
+how to use them.</p>
+<hr class="docutils" />
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="gravmag.html">Gravity and magnetics (<tt class="docutils literal"><span class="pre">fatiando.gravmag</span></tt>)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gravmag.harvester.html">3D inversion by planting anomalous densities (<tt class="docutils literal"><span class="pre">fatiando.gravmag.harvester</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gravmag.prism.html">Forward modeling with 3D right rectangular prisms (<tt class="docutils literal"><span class="pre">fatiando.gravmag.prism</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gravmag.polyprism.html">Forward modeling with 3D polygonal prisms (<tt class="docutils literal"><span class="pre">fatiando.gravmag.polyprism</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gravmag.sphere.html">Forward modeling with spheres (<tt class="docutils literal"><span class="pre">fatiando.gravmag.sphere</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gravmag.tesseroid.html">Forward modeling with tesseroids (<tt class="docutils literal"><span class="pre">fatiando.gravmag.tesseroid</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gravmag.talwani.html">Forward modeling with 2D polygons (<tt class="docutils literal"><span class="pre">fatiando.gravmag.talwani</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gravmag.half_sph_shell.html">Forward modeling of half a spherical shell (<tt class="docutils literal"><span class="pre">fatiando.gravmag.half_sph_shell</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gravmag.basin2d.html">Inversion for the relief of 2D basins  (<tt class="docutils literal"><span class="pre">fatiando.gravmag.basin2d</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gravmag.fourier.html">Processing and transformations using the FFT (<tt class="docutils literal"><span class="pre">fatiando.gravmag.fourier</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gravmag.imaging.html">Imaging methods for potential fields (<tt class="docutils literal"><span class="pre">fatiando.gravmag.imaging</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gravmag.tensor.html">Utilities for operating on the gradient tensor (<tt class="docutils literal"><span class="pre">fatiando.gravmag.tensor</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gravmag.euler.html">3D Euler deconvolution methods (<tt class="docutils literal"><span class="pre">fatiando.gravmag.euler</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gravmag.transform.html">Space domain processing (<tt class="docutils literal"><span class="pre">fatiando.gravmag.transform</span></tt>)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="seismic.html">Seismics and seismology (<tt class="docutils literal"><span class="pre">fatiando.seismic</span></tt>)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seismic.ttime2d.html">2D seismic ray travel-time modeling (<tt class="docutils literal"><span class="pre">fatiando.seismic.ttime2d</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="seismic.epic2d.html">2D epicenter determination (<tt class="docutils literal"><span class="pre">fatiando.seismic.epic2d</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="seismic.profile.html">Seismic profiling (<tt class="docutils literal"><span class="pre">fatiando.seismic.profile</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="seismic.srtomo.html">Straigh-ray 2D tomography with SrTomo (<tt class="docutils literal"><span class="pre">fatiando.seismic.srtomo</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="seismic.wavefd.html">Finite difference solution of the 2D wave equation (<tt class="docutils literal"><span class="pre">fatiando.seismic.wavefd</span></tt>)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="geothermal.html">Geothermal heat (<tt class="docutils literal"><span class="pre">fatiando.geothermal</span></tt>)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="geothermal.climsig.html">Climate change signal in well temperature logs (<tt class="docutils literal"><span class="pre">fatiando.geothermal.climsig</span></tt>)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mesher.html">Meshing (<tt class="docutils literal"><span class="pre">fatiando.mesher</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gridder.html">Gridding (<tt class="docutils literal"><span class="pre">fatiando.gridder</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vis.html">Visualization (<tt class="docutils literal"><span class="pre">fatiando.vis</span></tt>)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="vis.mpl.html">Plot 2D objects, maps and grids with matplotlib (<tt class="docutils literal"><span class="pre">fatiando.vis.mpl</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vis.myv.html">Plot 3D objects in Mayavi2 (<tt class="docutils literal"><span class="pre">fatiando.vis.myv</span></tt>)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="io.html">Input/Output (<tt class="docutils literal"><span class="pre">fatiando.io</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gui.html">Graphical user interfaces (<tt class="docutils literal"><span class="pre">fatiando.gui</span></tt>)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gui.simple.html">Simple GUIs using <tt class="docutils literal"><span class="pre">matplotlib</span></tt> (<tt class="docutils literal"><span class="pre">fatiando.gui.simple</span></tt>)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Miscellaneous Utilities (<tt class="docutils literal"><span class="pre">fatiando.utils</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="logger.html">Logging (<tt class="docutils literal"><span class="pre">fatiando.logger</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="constants.html">Physical constants and unit conversions (<tt class="docutils literal"><span class="pre">fatiando.constants</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="inversion.html">Inverse problem solving tools (<tt class="docutils literal"><span class="pre">fatiando.inversion</span></tt>)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="inversion.linear.html">Solvers for linear problems (<tt class="docutils literal"><span class="pre">fatiando.inversion.linear</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inversion.gradient.html">Gradient solvers (<tt class="docutils literal"><span class="pre">fatiando.inversion.gradient</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inversion.heuristic.html">Heuristic solvers (<tt class="docutils literal"><span class="pre">fatiando.inversion.heuristic</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inversion.regularizer.html">Regularizing functions (<tt class="docutils literal"><span class="pre">fatiando.inversion.regularizer</span></tt>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inversion.datamodule.html">Base data module class (<tt class="docutils literal"><span class="pre">fatiando.inversion.datamodule</span></tt>)</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../install.html"
+                        title="previous chapter">Installing Fatiando</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gravmag.html"
+                        title="next chapter">Gravity and magnetics (<tt class="docutils literal"><span class="pre">fatiando.gravmag</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/fatiando.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag.html" title="Gravity and magnetics (fatiando.gravmag)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../install.html" title="Installing Fatiando"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

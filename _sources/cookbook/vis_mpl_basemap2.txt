@@ -1,0 +1,12 @@
+.. _cookbook_vis_mpl_basemap2:
+
+Vis: Plot a map using the Mercator map projection and pseudo-color
+===================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/vis_mpl_basemap2.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/vis_mpl_basemap2.py
+    :language: python
+    :linenos:

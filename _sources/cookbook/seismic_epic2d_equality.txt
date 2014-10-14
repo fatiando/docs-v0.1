@@ -1,0 +1,12 @@
+.. _cookbook_seismic_epic2d_equality:
+
+Seismic: 2D epicenter estimation on a flat Earth using equality constraints
+============================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/seismic_epic2d_equality.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/seismic_epic2d_equality.py
+    :language: python
+    :linenos:

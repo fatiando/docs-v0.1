@@ -1,0 +1,12 @@
+.. _cookbook_gravmag_fourier_deriv:
+
+GravMag: Calculating the derivatives of the gravity anomaly using FFT
+======================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/gravmag_fourier_deriv.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/gravmag_fourier_deriv.py
+    :language: python
+    :linenos:

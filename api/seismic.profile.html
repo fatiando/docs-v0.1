@@ -1,0 +1,359 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Seismic profiling (fatiando.seismic.profile) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Seismics and seismology (fatiando.seismic)" href="seismic.html" />
+    <link rel="next" title="Straigh-ray 2D tomography with SrTomo (fatiando.seismic.srtomo)" href="seismic.srtomo.html" />
+    <link rel="prev" title="2D epicenter determination (fatiando.seismic.epic2d)" href="seismic.epic2d.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="seismic.srtomo.html" title="Straigh-ray 2D tomography with SrTomo (fatiando.seismic.srtomo)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="seismic.epic2d.html" title="2D epicenter determination (fatiando.seismic.epic2d)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="seismic.html" accesskey="U">Seismics and seismology (<tt class="docutils literal"><span class="pre">fatiando.seismic</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.seismic.profile">
+<span id="seismic-profiling-fatiando-seismic-profile"></span><span id="fatiando-seismic-profile"></span><h1>Seismic profiling (<tt class="docutils literal"><span class="pre">fatiando.seismic.profile</span></tt>)<a class="headerlink" href="#module-fatiando.seismic.profile" title="Permalink to this headline">¶</a></h1>
+<p>Forward modeling and inversion of seismic profiling data.</p>
+<p><strong>Vertical seismic profiling</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.seismic.profile.vertical" title="fatiando.seismic.profile.vertical"><tt class="xref py py-func docutils literal"><span class="pre">vertical</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.seismic.profile.ivertical" title="fatiando.seismic.profile.ivertical"><tt class="xref py py-func docutils literal"><span class="pre">ivertical</span></tt></a></li>
+</ul>
+<p>Model and invert vertical seismic profiling data. In this kind of profiling, the
+wave source is located at the surface on top of the well. The travel-times of
+first arrivals is then measured at different depths along the well. The
+ith travel-time <span class="math">\(t_i\)</span> measured at depth <span class="math">\(z_i\)</span> is a function of the
+wave velocity <span class="math">\(v_j\)</span> and distance <span class="math">\(d_{ij}\)</span> that it traveled in each
+layer</p>
+<div class="math">
+\[t_i(z_i) = \sum\limits_{j=1}^M \frac{d_{ij}}{v_j}\]</div>
+<p>The distance <span class="math">\(d_{ij}\)</span> is smaller or equal to the thickness of the layer
+<span class="math">\(s_j\)</span>. Notice that <span class="math">\(d_{ij} = 0\)</span> if the jth layer is below
+<span class="math">\(z_i\)</span>, <span class="math">\(d_{ij} = s_j\)</span> if the jth layer is above <span class="math">\(z_i\)</span>, and
+<span class="math">\(d_{ij} &lt; s_j\)</span> if <span class="math">\(z_i\)</span> is inside the jth layer.</p>
+<p>To generate synthetic seismic profiling data, use
+<a class="reference internal" href="#fatiando.seismic.profile.vertical" title="fatiando.seismic.profile.vertical"><tt class="xref py py-func docutils literal"><span class="pre">vertical</span></tt></a> like so:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">fatiando</span> <span class="kn">as</span> <span class="nn">ft</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Make the synthetic 4 layer model</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">thicks</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">30</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vels</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Make an array with the z_i</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">zs</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">70</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Calculate the travel-times</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">ft</span><span class="o">.</span><span class="n">seismic</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">vertical</span><span class="p">(</span><span class="n">thicks</span><span class="p">,</span> <span class="n">vels</span><span class="p">,</span> <span class="n">zs</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="s">&#39;</span><span class="si">%.1f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">t</span><span class="p">),</span>
+<span class="go">5.0 10.0 11.0 17.0</span>
+</pre></div>
+</div>
+<p>To make <span class="math">\(t_i\)</span> linear with respect to <span class="math">\(v_j\)</span>, we can use
+<em>slowness</em> <span class="math">\(w_j\)</span> instead of velocity</p>
+<div class="math">
+\[t_i(z_i) = \sum\limits_{j=1}^M d_{ij} w_j\]</div>
+<p>This allows us to easily invert for the slowness of each layer, given their
+thickness. Here&#8217;s an example of using
+<a class="reference internal" href="#fatiando.seismic.profile.ivertical" title="fatiando.seismic.profile.ivertical"><tt class="xref py py-func docutils literal"><span class="pre">ivertical</span></tt></a> to do this on some synthetic
+data:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">fatiando</span> <span class="kn">as</span> <span class="nn">ft</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Make the synthetic 4 layer model</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">thicks</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">30</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vels</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Make an array with the z_i</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">zs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="n">thicks</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Calculate the travel-times</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tts</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">seismic</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">vertical</span><span class="p">(</span><span class="n">thicks</span><span class="p">,</span> <span class="n">vels</span><span class="p">,</span> <span class="n">zs</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Make a linear solver and solve for the slowness</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">solver</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">inversion</span><span class="o">.</span><span class="n">linear</span><span class="o">.</span><span class="n">overdet</span><span class="p">(</span><span class="n">nparams</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">thicks</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span><span class="p">,</span> <span class="n">residuals</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">seismic</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">ivertical</span><span class="p">(</span><span class="n">tts</span><span class="p">,</span> <span class="n">zs</span><span class="p">,</span> <span class="n">thicks</span><span class="p">,</span> <span class="n">solver</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">slow</span> <span class="ow">in</span> <span class="n">p</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="s">&#39;</span><span class="si">%.1f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">slow</span><span class="p">),</span>
+<span class="go">2.0 4.0 10.0 8.0</span>
+</pre></div>
+</div>
+<hr class="docutils" />
+<dl class="class">
+<dt id="fatiando.seismic.profile.VerticalSlownessDM">
+<em class="property">class </em><tt class="descclassname">fatiando.seismic.profile.</tt><tt class="descname">VerticalSlownessDM</tt><big>(</big><em>traveltimes</em>, <em>zp</em>, <em>thickness</em><big>)</big><a class="reference internal" href="../_modules/fatiando/seismic/profile.html#VerticalSlownessDM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.seismic.profile.VerticalSlownessDM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="inversion.datamodule.html#fatiando.inversion.datamodule.DataModule" title="fatiando.inversion.datamodule.DataModule"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.inversion.datamodule.DataModule</span></tt></a></p>
+<p>Data module for a vertical seismic profile first-arrival travel-time data.
+Assumes that only the slowness of the layers are parameters in the
+inversion.</p>
+<p>In this case, the inverse problem in linear. The element <span class="math">\(G_{ij}\)</span> of
+the Jacobian (sensitivity) matrix is given by</p>
+<div class="math">
+\[G_{ij} = d_{ij}\]</div>
+<p>where <span class="math">\(d_{ij}\)</span> is the distance that the ith first-arrival traveled
+inside the jth layer.</p>
+<p>Uses <a class="reference internal" href="seismic.ttime2d.html#fatiando.seismic.ttime2d.straight" title="fatiando.seismic.ttime2d.straight"><tt class="xref py py-func docutils literal"><span class="pre">fatiando.seismic.ttime2d.straight</span></tt></a> for forward modeling to
+build the Jacobian matrix.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>traveltimes <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The first-arrival travel-times calculated at the measurement stations</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>zp <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The depths of the measurement stations (seismometers)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>thickness <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The thickness of each layer in order of increasing depth</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.seismic.profile.ivertical">
+<tt class="descclassname">fatiando.seismic.profile.</tt><tt class="descname">ivertical</tt><big>(</big><em>traveltimes</em>, <em>zp</em>, <em>thickness</em>, <em>solver=None</em>, <em>damping=0.0</em>, <em>smooth=0.0</em>, <em>sharp=0.0</em>, <em>beta=1e-10</em>, <em>iterate=False</em><big>)</big><a class="reference internal" href="../_modules/fatiando/seismic/profile.html#ivertical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.seismic.profile.ivertical" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invert first-arrival travel-time data for the slowness of each layer.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>traveltimes <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The first-arrival travel-times calculated at the measurement stations</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>zp <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The depths of the measurement stations (seismometers)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>thickness <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The thickness of each layer in order of increasing depth</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>solver <span class="classifier-delimiter">:</span> <span class="classifier">function or None</span></dt>
+<dd><p class="first last">A linear or non-linear inverse problem solver generated by a factory
+function from a module of package <a class="reference internal" href="inversion.html#module-fatiando.inversion" title="fatiando.inversion"><tt class="xref py py-mod docutils literal"><span class="pre">inversion</span></tt></a>.
+If None, will use a default solver function.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>damping <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Damping regularizing parameter (i.e., how much damping to apply).
+Must be a positive scalar.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>smooth <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Smoothness regularizing parameter (i.e., how much smoothness to apply).
+Must be a positive scalar.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>sharp <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first">Sharpness (total variation) regularizing parameter (i.e., how much
+sharpness to apply). Must be a positive scalar.</p>
+<div class="last admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Total variation regularization doesn&#8217;t seem to work for this
+problem</p>
+</div>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>beta <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Total variation parameter. See
+<a class="reference internal" href="inversion.regularizer.html#fatiando.inversion.regularizer.TotalVariation" title="fatiando.inversion.regularizer.TotalVariation"><tt class="xref py py-class docutils literal"><span class="pre">TotalVariation</span></tt></a> for details</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>iterate <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">If True, will yield the current estimate at each iteration yielded by
+<em>solver</em>. In Python terms, <tt class="docutils literal"><span class="pre">iterate=True</span></tt> transforms this function
+into a generator function.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><p class="first">results : list = [slowness, residuals]:</p>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt>slowness <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The slowness of each layer</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>residuals <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The inversion residuals (observed travel-times minus predicted
+travel-times by the slowness estimate)</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.seismic.profile.vertical">
+<tt class="descclassname">fatiando.seismic.profile.</tt><tt class="descname">vertical</tt><big>(</big><em>thickness</em>, <em>velocity</em>, <em>zp</em><big>)</big><a class="reference internal" href="../_modules/fatiando/seismic/profile.html#vertical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.seismic.profile.vertical" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the first-arrival travel-times for given a layered model.
+Simulates a vertical seismic profile.</p>
+<p>The source is assumed to be at z = 0. The z-axis is positive downward.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>thickness <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The thickness of each layer in order of increasing depth</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>velocity <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The velocity of each layer in order of increasing depth</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>zp <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The depths of the measurement stations (seismometers)</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>travel_times <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The first-arrival travel-times calculated at the measurement stations.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="seismic.epic2d.html"
+                        title="previous chapter">2D epicenter determination (<tt class="docutils literal"><span class="pre">fatiando.seismic.epic2d</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="seismic.srtomo.html"
+                        title="next chapter">Straigh-ray 2D tomography with SrTomo (<tt class="docutils literal"><span class="pre">fatiando.seismic.srtomo</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/seismic.profile.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="seismic.srtomo.html" title="Straigh-ray 2D tomography with SrTomo (fatiando.seismic.srtomo)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="seismic.epic2d.html" title="2D epicenter determination (fatiando.seismic.epic2d)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="seismic.html" >Seismics and seismology (<tt class="docutils literal"><span class="pre">fatiando.seismic</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

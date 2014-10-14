@@ -1,0 +1,12 @@
+.. _cookbook_geothermal_climsig_wrong:
+
+Geothermal: Climate signal: What happens when assuming a climate change is linear, when in fact it was abrupt?
+===============================================================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/geothermal_climsig_wrong.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/geothermal_climsig_wrong.py
+    :language: python
+    :linenos:

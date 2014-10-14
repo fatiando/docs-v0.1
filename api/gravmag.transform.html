@@ -1,0 +1,195 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Space domain processing (fatiando.gravmag.transform) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Gravity and magnetics (fatiando.gravmag)" href="gravmag.html" />
+    <link rel="next" title="Seismics and seismology (fatiando.seismic)" href="seismic.html" />
+    <link rel="prev" title="3D Euler deconvolution methods (fatiando.gravmag.euler)" href="gravmag.euler.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="seismic.html" title="Seismics and seismology (fatiando.seismic)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gravmag.euler.html" title="3D Euler deconvolution methods (fatiando.gravmag.euler)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="gravmag.html" accesskey="U">Gravity and magnetics (<tt class="docutils literal"><span class="pre">fatiando.gravmag</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.gravmag.transform">
+<span id="space-domain-processing-fatiando-gravmag-transform"></span><span id="fatiando-gravmag-transform"></span><h1>Space domain processing (<tt class="docutils literal"><span class="pre">fatiando.gravmag.transform</span></tt>)<a class="headerlink" href="#module-fatiando.gravmag.transform" title="Permalink to this headline">¶</a></h1>
+<p>Space domain potential field transformations, like upward continuation,
+derivatives and total mass.</p>
+<p><strong>Transformations</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.gravmag.transform.upcontinue" title="fatiando.gravmag.transform.upcontinue"><tt class="xref py py-func docutils literal"><span class="pre">upcontinue</span></tt></a>: Upward continuation of the
+vertical component of gravity <span class="math">\(g_z\)</span> using numerical integration</li>
+</ul>
+<hr class="docutils" />
+<dl class="function">
+<dt id="fatiando.gravmag.transform.upcontinue">
+<tt class="descclassname">fatiando.gravmag.transform.</tt><tt class="descname">upcontinue</tt><big>(</big><em>gz</em>, <em>height</em>, <em>xp</em>, <em>yp</em>, <em>dims</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/transform.html#upcontinue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.transform.upcontinue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Upward continue <span class="math">\(g_z\)</span> data using numerical integration of the
+analytical formula:</p>
+<div class="math">
+\[g_z(x,y,z) = \frac{z-z_0}{2\pi}\int_{-\infty}^{\infty}\int_{-\infty}^
+{\infty} g_z(x',y',z_0) \frac{1}{[(x-x')^2 + (y-y')^2 + (z-z_0)^2
+]^{\frac{3}{2}}} dx' dy'\]</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Data needs to be on a regular grid!</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Units are SI for all coordinates and mGal for <span class="math">\(g_z\)</span></p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">be aware of coordinate systems! The <em>x</em>, <em>y</em>, <em>z</em> coordinates are:
+x -&gt; North, y -&gt; East and z -&gt; <strong>DOWN</strong>.</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>gz <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The gravity values on the grid points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>height <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">How much higher to move the gravity field (should be POSITIVE!)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>xp, yp <span class="classifier-delimiter">:</span> <span class="classifier">arrays</span></dt>
+<dd><p class="first last">The x and y coordinates of the grid points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>dims <span class="classifier-delimiter">:</span> <span class="classifier">list = [dy, dx]</span></dt>
+<dd><p class="first last">The grid spacing in the y and x directions</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>gzcont <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The upward continued <span class="math">\(g_z\)</span></p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gravmag.euler.html"
+                        title="previous chapter">3D Euler deconvolution methods (<tt class="docutils literal"><span class="pre">fatiando.gravmag.euler</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="seismic.html"
+                        title="next chapter">Seismics and seismology (<tt class="docutils literal"><span class="pre">fatiando.seismic</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/gravmag.transform.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="seismic.html" title="Seismics and seismology (fatiando.seismic)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gravmag.euler.html" title="3D Euler deconvolution methods (fatiando.gravmag.euler)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="gravmag.html" >Gravity and magnetics (<tt class="docutils literal"><span class="pre">fatiando.gravmag</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

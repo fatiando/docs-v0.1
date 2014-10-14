@@ -1,0 +1,814 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fatiando.gravmag.polyprism &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for fatiando.gravmag.polyprism</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Calculate the potential fields of the 3D prism with polygonal crossection using</span>
+<span class="sd">the formula of Plouff (1976).</span>
+
+<span class="sd">**Gravity**</span>
+
+<span class="sd">First and second derivatives of the gravitational potential:</span>
+
+<span class="sd">* :func:`~fatiando.gravmag.polyprism.gz`</span>
+<span class="sd">* :func:`~fatiando.gravmag.polyprism.gxx`</span>
+<span class="sd">* :func:`~fatiando.gravmag.polyprism.gxy`</span>
+<span class="sd">* :func:`~fatiando.gravmag.polyprism.gxz`</span>
+<span class="sd">* :func:`~fatiando.gravmag.polyprism.gyy`</span>
+<span class="sd">* :func:`~fatiando.gravmag.polyprism.gyz`</span>
+<span class="sd">* :func:`~fatiando.gravmag.polyprism.gzz`</span>
+
+<span class="sd">**Magnetic**</span>
+
+<span class="sd">The Total Field magnetic anomaly:</span>
+
+<span class="sd">* :func:`~fatiando.gravmag.polyprism.tf`</span>
+
+<span class="sd">**References**</span>
+
+<span class="sd">Plouff, D. , 1976, Gravity and magnetic fields of polygonal prisms and</span>
+<span class="sd">applications to magnetic terrain corrections, Geophysics, 41(4), 727-741.</span>
+
+<span class="sd">----</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">arctan2</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">sqrt</span><span class="p">,</span> <span class="n">arctan</span>
+
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">fatiando.constants</span> <span class="kn">import</span> <span class="n">SI2MGAL</span><span class="p">,</span> <span class="n">SI2EOTVOS</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">CM</span><span class="p">,</span> <span class="n">T2NT</span>
+
+
+<div class="viewcode-block" id="tf"><a class="viewcode-back" href="../../../api/gravmag.polyprism.html#fatiando.gravmag.polyprism.tf">[docs]</a><span class="k">def</span> <span class="nf">tf</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">,</span> <span class="n">inc</span><span class="p">,</span> <span class="n">dec</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the total-field anomaly of polygonal prisms.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: Input units are SI. Output is in nT</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        Arrays with the x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`fatiando.mesher.PolygonalPrism`</span>
+<span class="sd">        The model used to calculate the total field anomaly.</span>
+<span class="sd">        Prisms must have the physical property ``&#39;magnetization&#39;`` will be</span>
+<span class="sd">        ignored. If the physical properties ``&#39;inclination&#39;`` and</span>
+<span class="sd">        ``&#39;declination&#39;`` are not present, will use the values of *inc* and</span>
+<span class="sd">        *dec* instead (regional field).</span>
+<span class="sd">    * inc : float</span>
+<span class="sd">        The inclination of the regional field (in degrees)</span>
+<span class="sd">    * dec : float</span>
+<span class="sd">        The declination of the regional field (in degrees)</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The field calculated on xp, yp, zp</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="c"># Calculate the 3 components of the unit vector in the direction of the</span>
+    <span class="c"># regional field</span>
+    <span class="n">fx</span><span class="p">,</span> <span class="n">fy</span><span class="p">,</span> <span class="n">fz</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">dircos</span><span class="p">(</span><span class="n">inc</span><span class="p">,</span> <span class="n">dec</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xp</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="s">&#39;magnetization&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">magnetization</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;magnetization&#39;</span><span class="p">]</span>
+        <span class="n">nverts</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">nverts</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y</span>
+        <span class="n">z1</span><span class="p">,</span> <span class="n">z2</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z2</span>
+        <span class="c"># Get the 3 components of the unit vector in the direction of the</span>
+        <span class="c"># magnetization from the inclination and declination</span>
+        <span class="c"># 1) given by the prism</span>
+        <span class="k">if</span> <span class="s">&#39;inclination&#39;</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span> <span class="ow">and</span> <span class="s">&#39;declination&#39;</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">:</span>
+            <span class="n">mx</span><span class="p">,</span> <span class="n">my</span><span class="p">,</span> <span class="n">mz</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">dircos</span><span class="p">(</span><span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;inclination&#39;</span><span class="p">],</span>
+                                      <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;declination&#39;</span><span class="p">])</span>
+        <span class="c"># 2) Use in the direction of the regional field</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mx</span><span class="p">,</span> <span class="n">my</span><span class="p">,</span> <span class="n">mz</span> <span class="o">=</span> <span class="n">fx</span><span class="p">,</span> <span class="n">fy</span><span class="p">,</span> <span class="n">fz</span>
+        <span class="c"># Now calculate the total field anomaly</span>
+        <span class="n">Z1</span> <span class="o">=</span> <span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span>
+        <span class="n">Z2</span> <span class="o">=</span> <span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nverts</span><span class="p">):</span>
+            <span class="n">X1</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">xp</span>
+            <span class="n">Y1</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">yp</span>
+            <span class="n">X2</span> <span class="o">=</span> <span class="n">x</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">nverts</span><span class="p">]</span> <span class="o">-</span> <span class="n">xp</span>
+            <span class="n">Y2</span> <span class="o">=</span> <span class="n">y</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">nverts</span><span class="p">]</span> <span class="o">-</span> <span class="n">yp</span>
+            <span class="n">v1</span> <span class="o">=</span> <span class="n">_integral_v1</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">Y1</span><span class="p">,</span> <span class="n">Y2</span><span class="p">,</span> <span class="n">Z1</span><span class="p">,</span> <span class="n">Z2</span><span class="p">)</span>
+            <span class="n">v2</span> <span class="o">=</span> <span class="n">_integral_v2</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">Y1</span><span class="p">,</span> <span class="n">Y2</span><span class="p">,</span> <span class="n">Z1</span><span class="p">,</span> <span class="n">Z2</span><span class="p">)</span>
+            <span class="n">v3</span> <span class="o">=</span> <span class="n">_integral_v3</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">Y1</span><span class="p">,</span> <span class="n">Y2</span><span class="p">,</span> <span class="n">Z1</span><span class="p">,</span> <span class="n">Z2</span><span class="p">)</span>
+            <span class="n">v4</span> <span class="o">=</span> <span class="n">_integral_v4</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">Y1</span><span class="p">,</span> <span class="n">Y2</span><span class="p">,</span> <span class="n">Z1</span><span class="p">,</span> <span class="n">Z2</span><span class="p">)</span>
+            <span class="n">v5</span> <span class="o">=</span> <span class="n">_integral_v5</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">Y1</span><span class="p">,</span> <span class="n">Y2</span><span class="p">,</span> <span class="n">Z1</span><span class="p">,</span> <span class="n">Z2</span><span class="p">)</span>
+            <span class="n">v6</span> <span class="o">=</span> <span class="n">_integral_v6</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">Y1</span><span class="p">,</span> <span class="n">Y2</span><span class="p">,</span> <span class="n">Z1</span><span class="p">,</span> <span class="n">Z2</span><span class="p">)</span>
+            <span class="n">res</span> <span class="o">+=</span> <span class="n">magnetization</span><span class="o">*</span><span class="p">(</span>
+                      <span class="n">mx</span><span class="o">*</span><span class="p">(</span><span class="n">v1</span><span class="o">*</span><span class="n">fx</span> <span class="o">+</span> <span class="n">v2</span><span class="o">*</span><span class="n">fy</span> <span class="o">+</span> <span class="n">v3</span><span class="o">*</span><span class="n">fz</span><span class="p">)</span>
+                    <span class="o">+</span> <span class="n">my</span><span class="o">*</span><span class="p">(</span><span class="n">v2</span><span class="o">*</span><span class="n">fx</span> <span class="o">+</span> <span class="n">v4</span><span class="o">*</span><span class="n">fy</span> <span class="o">+</span> <span class="n">v5</span><span class="o">*</span><span class="n">fz</span><span class="p">)</span>
+                    <span class="o">+</span> <span class="n">mz</span><span class="o">*</span><span class="p">(</span><span class="n">v3</span><span class="o">*</span><span class="n">fx</span> <span class="o">+</span> <span class="n">v5</span><span class="o">*</span><span class="n">fy</span> <span class="o">+</span> <span class="n">v6</span><span class="o">*</span><span class="n">fz</span><span class="p">))</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">CM</span><span class="o">*</span><span class="n">T2NT</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="gz"><a class="viewcode-back" href="../../../api/gravmag.polyprism.html#fatiando.gravmag.polyprism.gz">[docs]</a><span class="k">def</span> <span class="nf">gz</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the :math:`g_{z}` gravity acceleration component.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: All input values in SI units and output in mGal!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        The x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`fatiando.mesher.PolygonalPrism`</span>
+<span class="sd">        The model used to calculate the field.</span>
+<span class="sd">        Prisms must have the physical property ``&#39;density&#39;`` will be</span>
+<span class="sd">        ignored.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The effect calculated on the computation points.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">dummy</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xp</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">density</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="n">nverts</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">nverts</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y</span>
+        <span class="n">z1</span><span class="p">,</span> <span class="n">z2</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z2</span>
+        <span class="c"># Calculate the effect of the prism</span>
+        <span class="n">Z1</span> <span class="o">=</span> <span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span>
+        <span class="n">Z2</span> <span class="o">=</span> <span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span>
+        <span class="n">Z1_sqr</span> <span class="o">=</span> <span class="n">Z1</span><span class="o">**</span><span class="mi">2</span>
+        <span class="n">Z2_sqr</span> <span class="o">=</span> <span class="n">Z2</span><span class="o">**</span><span class="mi">2</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nverts</span><span class="p">):</span>
+            <span class="n">Xk1</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">xp</span>
+            <span class="n">Yk1</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">yp</span>
+            <span class="n">Xk2</span> <span class="o">=</span> <span class="n">x</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">nverts</span><span class="p">]</span> <span class="o">-</span> <span class="n">xp</span>
+            <span class="n">Yk2</span> <span class="o">=</span> <span class="n">y</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">nverts</span><span class="p">]</span> <span class="o">-</span> <span class="n">yp</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">Xk1</span><span class="o">*</span><span class="n">Yk2</span> <span class="o">-</span> <span class="n">Xk2</span><span class="o">*</span><span class="n">Yk1</span>
+            <span class="n">p_sqr</span> <span class="o">=</span> <span class="n">p</span><span class="o">**</span><span class="mi">2</span>
+            <span class="n">Qk1</span> <span class="o">=</span> <span class="p">(</span><span class="n">Yk2</span> <span class="o">-</span> <span class="n">Yk1</span><span class="p">)</span><span class="o">*</span><span class="n">Yk1</span> <span class="o">+</span> <span class="p">(</span><span class="n">Xk2</span> <span class="o">-</span> <span class="n">Xk1</span><span class="p">)</span><span class="o">*</span><span class="n">Xk1</span>
+            <span class="n">Qk2</span> <span class="o">=</span> <span class="p">(</span><span class="n">Yk2</span> <span class="o">-</span> <span class="n">Yk1</span><span class="p">)</span><span class="o">*</span><span class="n">Yk2</span> <span class="o">+</span> <span class="p">(</span><span class="n">Xk2</span> <span class="o">-</span> <span class="n">Xk1</span><span class="p">)</span><span class="o">*</span><span class="n">Xk2</span>
+            <span class="n">Ak1</span> <span class="o">=</span> <span class="n">Xk1</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">Yk1</span><span class="o">**</span><span class="mi">2</span>
+            <span class="n">Ak2</span> <span class="o">=</span> <span class="n">Xk2</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">Yk2</span><span class="o">**</span><span class="mi">2</span>
+            <span class="n">R1k1</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">Ak1</span> <span class="o">+</span> <span class="n">Z1_sqr</span><span class="p">)</span>
+            <span class="n">R1k2</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">Ak2</span> <span class="o">+</span> <span class="n">Z1_sqr</span><span class="p">)</span>
+            <span class="n">R2k1</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">Ak1</span> <span class="o">+</span> <span class="n">Z2_sqr</span><span class="p">)</span>
+            <span class="n">R2k2</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">Ak2</span> <span class="o">+</span> <span class="n">Z2_sqr</span><span class="p">)</span>
+            <span class="n">Ak1</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">Ak1</span><span class="p">)</span>
+            <span class="n">Ak2</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">Ak2</span><span class="p">)</span>
+            <span class="n">Bk1</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">Qk1</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">p_sqr</span><span class="p">)</span>
+            <span class="n">Bk2</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">Qk2</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">p_sqr</span><span class="p">)</span>
+            <span class="n">E1k1</span> <span class="o">=</span> <span class="n">R1k1</span><span class="o">*</span><span class="n">Bk1</span>
+            <span class="n">E1k2</span> <span class="o">=</span> <span class="n">R1k2</span><span class="o">*</span><span class="n">Bk2</span>
+            <span class="n">E2k1</span> <span class="o">=</span> <span class="n">R2k1</span><span class="o">*</span><span class="n">Bk1</span>
+            <span class="n">E2k2</span> <span class="o">=</span> <span class="n">R2k2</span><span class="o">*</span><span class="n">Bk2</span>
+            <span class="n">kernel</span> <span class="o">+=</span> <span class="p">(</span><span class="n">Z2</span> <span class="o">-</span> <span class="n">Z1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">arctan2</span><span class="p">(</span><span class="n">Qk2</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="o">-</span> <span class="n">arctan2</span><span class="p">(</span><span class="n">Qk1</span><span class="p">,</span> <span class="n">p</span><span class="p">))</span>
+            <span class="n">kernel</span> <span class="o">+=</span> <span class="n">Z2</span><span class="o">*</span><span class="p">(</span><span class="n">arctan2</span><span class="p">(</span><span class="n">Z2</span><span class="o">*</span><span class="n">Qk1</span><span class="p">,</span> <span class="n">R2k1</span><span class="o">*</span><span class="n">p</span><span class="p">)</span> <span class="o">-</span> <span class="n">arctan2</span><span class="p">(</span><span class="n">Z2</span><span class="o">*</span><span class="n">Qk2</span><span class="p">,</span> <span class="n">R2k2</span><span class="o">*</span><span class="n">p</span><span class="p">))</span>
+            <span class="n">kernel</span> <span class="o">+=</span> <span class="n">Z1</span><span class="o">*</span><span class="p">(</span><span class="n">arctan2</span><span class="p">(</span><span class="n">Z1</span><span class="o">*</span><span class="n">Qk2</span><span class="p">,</span> <span class="n">R1k2</span><span class="o">*</span><span class="n">p</span><span class="p">)</span> <span class="o">-</span> <span class="n">arctan2</span><span class="p">(</span><span class="n">Z1</span><span class="o">*</span><span class="n">Qk1</span><span class="p">,</span> <span class="n">R1k1</span><span class="o">*</span><span class="n">p</span><span class="p">))</span>
+            <span class="n">Ck1</span> <span class="o">=</span> <span class="n">Qk1</span><span class="o">*</span><span class="n">Ak1</span>
+            <span class="n">Ck2</span> <span class="o">=</span> <span class="n">Qk2</span><span class="o">*</span><span class="n">Ak2</span>
+            <span class="c"># dummy helps prevent zero division errors</span>
+            <span class="n">kernel</span> <span class="o">+=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">p</span><span class="o">*</span><span class="p">(</span><span class="n">Ak1</span><span class="o">/</span><span class="p">(</span><span class="n">Bk1</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span><span class="o">*</span><span class="p">(</span>
+                <span class="n">log</span><span class="p">((</span><span class="n">E1k1</span> <span class="o">-</span> <span class="n">Ck1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">E1k1</span> <span class="o">+</span> <span class="n">Ck1</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">)</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">)</span> <span class="o">-</span>
+                <span class="n">log</span><span class="p">((</span><span class="n">E2k1</span> <span class="o">-</span> <span class="n">Ck1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">E2k1</span> <span class="o">+</span> <span class="n">Ck1</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">)</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+            <span class="n">kernel</span> <span class="o">+=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">p</span><span class="o">*</span><span class="p">(</span><span class="n">Ak2</span><span class="o">/</span><span class="p">(</span><span class="n">Bk2</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span><span class="o">*</span><span class="p">(</span>
+                <span class="n">log</span><span class="p">((</span><span class="n">E2k2</span> <span class="o">-</span> <span class="n">Ck2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">E2k2</span> <span class="o">+</span> <span class="n">Ck2</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">)</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">)</span> <span class="o">-</span>
+                <span class="n">log</span><span class="p">((</span><span class="n">E1k2</span> <span class="o">-</span> <span class="n">Ck2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">E1k2</span> <span class="o">+</span> <span class="n">Ck2</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">)</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">res</span> <span class="o">+</span> <span class="n">kernel</span><span class="o">*</span><span class="n">density</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">G</span><span class="o">*</span><span class="n">SI2MGAL</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="gxx"><a class="viewcode-back" href="../../../api/gravmag.polyprism.html#fatiando.gravmag.polyprism.gxx">[docs]</a><span class="k">def</span> <span class="nf">gxx</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the :math:`g_{xx}` gravity gradient tensor component.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: All input values in SI units and output in Eotvos!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        The x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`fatiando.mesher.PolygonalPrism`</span>
+<span class="sd">        The model used to calculate the field.</span>
+<span class="sd">        Prisms must have the physical property ``&#39;density&#39;`` will be</span>
+<span class="sd">        ignored.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The effect calculated on the computation points.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xp</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">density</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="n">nverts</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">nverts</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y</span>
+        <span class="n">z1</span><span class="p">,</span> <span class="n">z2</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z2</span>
+        <span class="c"># Calculate the effect of the prism</span>
+        <span class="n">Z1</span> <span class="o">=</span> <span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span>
+        <span class="n">Z2</span> <span class="o">=</span> <span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nverts</span><span class="p">):</span>
+            <span class="n">res</span> <span class="o">+=</span> <span class="n">density</span><span class="o">*</span><span class="n">_integral_v1</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span> <span class="n">x</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">nverts</span><span class="p">]</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span>
+                <span class="n">y</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">y</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">nverts</span><span class="p">]</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">Z1</span><span class="p">,</span> <span class="n">Z2</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">G</span><span class="o">*</span><span class="n">SI2EOTVOS</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="gxy"><a class="viewcode-back" href="../../../api/gravmag.polyprism.html#fatiando.gravmag.polyprism.gxy">[docs]</a><span class="k">def</span> <span class="nf">gxy</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the :math:`g_{xy}` gravity gradient tensor component.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: All input values in SI units and output in Eotvos!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        The x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`fatiando.mesher.PolygonalPrism`</span>
+<span class="sd">        The model used to calculate the field.</span>
+<span class="sd">        Prisms must have the physical property ``&#39;density&#39;`` will be</span>
+<span class="sd">        ignored.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The effect calculated on the computation points.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xp</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">density</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="n">nverts</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">nverts</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y</span>
+        <span class="n">z1</span><span class="p">,</span> <span class="n">z2</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z2</span>
+        <span class="c"># Calculate the effect of the prism</span>
+        <span class="n">Z1</span> <span class="o">=</span> <span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span>
+        <span class="n">Z2</span> <span class="o">=</span> <span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nverts</span><span class="p">):</span>
+            <span class="n">res</span> <span class="o">+=</span> <span class="n">density</span><span class="o">*</span><span class="n">_integral_v2</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span> <span class="n">x</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">nverts</span><span class="p">]</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span>
+                <span class="n">y</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">y</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">nverts</span><span class="p">]</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">Z1</span><span class="p">,</span> <span class="n">Z2</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">G</span><span class="o">*</span><span class="n">SI2EOTVOS</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="gxz"><a class="viewcode-back" href="../../../api/gravmag.polyprism.html#fatiando.gravmag.polyprism.gxz">[docs]</a><span class="k">def</span> <span class="nf">gxz</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the :math:`g_{xz}` gravity gradient tensor component.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: All input values in SI units and output in Eotvos!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        The x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`fatiando.mesher.PolygonalPrism`</span>
+<span class="sd">        The model used to calculate the field.</span>
+<span class="sd">        Prisms must have the physical property ``&#39;density&#39;`` will be</span>
+<span class="sd">        ignored.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The effect calculated on the computation points.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xp</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">density</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="n">nverts</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">nverts</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y</span>
+        <span class="n">z1</span><span class="p">,</span> <span class="n">z2</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z2</span>
+        <span class="c"># Calculate the effect of the prism</span>
+        <span class="n">Z1</span> <span class="o">=</span> <span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span>
+        <span class="n">Z2</span> <span class="o">=</span> <span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nverts</span><span class="p">):</span>
+            <span class="n">res</span> <span class="o">+=</span> <span class="n">density</span><span class="o">*</span><span class="n">_integral_v3</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span> <span class="n">x</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">nverts</span><span class="p">]</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span>
+                <span class="n">y</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">y</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">nverts</span><span class="p">]</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">Z1</span><span class="p">,</span> <span class="n">Z2</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">G</span><span class="o">*</span><span class="n">SI2EOTVOS</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="gyy"><a class="viewcode-back" href="../../../api/gravmag.polyprism.html#fatiando.gravmag.polyprism.gyy">[docs]</a><span class="k">def</span> <span class="nf">gyy</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the :math:`g_{yy}` gravity gradient tensor component.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: All input values in SI units and output in Eotvos!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        The x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`fatiando.mesher.PolygonalPrism`</span>
+<span class="sd">        The model used to calculate the field.</span>
+<span class="sd">        Prisms must have the physical property ``&#39;density&#39;`` will be</span>
+<span class="sd">        ignored.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The effect calculated on the computation points.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xp</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">density</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="n">nverts</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">nverts</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y</span>
+        <span class="n">z1</span><span class="p">,</span> <span class="n">z2</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z2</span>
+        <span class="c"># Calculate the effect of the prism</span>
+        <span class="n">Z1</span> <span class="o">=</span> <span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span>
+        <span class="n">Z2</span> <span class="o">=</span> <span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nverts</span><span class="p">):</span>
+            <span class="n">res</span> <span class="o">+=</span> <span class="n">density</span><span class="o">*</span><span class="n">_integral_v4</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span> <span class="n">x</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">nverts</span><span class="p">]</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span>
+                <span class="n">y</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">y</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">nverts</span><span class="p">]</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">Z1</span><span class="p">,</span> <span class="n">Z2</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">G</span><span class="o">*</span><span class="n">SI2EOTVOS</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="gyz"><a class="viewcode-back" href="../../../api/gravmag.polyprism.html#fatiando.gravmag.polyprism.gyz">[docs]</a><span class="k">def</span> <span class="nf">gyz</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the :math:`g_{yz}` gravity gradient tensor component.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: All input values in SI units and output in Eotvos!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        The x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`fatiando.mesher.PolygonalPrism`</span>
+<span class="sd">        The model used to calculate the field.</span>
+<span class="sd">        Prisms must have the physical property ``&#39;density&#39;`` will be</span>
+<span class="sd">        ignored.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The effect calculated on the computation points.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xp</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">density</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="n">nverts</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">nverts</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y</span>
+        <span class="n">z1</span><span class="p">,</span> <span class="n">z2</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z2</span>
+        <span class="c"># Calculate the effect of the prism</span>
+        <span class="n">Z1</span> <span class="o">=</span> <span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span>
+        <span class="n">Z2</span> <span class="o">=</span> <span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nverts</span><span class="p">):</span>
+            <span class="n">res</span> <span class="o">+=</span> <span class="n">density</span><span class="o">*</span><span class="n">_integral_v5</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span> <span class="n">x</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">nverts</span><span class="p">]</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span>
+                <span class="n">y</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">y</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">nverts</span><span class="p">]</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">Z1</span><span class="p">,</span> <span class="n">Z2</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">G</span><span class="o">*</span><span class="n">SI2EOTVOS</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="gzz"><a class="viewcode-back" href="../../../api/gravmag.polyprism.html#fatiando.gravmag.polyprism.gzz">[docs]</a><span class="k">def</span> <span class="nf">gzz</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the :math:`g_{zz}` gravity gradient tensor component.</span>
+
+<span class="sd">    .. note:: The coordinate system of the input parameters is to be x -&gt; North,</span>
+<span class="sd">        y -&gt; East and z -&gt; Down.</span>
+
+<span class="sd">    .. note:: All input values in SI units and output in Eotvos!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, yp, zp : arrays</span>
+<span class="sd">        The x, y, and z coordinates of the computation points.</span>
+<span class="sd">    * prisms : list of :class:`fatiando.mesher.PolygonalPrism`</span>
+<span class="sd">        The model used to calculate the field.</span>
+<span class="sd">        Prisms must have the physical property ``&#39;density&#39;`` will be</span>
+<span class="sd">        ignored.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * res : array</span>
+<span class="sd">        The effect calculated on the computation points.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">yp</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Input arrays xp, yp, and zp must have same shape!&quot;</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xp</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">density</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="n">nverts</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">nverts</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y</span>
+        <span class="n">z1</span><span class="p">,</span> <span class="n">z2</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z2</span>
+        <span class="c"># Calculate the effect of the prism</span>
+        <span class="n">Z1</span> <span class="o">=</span> <span class="n">z1</span> <span class="o">-</span> <span class="n">zp</span>
+        <span class="n">Z2</span> <span class="o">=</span> <span class="n">z2</span> <span class="o">-</span> <span class="n">zp</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nverts</span><span class="p">):</span>
+            <span class="n">res</span> <span class="o">+=</span> <span class="n">density</span><span class="o">*</span><span class="n">_integral_v6</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span> <span class="n">x</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">nverts</span><span class="p">]</span> <span class="o">-</span> <span class="n">xp</span><span class="p">,</span>
+                <span class="n">y</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">y</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">nverts</span><span class="p">]</span> <span class="o">-</span> <span class="n">yp</span><span class="p">,</span> <span class="n">Z1</span><span class="p">,</span> <span class="n">Z2</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">G</span><span class="o">*</span><span class="n">SI2EOTVOS</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<span class="k">def</span> <span class="nf">_integral_v1</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">Y1</span><span class="p">,</span> <span class="n">Y2</span><span class="p">,</span> <span class="n">Z1</span><span class="p">,</span> <span class="n">Z2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the first element of the V matrix (gxx components)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dummy</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">)</span> <span class="c"># Used to avoid singularities</span>
+    <span class="n">aux0</span> <span class="o">=</span> <span class="n">X2</span> <span class="o">-</span> <span class="n">X1</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">aux1</span> <span class="o">=</span> <span class="n">Y2</span> <span class="o">-</span> <span class="n">Y1</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux0</span><span class="o">/</span><span class="n">aux1</span><span class="p">)</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">X1</span> <span class="o">-</span> <span class="p">(</span><span class="n">Y1</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux1</span><span class="o">/</span><span class="n">aux0</span><span class="p">)</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">Y1</span> <span class="o">-</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">aux2</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">((</span><span class="n">aux0</span><span class="o">*</span><span class="n">aux0</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span><span class="o">*</span><span class="n">aux1</span><span class="p">))</span>
+    <span class="n">aux3</span> <span class="o">=</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="n">Y2</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">X2</span><span class="o">*</span><span class="n">Y1</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="p">((</span><span class="n">aux3</span><span class="o">/</span><span class="n">aux2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">aux4</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux0</span><span class="o">*</span><span class="n">X1</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span><span class="o">*</span><span class="n">Y1</span><span class="p">)</span>
+    <span class="n">aux5</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux0</span><span class="o">*</span><span class="n">X2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span><span class="o">*</span><span class="n">Y2</span><span class="p">)</span>
+    <span class="n">d1</span> <span class="o">=</span> <span class="p">((</span><span class="n">aux4</span><span class="o">/</span><span class="n">aux2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">d2</span> <span class="o">=</span> <span class="p">((</span><span class="n">aux5</span><span class="o">/</span><span class="n">aux2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">aux6</span> <span class="o">=</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="n">X1</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y1</span><span class="o">*</span><span class="n">Y1</span><span class="p">)</span>
+    <span class="n">aux7</span> <span class="o">=</span> <span class="p">(</span><span class="n">X2</span><span class="o">*</span><span class="n">X2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y2</span><span class="o">*</span><span class="n">Y2</span><span class="p">)</span>
+    <span class="n">aux8</span> <span class="o">=</span> <span class="n">Z1</span><span class="o">*</span><span class="n">Z1</span>
+    <span class="n">aux9</span> <span class="o">=</span> <span class="n">Z2</span><span class="o">*</span><span class="n">Z2</span>
+    <span class="n">R11</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux6</span> <span class="o">+</span> <span class="n">aux8</span><span class="p">)</span>
+    <span class="n">R12</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux6</span> <span class="o">+</span> <span class="n">aux9</span><span class="p">)</span>
+    <span class="n">R21</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux7</span> <span class="o">+</span> <span class="n">aux8</span><span class="p">)</span>
+    <span class="n">R22</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux7</span> <span class="o">+</span> <span class="n">aux9</span><span class="p">)</span>
+    <span class="n">aux10</span> <span class="o">=</span> <span class="n">arctan2</span><span class="p">((</span><span class="n">Z2</span><span class="o">*</span><span class="n">d2</span><span class="p">),</span> <span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">R22</span><span class="p">))</span>
+    <span class="n">aux11</span> <span class="o">=</span> <span class="n">arctan2</span><span class="p">((</span><span class="n">Z1</span><span class="o">*</span><span class="n">d2</span><span class="p">),</span> <span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">R21</span><span class="p">))</span>
+    <span class="n">aux12</span> <span class="o">=</span> <span class="n">aux10</span> <span class="o">-</span> <span class="n">aux11</span>
+    <span class="n">aux13</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux12</span><span class="o">/</span><span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">d2</span><span class="p">))</span>
+    <span class="n">aux14</span> <span class="o">=</span> <span class="p">((</span><span class="n">p</span><span class="o">*</span><span class="n">aux12</span><span class="p">)</span><span class="o">/</span><span class="n">d2</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">(</span><span class="n">g</span><span class="o">*</span><span class="n">Y2</span><span class="o">*</span><span class="n">aux13</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span><span class="o">*</span><span class="n">aux14</span><span class="p">)</span>
+    <span class="n">aux10</span> <span class="o">=</span> <span class="n">arctan2</span><span class="p">((</span><span class="n">Z2</span><span class="o">*</span><span class="n">d1</span><span class="p">),</span> <span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">R12</span><span class="p">))</span>
+    <span class="n">aux11</span> <span class="o">=</span> <span class="n">arctan2</span><span class="p">((</span><span class="n">Z1</span><span class="o">*</span><span class="n">d1</span><span class="p">),</span> <span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">R11</span><span class="p">))</span>
+    <span class="n">aux12</span> <span class="o">=</span> <span class="n">aux10</span> <span class="o">-</span> <span class="n">aux11</span>
+    <span class="n">aux13</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux12</span><span class="o">/</span><span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">d1</span><span class="p">))</span>
+    <span class="n">aux14</span> <span class="o">=</span> <span class="p">((</span><span class="n">p</span><span class="o">*</span><span class="n">aux12</span><span class="p">)</span><span class="o">/</span><span class="n">d1</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">-=</span> <span class="p">(</span><span class="n">g</span><span class="o">*</span><span class="n">Y1</span><span class="o">*</span><span class="n">aux13</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span><span class="o">*</span><span class="n">aux14</span><span class="p">)</span>
+    <span class="n">aux10</span> <span class="o">=</span> <span class="n">log</span><span class="p">(((</span><span class="n">Z2</span> <span class="o">+</span> <span class="n">R22</span><span class="p">)</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux11</span> <span class="o">=</span> <span class="n">log</span><span class="p">(((</span><span class="n">Z1</span> <span class="o">+</span> <span class="n">R21</span><span class="p">)</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux12</span> <span class="o">=</span> <span class="n">log</span><span class="p">(((</span><span class="n">Z2</span> <span class="o">+</span> <span class="n">R12</span><span class="p">)</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux13</span> <span class="o">=</span> <span class="n">log</span><span class="p">(((</span><span class="n">Z1</span> <span class="o">+</span> <span class="n">R11</span><span class="p">)</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux14</span> <span class="o">=</span> <span class="n">aux10</span> <span class="o">-</span> <span class="n">aux11</span>
+    <span class="n">aux15</span> <span class="o">=</span> <span class="n">aux12</span> <span class="o">-</span> <span class="n">aux13</span>
+    <span class="n">res</span> <span class="o">+=</span> <span class="p">(</span><span class="n">n</span><span class="o">*</span><span class="p">(</span><span class="n">aux15</span> <span class="o">-</span> <span class="n">aux14</span><span class="p">))</span>
+    <span class="n">aux0</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span><span class="o">*</span><span class="n">n</span><span class="p">)))</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="o">-</span><span class="n">aux0</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+<span class="k">def</span> <span class="nf">_integral_v2</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">Y1</span><span class="p">,</span> <span class="n">Y2</span><span class="p">,</span> <span class="n">Z1</span><span class="p">,</span> <span class="n">Z2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the second element of the V matrix (gxy components)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dummy</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">)</span> <span class="c"># Used to avoid singularities</span>
+    <span class="n">aux0</span> <span class="o">=</span> <span class="n">X2</span> <span class="o">-</span> <span class="n">X1</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">aux1</span> <span class="o">=</span> <span class="n">Y2</span> <span class="o">-</span> <span class="n">Y1</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux0</span><span class="o">/</span><span class="n">aux1</span><span class="p">)</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">X1</span> <span class="o">-</span> <span class="p">(</span><span class="n">Y1</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux1</span><span class="o">/</span><span class="n">aux0</span><span class="p">)</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">Y1</span> <span class="o">-</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">aux2</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">((</span><span class="n">aux0</span><span class="o">*</span><span class="n">aux0</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span><span class="o">*</span><span class="n">aux1</span><span class="p">))</span>
+    <span class="n">aux3</span> <span class="o">=</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="n">Y2</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">X2</span><span class="o">*</span><span class="n">Y1</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="p">((</span><span class="n">aux3</span><span class="o">/</span><span class="n">aux2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">aux4</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux0</span><span class="o">*</span><span class="n">X1</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span><span class="o">*</span><span class="n">Y1</span><span class="p">)</span>
+    <span class="n">aux5</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux0</span><span class="o">*</span><span class="n">X2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span><span class="o">*</span><span class="n">Y2</span><span class="p">)</span>
+    <span class="n">d1</span> <span class="o">=</span> <span class="p">((</span><span class="n">aux4</span><span class="o">/</span><span class="n">aux2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">d2</span> <span class="o">=</span> <span class="p">((</span><span class="n">aux5</span><span class="o">/</span><span class="n">aux2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">aux6</span> <span class="o">=</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="n">X1</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y1</span><span class="o">*</span><span class="n">Y1</span><span class="p">)</span>
+    <span class="n">aux7</span> <span class="o">=</span> <span class="p">(</span><span class="n">X2</span><span class="o">*</span><span class="n">X2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y2</span><span class="o">*</span><span class="n">Y2</span><span class="p">)</span>
+    <span class="n">aux8</span> <span class="o">=</span> <span class="n">Z1</span><span class="o">*</span><span class="n">Z1</span>
+    <span class="n">aux9</span> <span class="o">=</span> <span class="n">Z2</span><span class="o">*</span><span class="n">Z2</span>
+    <span class="n">R11</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux6</span> <span class="o">+</span> <span class="n">aux8</span><span class="p">)</span>
+    <span class="n">R12</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux6</span> <span class="o">+</span> <span class="n">aux9</span><span class="p">)</span>
+    <span class="n">R21</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux7</span> <span class="o">+</span> <span class="n">aux8</span><span class="p">)</span>
+    <span class="n">R22</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux7</span> <span class="o">+</span> <span class="n">aux9</span><span class="p">)</span>
+    <span class="n">aux10</span> <span class="o">=</span> <span class="n">arctan2</span><span class="p">((</span><span class="n">Z2</span><span class="o">*</span><span class="n">d2</span><span class="p">),</span> <span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">R22</span><span class="p">))</span>
+    <span class="n">aux11</span> <span class="o">=</span> <span class="n">arctan2</span><span class="p">((</span><span class="n">Z1</span><span class="o">*</span><span class="n">d2</span><span class="p">),</span> <span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">R21</span><span class="p">))</span>
+    <span class="n">aux12</span> <span class="o">=</span> <span class="n">aux10</span> <span class="o">-</span> <span class="n">aux11</span>
+    <span class="n">aux13</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux12</span><span class="o">/</span><span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">d2</span><span class="p">))</span>
+    <span class="n">aux14</span> <span class="o">=</span> <span class="p">((</span><span class="n">p</span><span class="o">*</span><span class="n">aux12</span><span class="p">)</span><span class="o">/</span><span class="n">d2</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">(((</span><span class="n">g</span><span class="o">*</span><span class="n">g</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">g</span><span class="o">*</span><span class="n">n</span><span class="o">*</span><span class="n">Y2</span><span class="p">))</span><span class="o">*</span><span class="n">aux13</span><span class="p">)</span> <span class="o">-</span> <span class="n">aux14</span>
+    <span class="n">aux10</span> <span class="o">=</span> <span class="n">arctan2</span><span class="p">((</span><span class="n">Z2</span><span class="o">*</span><span class="n">d1</span><span class="p">),</span> <span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">R12</span><span class="p">))</span>
+    <span class="n">aux11</span> <span class="o">=</span> <span class="n">arctan2</span><span class="p">((</span><span class="n">Z1</span><span class="o">*</span><span class="n">d1</span><span class="p">),</span> <span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">R11</span><span class="p">))</span>
+    <span class="n">aux12</span> <span class="o">=</span> <span class="n">aux10</span> <span class="o">-</span> <span class="n">aux11</span>
+    <span class="n">aux13</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux12</span><span class="o">/</span><span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">d1</span><span class="p">))</span>
+    <span class="n">aux14</span> <span class="o">=</span> <span class="p">((</span><span class="n">p</span><span class="o">*</span><span class="n">aux12</span><span class="p">)</span><span class="o">/</span><span class="n">d1</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">-=</span> <span class="p">(((</span><span class="n">g</span><span class="o">*</span><span class="n">g</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">g</span><span class="o">*</span><span class="n">n</span><span class="o">*</span><span class="n">Y1</span><span class="p">))</span><span class="o">*</span><span class="n">aux13</span><span class="p">)</span> <span class="o">-</span> <span class="n">aux14</span>
+    <span class="n">aux10</span> <span class="o">=</span> <span class="n">log</span><span class="p">(((</span><span class="n">Z2</span> <span class="o">+</span> <span class="n">R22</span><span class="p">)</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux11</span> <span class="o">=</span> <span class="n">log</span><span class="p">(((</span><span class="n">Z1</span> <span class="o">+</span> <span class="n">R21</span><span class="p">)</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux12</span> <span class="o">=</span> <span class="n">log</span><span class="p">(((</span><span class="n">Z2</span> <span class="o">+</span> <span class="n">R12</span><span class="p">)</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux13</span> <span class="o">=</span> <span class="n">log</span><span class="p">(((</span><span class="n">Z1</span> <span class="o">+</span> <span class="n">R11</span><span class="p">)</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux14</span> <span class="o">=</span> <span class="n">aux10</span> <span class="o">-</span> <span class="n">aux11</span>
+    <span class="n">aux15</span> <span class="o">=</span> <span class="n">aux12</span> <span class="o">-</span> <span class="n">aux13</span>
+    <span class="n">res</span> <span class="o">+=</span> <span class="p">(</span><span class="n">aux14</span> <span class="o">-</span> <span class="n">aux15</span><span class="p">)</span>
+    <span class="n">aux0</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span><span class="o">*</span><span class="n">n</span><span class="p">)))</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">aux0</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+<span class="k">def</span> <span class="nf">_integral_v3</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">Y1</span><span class="p">,</span> <span class="n">Y2</span><span class="p">,</span> <span class="n">Z1</span><span class="p">,</span> <span class="n">Z2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the third element of the V matrix (gxz components)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dummy</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">)</span> <span class="c"># Used to avoid singularities</span>
+    <span class="n">aux0</span> <span class="o">=</span> <span class="n">X2</span> <span class="o">-</span> <span class="n">X1</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">aux1</span> <span class="o">=</span> <span class="n">Y2</span> <span class="o">-</span> <span class="n">Y1</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux0</span><span class="o">/</span><span class="n">aux1</span><span class="p">)</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">X1</span> <span class="o">-</span> <span class="p">(</span><span class="n">Y1</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux1</span><span class="o">/</span><span class="n">aux0</span><span class="p">)</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">Y1</span> <span class="o">-</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">aux2</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">((</span><span class="n">aux0</span><span class="o">*</span><span class="n">aux0</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span><span class="o">*</span><span class="n">aux1</span><span class="p">))</span>
+    <span class="n">aux3</span> <span class="o">=</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="n">Y2</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">X2</span><span class="o">*</span><span class="n">Y1</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="p">((</span><span class="n">aux3</span><span class="o">/</span><span class="n">aux2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">aux4</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux0</span><span class="o">*</span><span class="n">X1</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span><span class="o">*</span><span class="n">Y1</span><span class="p">)</span>
+    <span class="n">aux5</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux0</span><span class="o">*</span><span class="n">X2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span><span class="o">*</span><span class="n">Y2</span><span class="p">)</span>
+    <span class="n">d1</span> <span class="o">=</span> <span class="p">((</span><span class="n">aux4</span><span class="o">/</span><span class="n">aux2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">d2</span> <span class="o">=</span> <span class="p">((</span><span class="n">aux5</span><span class="o">/</span><span class="n">aux2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">aux6</span> <span class="o">=</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="n">X1</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y1</span><span class="o">*</span><span class="n">Y1</span><span class="p">)</span>
+    <span class="n">aux7</span> <span class="o">=</span> <span class="p">(</span><span class="n">X2</span><span class="o">*</span><span class="n">X2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y2</span><span class="o">*</span><span class="n">Y2</span><span class="p">)</span>
+    <span class="n">aux8</span> <span class="o">=</span> <span class="n">Z1</span><span class="o">*</span><span class="n">Z1</span>
+    <span class="n">aux9</span> <span class="o">=</span> <span class="n">Z2</span><span class="o">*</span><span class="n">Z2</span>
+    <span class="n">R11</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux6</span> <span class="o">+</span> <span class="n">aux8</span><span class="p">)</span>
+    <span class="n">R12</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux6</span> <span class="o">+</span> <span class="n">aux9</span><span class="p">)</span>
+    <span class="n">R21</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux7</span> <span class="o">+</span> <span class="n">aux8</span><span class="p">)</span>
+    <span class="n">R22</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux7</span> <span class="o">+</span> <span class="n">aux9</span><span class="p">)</span>
+    <span class="n">aux10</span> <span class="o">=</span> <span class="n">log</span><span class="p">((((</span><span class="n">R11</span> <span class="o">-</span> <span class="n">d1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">R11</span> <span class="o">+</span> <span class="n">d1</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux11</span> <span class="o">=</span> <span class="n">log</span><span class="p">((((</span><span class="n">R12</span> <span class="o">-</span> <span class="n">d1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">R12</span> <span class="o">+</span> <span class="n">d1</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux12</span> <span class="o">=</span> <span class="n">log</span><span class="p">((((</span><span class="n">R21</span> <span class="o">-</span> <span class="n">d2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">R21</span> <span class="o">+</span> <span class="n">d2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux13</span> <span class="o">=</span> <span class="n">log</span><span class="p">((((</span><span class="n">R22</span> <span class="o">-</span> <span class="n">d2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">R22</span> <span class="o">+</span> <span class="n">d2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux14</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">d1</span><span class="p">))</span>
+    <span class="n">aux15</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">d2</span><span class="p">))</span>
+    <span class="n">aux16</span> <span class="o">=</span> <span class="n">aux15</span><span class="o">*</span><span class="p">(</span><span class="n">aux13</span> <span class="o">-</span> <span class="n">aux12</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">(</span><span class="n">Y2</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span><span class="o">*</span><span class="n">n</span><span class="p">))</span> <span class="o">+</span> <span class="n">g</span><span class="o">*</span><span class="n">n</span><span class="p">)</span><span class="o">*</span><span class="n">aux16</span>
+    <span class="n">aux16</span> <span class="o">=</span> <span class="n">aux14</span><span class="o">*</span><span class="p">(</span><span class="n">aux11</span> <span class="o">-</span> <span class="n">aux10</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">-=</span> <span class="p">(</span><span class="n">Y1</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span><span class="o">*</span><span class="n">n</span><span class="p">))</span> <span class="o">+</span> <span class="n">g</span><span class="o">*</span><span class="n">n</span><span class="p">)</span><span class="o">*</span><span class="n">aux16</span>
+    <span class="n">aux0</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span><span class="o">*</span><span class="n">n</span><span class="p">)))</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="o">-</span><span class="n">aux0</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+<span class="k">def</span> <span class="nf">_integral_v4</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">Y1</span><span class="p">,</span> <span class="n">Y2</span><span class="p">,</span> <span class="n">Z1</span><span class="p">,</span> <span class="n">Z2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the forth element of the V matrix (gyy components)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dummy</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">)</span> <span class="c"># Used to avoid singularities</span>
+    <span class="n">aux0</span> <span class="o">=</span> <span class="n">X2</span> <span class="o">-</span> <span class="n">X1</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">aux1</span> <span class="o">=</span> <span class="n">Y2</span> <span class="o">-</span> <span class="n">Y1</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux0</span><span class="o">/</span><span class="n">aux1</span><span class="p">)</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">X1</span> <span class="o">-</span> <span class="p">(</span><span class="n">Y1</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux1</span><span class="o">/</span><span class="n">aux0</span><span class="p">)</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">Y1</span> <span class="o">-</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">aux2</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">((</span><span class="n">aux0</span><span class="o">*</span><span class="n">aux0</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span><span class="o">*</span><span class="n">aux1</span><span class="p">))</span>
+    <span class="n">aux3</span> <span class="o">=</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="n">Y2</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">X2</span><span class="o">*</span><span class="n">Y1</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="p">((</span><span class="n">aux3</span><span class="o">/</span><span class="n">aux2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">aux4</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux0</span><span class="o">*</span><span class="n">X1</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span><span class="o">*</span><span class="n">Y1</span><span class="p">)</span>
+    <span class="n">aux5</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux0</span><span class="o">*</span><span class="n">X2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span><span class="o">*</span><span class="n">Y2</span><span class="p">)</span>
+    <span class="n">d1</span> <span class="o">=</span> <span class="p">((</span><span class="n">aux4</span><span class="o">/</span><span class="n">aux2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">d2</span> <span class="o">=</span> <span class="p">((</span><span class="n">aux5</span><span class="o">/</span><span class="n">aux2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">aux6</span> <span class="o">=</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="n">X1</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y1</span><span class="o">*</span><span class="n">Y1</span><span class="p">)</span>
+    <span class="n">aux7</span> <span class="o">=</span> <span class="p">(</span><span class="n">X2</span><span class="o">*</span><span class="n">X2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y2</span><span class="o">*</span><span class="n">Y2</span><span class="p">)</span>
+    <span class="n">aux8</span> <span class="o">=</span> <span class="n">Z1</span><span class="o">*</span><span class="n">Z1</span>
+    <span class="n">aux9</span> <span class="o">=</span> <span class="n">Z2</span><span class="o">*</span><span class="n">Z2</span>
+    <span class="n">R11</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux6</span> <span class="o">+</span> <span class="n">aux8</span><span class="p">)</span>
+    <span class="n">R12</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux6</span> <span class="o">+</span> <span class="n">aux9</span><span class="p">)</span>
+    <span class="n">R21</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux7</span> <span class="o">+</span> <span class="n">aux8</span><span class="p">)</span>
+    <span class="n">R22</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux7</span> <span class="o">+</span> <span class="n">aux9</span><span class="p">)</span>
+    <span class="n">aux10</span> <span class="o">=</span> <span class="n">arctan2</span><span class="p">((</span><span class="n">Z2</span><span class="o">*</span><span class="n">d2</span><span class="p">),</span> <span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">R22</span><span class="p">))</span>
+    <span class="n">aux11</span> <span class="o">=</span> <span class="n">arctan2</span><span class="p">((</span><span class="n">Z1</span><span class="o">*</span><span class="n">d2</span><span class="p">),</span> <span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">R21</span><span class="p">))</span>
+    <span class="n">aux12</span> <span class="o">=</span> <span class="n">aux10</span> <span class="o">-</span> <span class="n">aux11</span>
+    <span class="n">aux13</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux12</span><span class="o">/</span><span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">d2</span><span class="p">))</span>
+    <span class="n">aux14</span> <span class="o">=</span> <span class="p">((</span><span class="n">p</span><span class="o">*</span><span class="n">aux12</span><span class="p">)</span><span class="o">/</span><span class="n">d2</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">(</span><span class="n">c</span><span class="o">*</span><span class="n">X2</span><span class="o">*</span><span class="n">aux13</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">m</span><span class="o">*</span><span class="n">aux14</span><span class="p">)</span>
+    <span class="n">aux10</span> <span class="o">=</span> <span class="n">arctan2</span><span class="p">((</span><span class="n">Z2</span><span class="o">*</span><span class="n">d1</span><span class="p">),</span> <span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">R12</span><span class="p">))</span>
+    <span class="n">aux11</span> <span class="o">=</span> <span class="n">arctan2</span><span class="p">((</span><span class="n">Z1</span><span class="o">*</span><span class="n">d1</span><span class="p">),</span> <span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">R11</span><span class="p">))</span>
+    <span class="n">aux12</span> <span class="o">=</span> <span class="n">aux10</span> <span class="o">-</span> <span class="n">aux11</span>
+    <span class="n">aux13</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux12</span><span class="o">/</span><span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">d1</span><span class="p">))</span>
+    <span class="n">aux14</span> <span class="o">=</span> <span class="p">((</span><span class="n">p</span><span class="o">*</span><span class="n">aux12</span><span class="p">)</span><span class="o">/</span><span class="n">d1</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">-=</span> <span class="p">(</span><span class="n">c</span><span class="o">*</span><span class="n">X1</span><span class="o">*</span><span class="n">aux13</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">m</span><span class="o">*</span><span class="n">aux14</span><span class="p">)</span>
+    <span class="n">aux10</span> <span class="o">=</span> <span class="n">log</span><span class="p">(((</span><span class="n">Z2</span> <span class="o">+</span> <span class="n">R22</span><span class="p">)</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux11</span> <span class="o">=</span> <span class="n">log</span><span class="p">(((</span><span class="n">Z1</span> <span class="o">+</span> <span class="n">R21</span><span class="p">)</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux12</span> <span class="o">=</span> <span class="n">log</span><span class="p">(((</span><span class="n">Z2</span> <span class="o">+</span> <span class="n">R12</span><span class="p">)</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux13</span> <span class="o">=</span> <span class="n">log</span><span class="p">(((</span><span class="n">Z1</span> <span class="o">+</span> <span class="n">R11</span><span class="p">)</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux14</span> <span class="o">=</span> <span class="n">aux10</span> <span class="o">-</span> <span class="n">aux11</span>
+    <span class="n">aux15</span> <span class="o">=</span> <span class="n">aux12</span> <span class="o">-</span> <span class="n">aux13</span>
+    <span class="n">res</span> <span class="o">+=</span> <span class="p">(</span><span class="n">m</span><span class="o">*</span><span class="p">(</span><span class="n">aux15</span> <span class="o">-</span> <span class="n">aux14</span><span class="p">))</span>
+    <span class="n">aux1</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">m</span><span class="o">*</span><span class="n">m</span><span class="p">)))</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">aux1</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+<span class="k">def</span> <span class="nf">_integral_v5</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">Y1</span><span class="p">,</span> <span class="n">Y2</span><span class="p">,</span> <span class="n">Z1</span><span class="p">,</span> <span class="n">Z2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the fith element of the V matrix (gyz components)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dummy</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">)</span> <span class="c"># Used to avoid singularities</span>
+    <span class="n">aux0</span> <span class="o">=</span> <span class="n">X2</span> <span class="o">-</span> <span class="n">X1</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">aux1</span> <span class="o">=</span> <span class="n">Y2</span> <span class="o">-</span> <span class="n">Y1</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux0</span><span class="o">/</span><span class="n">aux1</span><span class="p">)</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">X1</span> <span class="o">-</span> <span class="p">(</span><span class="n">Y1</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux1</span><span class="o">/</span><span class="n">aux0</span><span class="p">)</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">Y1</span> <span class="o">-</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">aux2</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">((</span><span class="n">aux0</span><span class="o">*</span><span class="n">aux0</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span><span class="o">*</span><span class="n">aux1</span><span class="p">))</span>
+    <span class="n">aux3</span> <span class="o">=</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="n">Y2</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">X2</span><span class="o">*</span><span class="n">Y1</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="p">((</span><span class="n">aux3</span><span class="o">/</span><span class="n">aux2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">aux4</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux0</span><span class="o">*</span><span class="n">X1</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span><span class="o">*</span><span class="n">Y1</span><span class="p">)</span>
+    <span class="n">aux5</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux0</span><span class="o">*</span><span class="n">X2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span><span class="o">*</span><span class="n">Y2</span><span class="p">)</span>
+    <span class="n">d1</span> <span class="o">=</span> <span class="p">((</span><span class="n">aux4</span><span class="o">/</span><span class="n">aux2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">d2</span> <span class="o">=</span> <span class="p">((</span><span class="n">aux5</span><span class="o">/</span><span class="n">aux2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">aux6</span> <span class="o">=</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="n">X1</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y1</span><span class="o">*</span><span class="n">Y1</span><span class="p">)</span>
+    <span class="n">aux7</span> <span class="o">=</span> <span class="p">(</span><span class="n">X2</span><span class="o">*</span><span class="n">X2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y2</span><span class="o">*</span><span class="n">Y2</span><span class="p">)</span>
+    <span class="n">aux8</span> <span class="o">=</span> <span class="n">Z1</span><span class="o">*</span><span class="n">Z1</span>
+    <span class="n">aux9</span> <span class="o">=</span> <span class="n">Z2</span><span class="o">*</span><span class="n">Z2</span>
+    <span class="n">R11</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux6</span> <span class="o">+</span> <span class="n">aux8</span><span class="p">)</span>
+    <span class="n">R12</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux6</span> <span class="o">+</span> <span class="n">aux9</span><span class="p">)</span>
+    <span class="n">R21</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux7</span> <span class="o">+</span> <span class="n">aux8</span><span class="p">)</span>
+    <span class="n">R22</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux7</span> <span class="o">+</span> <span class="n">aux9</span><span class="p">)</span>
+    <span class="n">aux10</span> <span class="o">=</span> <span class="n">log</span><span class="p">((((</span><span class="n">R11</span> <span class="o">-</span> <span class="n">d1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">R11</span> <span class="o">+</span> <span class="n">d1</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux11</span> <span class="o">=</span> <span class="n">log</span><span class="p">((((</span><span class="n">R12</span> <span class="o">-</span> <span class="n">d1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">R12</span> <span class="o">+</span> <span class="n">d1</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux12</span> <span class="o">=</span> <span class="n">log</span><span class="p">((((</span><span class="n">R21</span> <span class="o">-</span> <span class="n">d2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">R21</span> <span class="o">+</span> <span class="n">d2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux13</span> <span class="o">=</span> <span class="n">log</span><span class="p">((((</span><span class="n">R22</span> <span class="o">-</span> <span class="n">d2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">R22</span> <span class="o">+</span> <span class="n">d2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span><span class="p">))</span>
+    <span class="n">aux14</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">d1</span><span class="p">))</span>
+    <span class="n">aux15</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">d2</span><span class="p">))</span>
+    <span class="n">aux16</span> <span class="o">=</span> <span class="n">aux15</span><span class="o">*</span><span class="p">(</span><span class="n">aux13</span> <span class="o">-</span> <span class="n">aux12</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">(</span><span class="n">X2</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">m</span><span class="o">*</span><span class="n">m</span><span class="p">))</span> <span class="o">+</span> <span class="n">c</span><span class="o">*</span><span class="n">m</span><span class="p">)</span><span class="o">*</span><span class="n">aux16</span>
+    <span class="n">aux16</span> <span class="o">=</span> <span class="n">aux14</span><span class="o">*</span><span class="p">(</span><span class="n">aux11</span> <span class="o">-</span> <span class="n">aux10</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">-=</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">m</span><span class="o">*</span><span class="n">m</span><span class="p">))</span> <span class="o">+</span> <span class="n">c</span><span class="o">*</span><span class="n">m</span><span class="p">)</span><span class="o">*</span><span class="n">aux16</span>
+    <span class="n">aux1</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">m</span><span class="o">*</span><span class="n">m</span><span class="p">)))</span>
+    <span class="n">res</span> <span class="o">*=</span> <span class="n">aux1</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+<span class="k">def</span> <span class="nf">_integral_v6</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">Y1</span><span class="p">,</span> <span class="n">Y2</span><span class="p">,</span> <span class="n">Z1</span><span class="p">,</span> <span class="n">Z2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the sixth element of the V matrix (gzz components)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dummy</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">)</span> <span class="c"># Used to avoid singularities</span>
+    <span class="n">aux0</span> <span class="o">=</span> <span class="n">X2</span> <span class="o">-</span> <span class="n">X1</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">aux1</span> <span class="o">=</span> <span class="n">Y2</span> <span class="o">-</span> <span class="n">Y1</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux0</span><span class="o">/</span><span class="n">aux1</span><span class="p">)</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">X1</span> <span class="o">-</span> <span class="p">(</span><span class="n">Y1</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux1</span><span class="o">/</span><span class="n">aux0</span><span class="p">)</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">Y1</span> <span class="o">-</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">aux2</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">((</span><span class="n">aux0</span><span class="o">*</span><span class="n">aux0</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span><span class="o">*</span><span class="n">aux1</span><span class="p">))</span>
+    <span class="n">aux3</span> <span class="o">=</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="n">Y2</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">X2</span><span class="o">*</span><span class="n">Y1</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="p">((</span><span class="n">aux3</span><span class="o">/</span><span class="n">aux2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">aux4</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux0</span><span class="o">*</span><span class="n">X1</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span><span class="o">*</span><span class="n">Y1</span><span class="p">)</span>
+    <span class="n">aux5</span> <span class="o">=</span> <span class="p">(</span><span class="n">aux0</span><span class="o">*</span><span class="n">X2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">aux1</span><span class="o">*</span><span class="n">Y2</span><span class="p">)</span>
+    <span class="n">d1</span> <span class="o">=</span> <span class="p">((</span><span class="n">aux4</span><span class="o">/</span><span class="n">aux2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">d2</span> <span class="o">=</span> <span class="p">((</span><span class="n">aux5</span><span class="o">/</span><span class="n">aux2</span><span class="p">))</span> <span class="o">+</span> <span class="n">dummy</span>
+    <span class="n">aux6</span> <span class="o">=</span> <span class="p">(</span><span class="n">X1</span><span class="o">*</span><span class="n">X1</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y1</span><span class="o">*</span><span class="n">Y1</span><span class="p">)</span>
+    <span class="n">aux7</span> <span class="o">=</span> <span class="p">(</span><span class="n">X2</span><span class="o">*</span><span class="n">X2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y2</span><span class="o">*</span><span class="n">Y2</span><span class="p">)</span>
+    <span class="n">aux8</span> <span class="o">=</span> <span class="n">Z1</span><span class="o">*</span><span class="n">Z1</span>
+    <span class="n">aux9</span> <span class="o">=</span> <span class="n">Z2</span><span class="o">*</span><span class="n">Z2</span>
+    <span class="n">R11</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux6</span> <span class="o">+</span> <span class="n">aux8</span><span class="p">)</span>
+    <span class="n">R12</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux6</span> <span class="o">+</span> <span class="n">aux9</span><span class="p">)</span>
+    <span class="n">R21</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux7</span> <span class="o">+</span> <span class="n">aux8</span><span class="p">)</span>
+    <span class="n">R22</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">aux7</span> <span class="o">+</span> <span class="n">aux9</span><span class="p">)</span>
+    <span class="n">aux10</span> <span class="o">=</span> <span class="n">arctan2</span><span class="p">((</span><span class="n">Z2</span><span class="o">*</span><span class="n">d2</span><span class="p">),</span> <span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">R22</span><span class="p">))</span>
+    <span class="n">aux11</span> <span class="o">=</span> <span class="n">arctan2</span><span class="p">((</span><span class="n">Z1</span><span class="o">*</span><span class="n">d2</span><span class="p">),</span> <span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">R21</span><span class="p">))</span>
+    <span class="n">aux12</span> <span class="o">=</span> <span class="n">aux10</span> <span class="o">-</span> <span class="n">aux11</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">aux12</span>
+    <span class="n">aux10</span> <span class="o">=</span> <span class="n">arctan2</span><span class="p">((</span><span class="n">Z2</span><span class="o">*</span><span class="n">d1</span><span class="p">),</span> <span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">R12</span><span class="p">))</span>
+    <span class="n">aux11</span> <span class="o">=</span> <span class="n">arctan2</span><span class="p">((</span><span class="n">Z1</span><span class="o">*</span><span class="n">d1</span><span class="p">),</span> <span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">R11</span><span class="p">))</span>
+    <span class="n">aux12</span> <span class="o">=</span> <span class="n">aux10</span> <span class="o">-</span> <span class="n">aux11</span>
+    <span class="n">res</span> <span class="o">-=</span> <span class="n">aux12</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+<span class="c"># Try to replace the functions here with the ones from the Cython module</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">fatiando.gravmag._cpolyprism</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

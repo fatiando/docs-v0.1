@@ -1,0 +1,12 @@
+.. _cookbook_seismic_wavefd_elastic_psv:
+
+Seismic: 2D finite difference simulation of elastic P and SV wave propagation
+==============================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/seismic_wavefd_elastic_psv.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/seismic_wavefd_elastic_psv.py
+    :language: python
+    :linenos:

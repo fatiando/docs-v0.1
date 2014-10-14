@@ -1,0 +1,12 @@
+.. _cookbook_gravmag_2d_polygon_picker:
+
+GravMag: 2D forward modeling with polygons
+===========================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/gravmag_2d_polygon_picker.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/gravmag_2d_polygon_picker.py
+    :language: python
+    :linenos:

@@ -1,0 +1,477 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fatiando.geothermal.climsig &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for fatiando.geothermal.climsig</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Modeling and inversion of temperature residuals measured in wells due to</span>
+<span class="sd">temperature perturbations in the surface.</span>
+
+<span class="sd">Perturbations can be of two kinds:</span>
+
+<span class="sd">**Abrupt**</span>
+
+<span class="sd">* :func:`~fatiando.geothermal.climsig.abrupt`</span>
+<span class="sd">* :func:`~fatiando.geothermal.climsig.iabrupt`</span>
+
+<span class="sd">Assumes that the temperature perturbation was abrupt. The residual temperature</span>
+<span class="sd">at a depth :math:`z_i` in the well at a time :math:`t` after the perturbation is</span>
+<span class="sd">given by</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">    T_i(z_i) = A \\left[1 - \\mathrm{erf}\\left(</span>
+<span class="sd">    \\frac{z_i}{\\sqrt{4\\lambda t}}\\right)\\right]</span>
+
+<span class="sd">where :math:`A` is the amplitude of the perturbation, :math:`\\lambda` is the</span>
+<span class="sd">thermal diffusivity of the medium, and :math:`\\mathrm{erf}` is the error</span>
+<span class="sd">function.</span>
+
+<span class="sd">Example of inverting for the amplitude and time since the perturbation using</span>
+<span class="sd">synthetic data::</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy</span>
+<span class="sd">    &gt;&gt;&gt; import fatiando as ft</span>
+<span class="sd">    &gt;&gt;&gt; # Generate the sythetic data along a well</span>
+<span class="sd">    &gt;&gt;&gt; zp = numpy.arange(0, 100, 1)</span>
+<span class="sd">    &gt;&gt;&gt; amp = 2</span>
+<span class="sd">    &gt;&gt;&gt; age = 100 # Uses years to avoid overflows</span>
+<span class="sd">    &gt;&gt;&gt; temp = ft.geothermal.climsig.abrupt(amp, age, zp)</span>
+<span class="sd">    &gt;&gt;&gt; # Run the inversion for the amplitude and time</span>
+<span class="sd">    &gt;&gt;&gt; p, residuals = ft.geothermal.climsig.iabrupt(temp, zp)</span>
+<span class="sd">    &gt;&gt;&gt; print &quot;amp: %.2f  age: %.2f&quot; % (p[0], p[1])</span>
+<span class="sd">    amp: 2.00  age: 100.00</span>
+
+<span class="sd">**Linear**</span>
+
+<span class="sd">* :func:`~fatiando.geothermal.climsig.linear`</span>
+<span class="sd">* :func:`~fatiando.geothermal.climsig.ilinear`</span>
+
+<span class="sd">Assumes that the temperature perturbation was linear with time. The residual</span>
+<span class="sd">temperature at a depth :math:`z_i` in the well at a time :math:`t` after the</span>
+<span class="sd">perturbation was started is given by</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">    T_i(z_i) = A \\left[</span>
+<span class="sd">    \\left(1 + 2\\frac{z_i^2}{4\\lambda t}\\right)</span>
+<span class="sd">    \\mathrm{erfc}\\left(\\frac{z_i}{\\sqrt{4\\lambda t}}\\right) -</span>
+<span class="sd">    \\frac{2}{\\sqrt{\\pi}}\\left(\\frac{z_i}{\\sqrt{4\\lambda t}}\\right)</span>
+<span class="sd">    \\mathrm{exp}\\left(-\\frac{z_i^2}{4\\lambda t}\\right)</span>
+<span class="sd">    \\right]</span>
+
+<span class="sd">where :math:`A` is the amplitude of the perturbation, :math:`\\lambda` is the</span>
+<span class="sd">thermal diffusivity of the medium, and :math:`\\mathrm{erf}` is the error</span>
+<span class="sd">function.</span>
+
+<span class="sd">Example of inverting for the amplitude and time since the perturbation using</span>
+<span class="sd">synthetic data::</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy</span>
+<span class="sd">    &gt;&gt;&gt; import fatiando as ft</span>
+<span class="sd">    &gt;&gt;&gt; # Generate the sythetic data along a well</span>
+<span class="sd">    &gt;&gt;&gt; zp = numpy.arange(0, 100, 1)</span>
+<span class="sd">    &gt;&gt;&gt; amp = 3.45</span>
+<span class="sd">    &gt;&gt;&gt; age = 52.5 # Uses years to avoid overflows</span>
+<span class="sd">    &gt;&gt;&gt; temp = ft.geothermal.climsig.linear(amp, age, zp)</span>
+<span class="sd">    &gt;&gt;&gt; # Run the inversion for the amplitude and time</span>
+<span class="sd">    &gt;&gt;&gt; p, residuals = ft.geothermal.climsig.ilinear(temp, zp)</span>
+<span class="sd">    &gt;&gt;&gt; print &quot;amp: %.2f  age: %.2f&quot; % (p[0], p[1])</span>
+<span class="sd">    amp: 3.45  age: 52.50</span>
+
+<span class="sd">----</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">scipy.special</span>
+
+<span class="kn">import</span> <span class="nn">fatiando.logger</span>
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">inversion</span><span class="p">,</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">fatiando.constants</span> <span class="kn">import</span> <span class="n">THERMAL_DIFFUSIVITY_YEAR</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">fatiando</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">dummy</span><span class="p">(</span><span class="s">&#39;fatiando.geothermal.climsig&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AbruptDM"><a class="viewcode-back" href="../../../api/geothermal.climsig.html#fatiando.geothermal.climsig.AbruptDM">[docs]</a><span class="k">class</span> <span class="nc">AbruptDM</span><span class="p">(</span><span class="n">inversion</span><span class="o">.</span><span class="n">datamodule</span><span class="o">.</span><span class="n">DataModule</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Data module for a single abrupt temperature perturbation.</span>
+
+<span class="sd">    Packs the necessary data for the inversion.</span>
+
+<span class="sd">    Derivatives with respect to the amplitude and age are calculated using the</span>
+<span class="sd">    formula</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \\frac{\\partial T_i}{\\partial A} = 1 - \\mathrm{erf}\\left(</span>
+<span class="sd">        \\frac{z_i}{\\sqrt{4\\lambda t}}\\right)</span>
+
+<span class="sd">    and</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \\frac{\\partial T_i}{\\partial t} = \\frac{A}{t\\sqrt{\\pi}}</span>
+<span class="sd">        \\left(\\frac{z_i}{\\sqrt{4\\lambda t}}\\right)</span>
+<span class="sd">        \\exp\\left[-\\left(\\frac{z_i}{\\sqrt{4\\lambda t}}\\right)^2\\right]</span>
+
+<span class="sd">    The Hessian matrix is calculated using a Gauss-Newton approximation.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * temp : array</span>
+<span class="sd">        The temperature profile</span>
+<span class="sd">    * zp : array</span>
+<span class="sd">        Depths along the profile</span>
+<span class="sd">    * diffus : float</span>
+<span class="sd">        Thermal diffusivity of the medium (in m^2/year)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">temp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">diffus</span><span class="o">=</span><span class="n">THERMAL_DIFFUSIVITY_YEAR</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">temp</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">zp</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;temp and zp must be of same length&quot;</span>
+        <span class="n">inversion</span><span class="o">.</span><span class="n">datamodule</span><span class="o">.</span><span class="n">DataModule</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">temp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">zp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diffus</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">diffus</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_predicted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="n">amp</span><span class="p">,</span> <span class="n">age</span> <span class="o">=</span> <span class="n">p</span>
+        <span class="k">return</span> <span class="n">abrupt</span><span class="p">(</span><span class="n">amp</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">diffus</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">sum_gradient</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">residuals</span><span class="p">):</span>
+        <span class="n">amp</span><span class="p">,</span> <span class="n">age</span> <span class="o">=</span> <span class="n">p</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">4.</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">diffus</span><span class="o">*</span><span class="n">age</span><span class="p">)</span>
+        <span class="n">jact</span> <span class="o">=</span> <span class="n">amp</span><span class="o">*</span><span class="n">tmp</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">tmp</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">*</span><span class="n">age</span><span class="p">)</span>
+        <span class="n">jacA</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">-</span> <span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">erf</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">jac_T</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jacA</span><span class="p">,</span> <span class="n">jact</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">gradient</span> <span class="o">-</span> <span class="mf">2.</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jac_T</span><span class="p">,</span> <span class="n">residuals</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">sum_hessian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hessian</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">hessian</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jac_T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">jac_T</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="abrupt"><a class="viewcode-back" href="../../../api/geothermal.climsig.html#fatiando.geothermal.climsig.abrupt">[docs]</a><span class="k">def</span> <span class="nf">abrupt</span><span class="p">(</span><span class="n">amp</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">diffus</span><span class="o">=</span><span class="n">THERMAL_DIFFUSIVITY_YEAR</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the residual temperature profile in depth due to an abrupt</span>
+<span class="sd">    temperature perturbation.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * amp : float</span>
+<span class="sd">        Amplitude of the perturbation (in C)</span>
+<span class="sd">    * age : float</span>
+<span class="sd">        Time since the perturbation occured (in years)</span>
+<span class="sd">    * zp : array</span>
+<span class="sd">        Arry with the depths of computation points along the well (in meters)</span>
+<span class="sd">    * diffus : float</span>
+<span class="sd">        Thermal diffusivity of the medium (in m^2/year)</span>
+
+<span class="sd">    See the default values for the thermal diffusivity in</span>
+<span class="sd">    :mod:`fatiando.constants`.</span>
+
+<span class="sd">    Returns</span>
+
+<span class="sd">    * temp : array</span>
+<span class="sd">        The residual temperatures measured along the well</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">amp</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">erf</span><span class="p">(</span><span class="n">zp</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">4.</span><span class="o">*</span><span class="n">diffus</span><span class="o">*</span><span class="n">age</span><span class="p">)))</span>
+</div>
+<div class="viewcode-block" id="iabrupt"><a class="viewcode-back" href="../../../api/geothermal.climsig.html#fatiando.geothermal.climsig.iabrupt">[docs]</a><span class="k">def</span> <span class="nf">iabrupt</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">diffus</span><span class="o">=</span><span class="n">THERMAL_DIFFUSIVITY_YEAR</span><span class="p">,</span> <span class="n">iterate</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Invert the residual temperature profile to estimate the amplitude and age</span>
+<span class="sd">    of an abrupt temperature perturbation.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * temp : array</span>
+<span class="sd">        The temperature profile</span>
+<span class="sd">    * zp : array</span>
+<span class="sd">        The depths along the profile</span>
+<span class="sd">    * solver : function or None</span>
+<span class="sd">        A non-linear inverse problem solver generated by a factory function</span>
+<span class="sd">        from a :mod:`fatiando.inversion` inverse problem solver module. If</span>
+<span class="sd">        None, will use the default solver.</span>
+<span class="sd">    * diffus : float</span>
+<span class="sd">        Thermal diffusivity of the medium (in m^2/year)</span>
+<span class="sd">    * iterate : True or False</span>
+<span class="sd">        If True, will yield the current estimate at each iteration yielded by</span>
+<span class="sd">        *solver*. In Python terms, ``iterate=True`` transforms this function</span>
+<span class="sd">        into a generator function.</span>
+
+<span class="sd">    See the default values for the thermal diffusivity in</span>
+<span class="sd">    :mod:`fatiando.constants`.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * results : list = [p, residuals]</span>
+<span class="sd">        The estimated paramter vector ``p = [amp, age]`` and the residuals (fit)</span>
+<span class="sd">        produced by the inversion. The residuals are the observed data minus the</span>
+<span class="sd">        data predicted by the estimated parameters.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Estimating amplitude and age of an abrupt perturbation:&quot;</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  thermal diffusivity: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">diffus</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  number of data: </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">temp</span><span class="p">)))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  iterate: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">iterate</span><span class="p">)))</span>
+    <span class="n">dms</span> <span class="o">=</span> <span class="p">[</span><span class="n">AbruptDM</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">diffus</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">solver</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">solver</span> <span class="o">=</span> <span class="n">inversion</span><span class="o">.</span><span class="n">gradient</span><span class="o">.</span><span class="n">levmarq</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">iterate</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_iterator</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">log</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_solver</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">log</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="LinearDM"><a class="viewcode-back" href="../../../api/geothermal.climsig.html#fatiando.geothermal.climsig.LinearDM">[docs]</a><span class="k">class</span> <span class="nc">LinearDM</span><span class="p">(</span><span class="n">inversion</span><span class="o">.</span><span class="n">datamodule</span><span class="o">.</span><span class="n">DataModule</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Data module for a single linear temperature perturbation.</span>
+
+<span class="sd">    Packs the necessary data for the inversion.</span>
+
+<span class="sd">    Derivatives with respect to the age are calculated using a 2-point finite</span>
+<span class="sd">    difference approximation. Derivatives with respect to amplitude are</span>
+<span class="sd">    calculate using the formula</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \\frac{\\partial T_i}{\\partial A} =</span>
+<span class="sd">        \\left(1 + 2\\frac{z_i^2}{4\\lambda t}\\right)</span>
+<span class="sd">        \\mathrm{erfc}\\left(\\frac{z_i}{\\sqrt{4\\lambda t}}\\right) -</span>
+<span class="sd">        \\frac{2}{\\sqrt{\\pi}}\\left(\\frac{z_i}{\\sqrt{4\\lambda t}}\\right)</span>
+<span class="sd">        \\mathrm{exp}\\left(-\\frac{z_i^2}{4\\lambda t}\\right)</span>
+
+<span class="sd">    The Hessian matrix is calculated using a Gauss-Newton approximation.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * temp : array</span>
+<span class="sd">        The temperature profile</span>
+<span class="sd">    * zp : array</span>
+<span class="sd">        The depths along the profile</span>
+<span class="sd">    * diffus : float</span>
+<span class="sd">        Thermal diffusivity of the medium (in m^2/year)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">temp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">diffus</span><span class="o">=</span><span class="n">THERMAL_DIFFUSIVITY_YEAR</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">temp</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">zp</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;temp and zp must be of same length&quot;</span>
+        <span class="n">inversion</span><span class="o">.</span><span class="n">datamodule</span><span class="o">.</span><span class="n">DataModule</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">temp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">zp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diffus</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">diffus</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_predicted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="n">amp</span><span class="p">,</span> <span class="n">age</span> <span class="o">=</span> <span class="n">p</span>
+        <span class="k">return</span> <span class="n">linear</span><span class="p">(</span><span class="n">amp</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">diffus</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">sum_gradient</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">residuals</span><span class="p">):</span>
+        <span class="n">amp</span><span class="p">,</span> <span class="n">age</span> <span class="o">=</span> <span class="n">p</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="mf">0.1</span>
+        <span class="n">at_p</span> <span class="o">=</span> <span class="n">linear</span><span class="p">(</span><span class="n">amp</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">diffus</span><span class="p">)</span>
+        <span class="n">jact</span> <span class="o">=</span> <span class="p">(</span><span class="n">linear</span><span class="p">(</span><span class="n">amp</span><span class="p">,</span> <span class="n">age</span> <span class="o">+</span> <span class="n">delta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">diffus</span><span class="p">)</span> <span class="o">-</span> <span class="n">at_p</span><span class="p">)</span><span class="o">/</span><span class="n">delta</span>
+        <span class="n">jacA</span> <span class="o">=</span> <span class="n">linear</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">diffus</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">jac_T</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jacA</span><span class="p">,</span> <span class="n">jact</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">gradient</span> <span class="o">-</span> <span class="mf">2.</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jac_T</span><span class="p">,</span> <span class="n">residuals</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">sum_hessian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hessian</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">hessian</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jac_T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">jac_T</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="linear"><a class="viewcode-back" href="../../../api/geothermal.climsig.html#fatiando.geothermal.climsig.linear">[docs]</a><span class="k">def</span> <span class="nf">linear</span><span class="p">(</span><span class="n">amp</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">diffus</span><span class="o">=</span><span class="n">THERMAL_DIFFUSIVITY_YEAR</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the residual temperature profile in depth due to a linear</span>
+<span class="sd">    temperature perturbation.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * amp : float</span>
+<span class="sd">        Amplitude of the perturbation (in C)</span>
+<span class="sd">    * age : float</span>
+<span class="sd">        Time since the perturbation occured (in years)</span>
+<span class="sd">    * zp : array</span>
+<span class="sd">        The depths of computation points along the well (in meters)</span>
+<span class="sd">    * diffus : float</span>
+<span class="sd">        Thermal diffusivity of the medium (in m^2/year)</span>
+
+<span class="sd">    See the default values for the thermal diffusivity in</span>
+<span class="sd">    :mod:`fatiando.constants`.</span>
+
+<span class="sd">    Returns</span>
+
+<span class="sd">    * temp : array</span>
+<span class="sd">        The residual temperatures measured along the well</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">zp</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">4.</span><span class="o">*</span><span class="n">diffus</span><span class="o">*</span><span class="n">age</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">amp</span><span class="o">*</span><span class="p">((</span><span class="mf">1.</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">tmp</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">erfc</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+               <span class="o">-</span> <span class="mf">2.</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">*</span><span class="n">tmp</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">tmp</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="ilinear"><a class="viewcode-back" href="../../../api/geothermal.climsig.html#fatiando.geothermal.climsig.ilinear">[docs]</a><span class="k">def</span> <span class="nf">ilinear</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">diffus</span><span class="o">=</span><span class="n">THERMAL_DIFFUSIVITY_YEAR</span><span class="p">,</span> <span class="n">iterate</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Invert the residual temperature profile to estimate the amplitude and age</span>
+<span class="sd">    of a linear temperature perturbation.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * temp : array</span>
+<span class="sd">        Array with the temperature profile</span>
+<span class="sd">    * zp : array</span>
+<span class="sd">        Array with the depths along the profile</span>
+<span class="sd">    * solver : function</span>
+<span class="sd">        A non-linear inverse problem solver generated by a factory function</span>
+<span class="sd">        from a :mod:`~fatiando.inversion` inverse problem solver module.If</span>
+<span class="sd">        None, will use the default solver.</span>
+<span class="sd">    * diffus : float</span>
+<span class="sd">        Thermal diffusivity of the medium (in m^2/year)</span>
+<span class="sd">    * iterate : True or False</span>
+<span class="sd">        If True, will yield the current estimate at each iteration yielded by</span>
+<span class="sd">        *solver*. In Python terms, ``iterate=True`` transforms this function</span>
+<span class="sd">        into a generator function.</span>
+
+<span class="sd">    See the default values for the thermal diffusivity in</span>
+<span class="sd">    :mod:`fatiando.constants`.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * results : list = [p, residuals]</span>
+<span class="sd">        The estimated paramter vector ``p = [amp, age]`` and the residuals (fit)</span>
+<span class="sd">        produced by the inversion. The residuals are the observed data minus the</span>
+<span class="sd">        data predicted by the estimated parameters.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Estimating amplitude and age of a linear perturbation:&quot;</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  thermal diffusivity: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">diffus</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  number of data: </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">temp</span><span class="p">)))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  iterate: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">iterate</span><span class="p">)))</span>
+    <span class="n">dms</span> <span class="o">=</span> <span class="p">[</span><span class="n">LinearDM</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">diffus</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">solver</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">solver</span> <span class="o">=</span> <span class="n">inversion</span><span class="o">.</span><span class="n">gradient</span><span class="o">.</span><span class="n">levmarq</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">iterate</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_iterator</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">log</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_solver</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">log</span><span class="p">)</span>
+</div>
+<span class="k">def</span> <span class="nf">_solver</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">log</span><span class="p">):</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chset</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">solver</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="p">[])):</span>
+            <span class="k">continue</span>
+    <span class="k">except</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">LinAlgError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="p">(</span><span class="s">&quot;Oops, the Hessian is a singular matrix.&quot;</span> <span class="o">+</span>
+                           <span class="s">&quot; Try applying more regularization&quot;</span><span class="p">)</span>
+    <span class="n">stop</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  number of iterations: </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  final data misfit: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chset</span><span class="p">[</span><span class="s">&#39;misfits&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  final goal function: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chset</span><span class="p">[</span><span class="s">&#39;goals&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  time: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">sec2hms</span><span class="p">(</span><span class="n">stop</span> <span class="o">-</span> <span class="n">start</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">chset</span><span class="p">[</span><span class="s">&#39;estimate&#39;</span><span class="p">],</span> <span class="n">chset</span><span class="p">[</span><span class="s">&#39;residuals&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">_iterator</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">log</span><span class="p">):</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chset</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">solver</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="p">[])):</span>
+            <span class="k">yield</span> <span class="n">chset</span><span class="p">[</span><span class="s">&#39;estimate&#39;</span><span class="p">],</span> <span class="n">chset</span><span class="p">[</span><span class="s">&#39;residuals&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">except</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">LinAlgError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="p">(</span><span class="s">&quot;Oops, the Hessian is a singular matrix.&quot;</span> <span class="o">+</span>
+                           <span class="s">&quot; Try applying more regularization&quot;</span><span class="p">)</span>
+    <span class="n">stop</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  number of iterations: </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  final data misfit: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chset</span><span class="p">[</span><span class="s">&#39;misfits&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  final goal function: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chset</span><span class="p">[</span><span class="s">&#39;goals&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  time: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">sec2hms</span><span class="p">(</span><span class="n">stop</span> <span class="o">-</span> <span class="n">start</span><span class="p">)))</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

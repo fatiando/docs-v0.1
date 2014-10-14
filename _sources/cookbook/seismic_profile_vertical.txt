@@ -1,0 +1,12 @@
+.. _cookbook_seismic_profile_vertical:
+
+Seismic: Invert vertical seismic profile (VSP) traveltimes for the velocity of the layers
+==========================================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/seismic_profile_vertical.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/seismic_profile_vertical.py
+    :language: python
+    :linenos:

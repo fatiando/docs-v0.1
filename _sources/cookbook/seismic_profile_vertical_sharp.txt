@@ -1,0 +1,12 @@
+.. _cookbook_seismic_profile_vertical_sharp:
+
+Seismic: Invert vertical seismic profile (VSP) traveltimes using sharpness regularization
+==========================================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/seismic_profile_vertical_sharp.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/seismic_profile_vertical_sharp.py
+    :language: python
+    :linenos:

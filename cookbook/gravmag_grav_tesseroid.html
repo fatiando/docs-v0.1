@@ -1,0 +1,254 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GravMag: Forward modeling of the gravitational potential and its derivatives using tesseroids &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Cookbook" href="../cookbook.html" />
+    <link rel="next" title="GravMag: Forward modeling of the gravity anomaly using tesseroids in parallel using multiprocessing" href="gravmag_grav_tesseroid_parallel.html" />
+    <link rel="prev" title="GravMag: Forward modeling of the gravity anomaly using spheres (calculate on random points)" href="gravmag_grav_sphere.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag_grav_tesseroid_parallel.html" title="GravMag: Forward modeling of the gravity anomaly using tesseroids in parallel using multiprocessing"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gravmag_grav_sphere.html" title="GravMag: Forward modeling of the gravity anomaly using spheres (calculate on random points)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../cookbook.html" accesskey="U">Cookbook</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="gravmag-forward-modeling-of-the-gravitational-potential-and-its-derivatives-using-tesseroids">
+<span id="cookbook-gravmag-grav-tesseroid"></span><h1>GravMag: Forward modeling of the gravitational potential and its derivatives using tesseroids<a class="headerlink" href="#gravmag-forward-modeling-of-the-gravitational-potential-and-its-derivatives-using-tesseroids" title="Permalink to this headline">¶</a></h1>
+[<a href="../_static/cookbook/gravmag_grav_tesseroid.py">source code</a>]<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64</pre></div></td><td class="code"><div class="highlight"><pre><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">GravMag: Forward modeling of the gravitational potential and its derivatives</span>
+<span class="sd">using tesseroids</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">gravmag</span><span class="p">,</span> <span class="n">gridder</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">fatiando.mesher</span> <span class="kn">import</span> <span class="n">Tesseroid</span>
+<span class="kn">from</span> <span class="nn">fatiando.vis</span> <span class="kn">import</span> <span class="n">mpl</span><span class="p">,</span> <span class="n">myv</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">logger</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">header</span><span class="p">())</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="p">[</span><span class="n">Tesseroid</span><span class="p">(</span><span class="o">-</span><span class="mi">60</span><span class="p">,</span> <span class="o">-</span><span class="mi">55</span><span class="p">,</span> <span class="o">-</span><span class="mi">30</span><span class="p">,</span> <span class="o">-</span><span class="mi">27</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">500000</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="mi">200</span><span class="p">}),</span>
+         <span class="n">Tesseroid</span><span class="p">(</span><span class="o">-</span><span class="mi">66</span><span class="p">,</span> <span class="o">-</span><span class="mi">62</span><span class="p">,</span> <span class="o">-</span><span class="mi">18</span><span class="p">,</span> <span class="o">-</span><span class="mi">12</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">300000</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="o">-</span><span class="mi">500</span><span class="p">})]</span>
+<span class="c"># Show the model before calculating</span>
+<span class="n">scene</span> <span class="o">=</span> <span class="n">myv</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">zdown</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="n">myv</span><span class="o">.</span><span class="n">tesseroids</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s">&#39;density&#39;</span><span class="p">)</span>
+<span class="n">myv</span><span class="o">.</span><span class="n">continents</span><span class="p">(</span><span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">myv</span><span class="o">.</span><span class="n">earth</span><span class="p">(</span><span class="n">opacity</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="n">myv</span><span class="o">.</span><span class="n">meridians</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">360</span><span class="p">,</span> <span class="mi">45</span><span class="p">),</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">myv</span><span class="o">.</span><span class="n">parallels</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="mi">45</span><span class="p">),</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">scene</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="p">[</span><span class="mf">23175275.131412581</span><span class="p">,</span> <span class="o">-</span><span class="mf">16937347.013663091</span><span class="p">,</span> 
+    <span class="o">-</span><span class="mf">4924328.2822419703</span><span class="p">]</span>
+<span class="n">scene</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">focal_point</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]</span>
+<span class="n">scene</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">view_angle</span> <span class="o">=</span> <span class="mf">30.0</span>
+<span class="n">scene</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">view_up</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.083030001958377356</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.17178720527713925</span><span class="p">,</span> 
+    <span class="mf">0.98162883763562181</span><span class="p">]</span>
+<span class="n">scene</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">clipping_range</span> <span class="o">=</span> <span class="p">[</span><span class="mf">9229054.5133903362</span><span class="p">,</span> <span class="mf">54238225.321054712</span><span class="p">]</span>
+<span class="n">scene</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">compute_view_plane_normal</span><span class="p">()</span>
+<span class="n">scene</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">render</span><span class="p">()</span>
+<span class="n">myv</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c"># Create the computation grid</span>
+<span class="n">area</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">80</span><span class="p">,</span> <span class="o">-</span><span class="mi">30</span><span class="p">,</span> <span class="o">-</span><span class="mi">40</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+<span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span> <span class="o">=</span> <span class="n">gridder</span><span class="o">.</span><span class="n">regular</span><span class="p">(</span><span class="n">area</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mi">250000</span><span class="p">)</span>
+
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Calculating...&#39;</span><span class="p">)</span>
+<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">fields</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">gravmag</span><span class="o">.</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">potential</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">model</span><span class="p">),</span>
+    <span class="n">gravmag</span><span class="o">.</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">gx</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">model</span><span class="p">),</span>
+    <span class="n">gravmag</span><span class="o">.</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">gy</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">model</span><span class="p">),</span>
+    <span class="n">gravmag</span><span class="o">.</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">gz</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">model</span><span class="p">),</span>
+    <span class="n">gravmag</span><span class="o">.</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">gxx</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">model</span><span class="p">),</span>
+    <span class="n">gravmag</span><span class="o">.</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">gxy</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">model</span><span class="p">),</span>
+    <span class="n">gravmag</span><span class="o">.</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">gxz</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">model</span><span class="p">),</span>
+    <span class="n">gravmag</span><span class="o">.</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">gyy</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">model</span><span class="p">),</span>
+    <span class="n">gravmag</span><span class="o">.</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">gyz</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">model</span><span class="p">),</span>
+    <span class="n">gravmag</span><span class="o">.</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">gzz</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">model</span><span class="p">)]</span>
+<span class="k">print</span> <span class="s">&quot;Time it took: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">sec2hms</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">))</span>
+
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Plotting...&#39;</span><span class="p">)</span>
+<span class="n">titles</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;potential&#39;</span><span class="p">,</span> <span class="s">&#39;gx&#39;</span><span class="p">,</span> <span class="s">&#39;gy&#39;</span><span class="p">,</span> <span class="s">&#39;gz&#39;</span><span class="p">,</span>
+          <span class="s">&#39;gxx&#39;</span><span class="p">,</span> <span class="s">&#39;gxy&#39;</span><span class="p">,</span> <span class="s">&#39;gxz&#39;</span><span class="p">,</span> <span class="s">&#39;gyy&#39;</span><span class="p">,</span> <span class="s">&#39;gyz&#39;</span><span class="p">,</span> <span class="s">&#39;gzz&#39;</span><span class="p">]</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">bm</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">basemap</span><span class="p">(</span><span class="n">area</span><span class="p">,</span> <span class="s">&#39;ortho&#39;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">fields</span><span class="p">):</span>
+    <span class="n">mpl</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">mpl</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">titles</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="n">mpl</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="n">basemap</span><span class="o">=</span><span class="n">bm</span><span class="p">)</span>
+    <span class="n">bm</span><span class="o">.</span><span class="n">drawcoastlines</span><span class="p">()</span>
+    <span class="n">mpl</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gravmag_grav_sphere.html"
+                        title="previous chapter">GravMag: Forward modeling of the gravity anomaly using spheres (calculate on random points)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gravmag_grav_tesseroid_parallel.html"
+                        title="next chapter">GravMag: Forward modeling of the gravity anomaly using tesseroids in parallel using <tt class="docutils literal"><span class="pre">multiprocessing</span></tt></a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/cookbook/gravmag_grav_tesseroid.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag_grav_tesseroid_parallel.html" title="GravMag: Forward modeling of the gravity anomaly using tesseroids in parallel using multiprocessing"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gravmag_grav_sphere.html" title="GravMag: Forward modeling of the gravity anomaly using spheres (calculate on random points)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../cookbook.html" >Cookbook</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,873 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fatiando.gravmag.harvester &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for fatiando.gravmag.harvester</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">3D potential field inversion by planting anomalous densities.</span>
+
+<span class="sd">Implements the method of Uieda and Barbosa (2012a) with improvements by</span>
+<span class="sd">Uieda and Barbosa (2012b).</span>
+
+<span class="sd">A &quot;heuristic&quot; inversion for compact 3D geologic bodies. Performs the inversion</span>
+<span class="sd">by iteratively growing the estimate around user-specified &quot;seeds&quot;. Supports</span>
+<span class="sd">various kinds of data (gravity, gravity tensor).</span>
+
+<span class="sd">The inversion is performed by function</span>
+<span class="sd">:func:`~fatiando.gravmag.harvester.harvest`. The required information, such as</span>
+<span class="sd">observed data, seeds, and regularization, are passed to the function through</span>
+<span class="sd">classes :class:`~fatiando.gravmag.harvester.Seed` and</span>
+<span class="sd">:class:`~fatiando.gravmag.harvester.Potential`,</span>
+<span class="sd">:class:`~fatiando.gravmag.harvester.Gz`,</span>
+<span class="sd">:class:`~fatiando.gravmag.harvester.Gxx`, etc.</span>
+
+<span class="sd">See the :ref:`Cookbook &lt;cookbook&gt;` for some example applications to synthetic</span>
+<span class="sd">data.</span>
+
+<span class="sd">**Functions**</span>
+
+<span class="sd">* :func:`~fatiando.gravmag.harvester.harvest`: Performs the inversion</span>
+<span class="sd">* :func:`~fatiando.gravmag.harvester.sow`: Creates the seeds from a set of</span>
+<span class="sd">  (x, y, z) points and physical properties</span>
+<span class="sd">* :func:`~fatiando.gravmag.harvester.loadseeds`: Loads from a JSON file a set</span>
+<span class="sd">  of (x, y, z) points and physical properties that specify the seeds. Pass</span>
+<span class="sd">  output to :func:`~fatiando.gravmag.harvester.sow`</span>
+
+<span class="sd">**Data types**</span>
+
+<span class="sd">* :class:`~fatiando.gravmag.harvester.Potential`: gravitational potential</span>
+<span class="sd">* :class:`~fatiando.gravmag.harvester.Gz`: vertical component of gravitational</span>
+<span class="sd">  acceleration (i.e., gravity anomaly)</span>
+<span class="sd">* :class:`~fatiando.gravmag.harvester.Gxx`: North-North component of the gravity</span>
+<span class="sd">  gradient tensor</span>
+<span class="sd">* :class:`~fatiando.gravmag.harvester.Gxy`: North-East component of the gravity</span>
+<span class="sd">  gradient tensor</span>
+<span class="sd">* :class:`~fatiando.gravmag.harvester.Gxz`: North-vertical component of the</span>
+<span class="sd">  gravity gradient tensor</span>
+<span class="sd">* :class:`~fatiando.gravmag.harvester.Gyy`: East-East component of the gravity</span>
+<span class="sd">  gradient tensor</span>
+<span class="sd">* :class:`~fatiando.gravmag.harvester.Gyz`: East-vertical component of the</span>
+<span class="sd">  gravity gradient tensor</span>
+<span class="sd">* :class:`~fatiando.gravmag.harvester.Gzz`: vertical-vertical component of the</span>
+<span class="sd">  gravity gradient tensor</span>
+
+<span class="sd">**References**</span>
+
+<span class="sd">Uieda, L., and V. C. F. Barbosa (2012a), Robust 3D gravity gradient inversion by</span>
+<span class="sd">planting anomalous densities, Geophysics, 77(4), G55-G66,</span>
+<span class="sd">doi:10.1190/geo2011-0388.1 [`pdf</span>
+<span class="sd">&lt;http://www.mendeley.com/download/public/1406731/4823610241/45dec08fa03c4d5950ecdaef8d7532767a57a1a8/dl.pdf&gt;`__]</span>
+
+<span class="sd">Uieda, L., and V. C. F. Barbosa (2012b),</span>
+<span class="sd">Use of the &quot;shape-of-anomaly&quot; data misfit in 3D inversion by planting anomalous</span>
+<span class="sd">densities, SEG Technical Program Expanded Abstracts, 1-6,</span>
+<span class="sd">doi:10.1190/segam2012-0383.1 [`pdf</span>
+<span class="sd">&lt;http://www.mendeley.com/download/public/1406731/4932659461/67606df295d428a7f729a74cf80b7ed4aa37553b/dl.pdf&gt;`__]</span>
+
+<span class="sd">----</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">bisect</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">sqrt</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="kn">from</span> <span class="nn">fatiando.gravmag</span> <span class="kn">import</span> <span class="n">prism</span> <span class="k">as</span> <span class="n">prism_engine</span>
+<span class="kn">from</span> <span class="nn">fatiando.gravmag</span> <span class="kn">import</span> <span class="n">tesseroid</span> <span class="k">as</span> <span class="n">tesseroid_engine</span>
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">import</span> <span class="nn">fatiando.logger</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">fatiando</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">dummy</span><span class="p">(</span><span class="s">&#39;fatiando.gravmag.harvester&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="loadseeds"><a class="viewcode-back" href="../../../api/gravmag.harvester.html#fatiando.gravmag.harvester.loadseeds">[docs]</a><span class="k">def</span> <span class="nf">loadseeds</span><span class="p">(</span><span class="n">fname</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load a set of seed locations and physical properties from a file.</span>
+
+<span class="sd">    The output can then be used with the :func:`~fatiando.gravmag.harvester.sow`</span>
+<span class="sd">    function.</span>
+
+<span class="sd">    The seed file should be formatted as::</span>
+
+<span class="sd">        [</span>
+<span class="sd">            [x1, y1, z1, {&quot;density&quot;:dens1}],</span>
+<span class="sd">            [x2, y2, z2, {&quot;density&quot;:dens2, &quot;magnetization&quot;:mag2}],</span>
+<span class="sd">            [x3, y3, z3, {&quot;magnetization&quot;:mag3, &quot;inclination&quot;:inc3,</span>
+<span class="sd">                          &quot;declination&quot;:dec3}],</span>
+<span class="sd">            ...</span>
+<span class="sd">        ]</span>
+
+<span class="sd">    x, y, z are the coordinates of the seed and the dict (``{&#39;density&#39;:2670}``)</span>
+<span class="sd">    are its physical properties.</span>
+
+<span class="sd">    .. warning::</span>
+
+<span class="sd">        Must use ``&quot;``, not ``&#39;``, in the physical property names!</span>
+
+<span class="sd">    Each seed can have different kinds of physical properties. If inclination</span>
+<span class="sd">    and declination are not given, will use the inc and dec of the inducing</span>
+<span class="sd">    field (i.e., no remanent magnetization).</span>
+
+<span class="sd">    The techie among you will recognize that the seed file is in JSON format.</span>
+
+<span class="sd">    Remember: the coordinate system is x-&gt;North, y-&gt;East, and z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * fname : str or file</span>
+<span class="sd">        Open file object or filename string</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * [[x1, y1, z1, props1], [x2, y2, z2, props2],  ...]</span>
+<span class="sd">        (x, y, z) are the points where the seeds will be placed</span>
+<span class="sd">        and *props* is dict with the values of the physical properties of each,</span>
+<span class="sd">        seed.</span>
+
+<span class="sd">    Example:</span>
+
+<span class="sd">        &gt;&gt;&gt; from StringIO import StringIO</span>
+<span class="sd">        &gt;&gt;&gt; file = StringIO(</span>
+<span class="sd">        ...     &#39;[[1, 2, 3, {&quot;density&quot;:4, &quot;magnetization&quot;:5}],&#39; +</span>
+<span class="sd">        ...     &#39; [6, 7, 8, {&quot;magnetization&quot;:-1}]]&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; seeds = loadseeds(file)</span>
+<span class="sd">        &gt;&gt;&gt; for s in seeds:</span>
+<span class="sd">        ...     print s</span>
+<span class="sd">        [1, 2, 3, {u&#39;magnetization&#39;: 5, u&#39;density&#39;: 4}]</span>
+<span class="sd">        [6, 7, 8, {u&#39;magnetization&#39;: -1}]</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">openned</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">fname</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+        <span class="n">openned</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="n">seeds</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">openned</span><span class="p">:</span>
+        <span class="n">fname</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">seeds</span>
+</div>
+<div class="viewcode-block" id="sow"><a class="viewcode-back" href="../../../api/gravmag.harvester.html#fatiando.gravmag.harvester.sow">[docs]</a><span class="k">def</span> <span class="nf">sow</span><span class="p">(</span><span class="n">locations</span><span class="p">,</span> <span class="n">mesh</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create the seeds given a list of (x,y,z) coordinates and physical</span>
+<span class="sd">    properties.</span>
+
+<span class="sd">    Removes seeds that would fall on the same location with overlapping</span>
+<span class="sd">    physical properties.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * locations : list</span>
+<span class="sd">        The locations and physical properties of the seeds. Should be a list</span>
+<span class="sd">        like::</span>
+
+<span class="sd">            [</span>
+<span class="sd">                [x1, y1, z1, {&quot;density&quot;:dens1}],</span>
+<span class="sd">                [x2, y2, z2, {&quot;density&quot;:dens2, &quot;magnetization&quot;:mag2}],</span>
+<span class="sd">                [x3, y3, z3, {&quot;magnetization&quot;:mag3, &quot;inclination&quot;:inc3,</span>
+<span class="sd">                              &quot;declination&quot;:dec3}],</span>
+<span class="sd">                ...</span>
+<span class="sd">            ]</span>
+
+<span class="sd">    * mesh : :class:`fatiando.mesher.PrismMesh`</span>
+<span class="sd">        The mesh that will be used in the inversion.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * seeds : list of :class:`~fatiando.gravmag.harvester.Seed`</span>
+<span class="sd">        The seeds that can be passed to</span>
+<span class="sd">        :func:`~fatiando.gravmag.harvester.harvest`</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Fetching seeds from mesh:&quot;</span><span class="p">)</span>
+    <span class="n">seeds</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">props</span> <span class="ow">in</span> <span class="n">locations</span><span class="p">:</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">_find_index</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">),</span> <span class="n">mesh</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">index</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s">&quot;Couldn&#39;t find seed at location (</span><span class="si">%g</span><span class="s">,</span><span class="si">%g</span><span class="s">,</span><span class="si">%g</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">))</span>
+        <span class="c"># Check for duplicates</span>
+        <span class="k">if</span> <span class="n">index</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">i</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">seeds</span><span class="p">):</span>
+            <span class="n">seeds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Seed</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">props</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  points given: </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">locations</span><span class="p">)))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  unique seeds found: </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">seeds</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">seeds</span>
+</div>
+<span class="k">def</span> <span class="nf">_find_index</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">mesh</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Find the index of the cell that has point inside it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">z1</span><span class="p">,</span> <span class="n">z2</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">bounds</span>
+    <span class="n">nz</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">xs</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">get_xs</span><span class="p">()</span>
+    <span class="n">ys</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">get_ys</span><span class="p">()</span>
+    <span class="n">zs</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">get_zs</span><span class="p">()</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">point</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">x</span> <span class="o">&lt;=</span> <span class="n">x2</span> <span class="ow">and</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="n">x1</span> <span class="ow">and</span> <span class="n">y</span> <span class="o">&lt;=</span> <span class="n">y2</span> <span class="ow">and</span> <span class="n">y</span> <span class="o">&gt;=</span> <span class="n">y1</span> <span class="ow">and</span>
+        <span class="p">((</span><span class="n">z</span> <span class="o">&lt;=</span> <span class="n">z2</span> <span class="ow">and</span> <span class="n">z</span> <span class="o">&gt;=</span> <span class="n">z1</span> <span class="ow">and</span> <span class="n">mesh</span><span class="o">.</span><span class="n">zdown</span><span class="p">)</span> <span class="ow">or</span>
+         <span class="p">(</span><span class="n">z</span> <span class="o">&gt;=</span> <span class="n">z2</span> <span class="ow">and</span> <span class="n">z</span> <span class="o">&lt;=</span> <span class="n">z1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">mesh</span><span class="o">.</span><span class="n">zdown</span><span class="p">))):</span>
+        <span class="k">if</span> <span class="n">mesh</span><span class="o">.</span><span class="n">zdown</span><span class="p">:</span>
+            <span class="c"># -1 because bisect gives the index z would have. I want to know</span>
+            <span class="c"># what index z comes after</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="n">bisect</span><span class="o">.</span><span class="n">bisect_left</span><span class="p">(</span><span class="n">zs</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># If z is not positive downward, zs will not be sorted</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">zs</span><span class="p">)</span> <span class="o">-</span> <span class="n">bisect</span><span class="o">.</span><span class="n">bisect_left</span><span class="p">(</span><span class="n">zs</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">z</span><span class="p">)</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="n">bisect</span><span class="o">.</span><span class="n">bisect_left</span><span class="p">(</span><span class="n">ys</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">bisect</span><span class="o">.</span><span class="n">bisect_left</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">seed</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="n">j</span><span class="o">*</span><span class="n">nx</span> <span class="o">+</span> <span class="n">k</span><span class="o">*</span><span class="n">nx</span><span class="o">*</span><span class="n">ny</span>
+        <span class="c"># Check if the cell is not masked (topography)</span>
+        <span class="k">if</span> <span class="n">mesh</span><span class="p">[</span><span class="n">seed</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">seed</span>
+    <span class="k">return</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="harvest"><a class="viewcode-back" href="../../../api/gravmag.harvester.html#fatiando.gravmag.harvester.harvest">[docs]</a><span class="k">def</span> <span class="nf">harvest</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">seeds</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">compactness</span><span class="p">,</span> <span class="n">threshold</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Run the inversion algorithm and produce an estimate physical property</span>
+<span class="sd">    distribution (density and/or magnetization).</span>
+
+<span class="sd">    Paramters:</span>
+
+<span class="sd">    * data : list of data (e.g., :class:`~fatiando.gravmag.harvester.Gz`)</span>
+<span class="sd">        The data that will be inverted. Data used must match the physical</span>
+<span class="sd">        properties given to the seeds (e.g., gravity data requires seeds to have</span>
+<span class="sd">        ``&#39;density&#39;`` prop)</span>
+
+<span class="sd">    * seeds : list of :class:`~fatiando.gravmag.harvester.Seed`</span>
+<span class="sd">        Lits of seeds used to start the growth process of the inversion. Use</span>
+<span class="sd">        :func:`~fatiando.gravmag.harvester.sow` to generate seeds.</span>
+
+<span class="sd">    * mesh : :class:`fatiando.mesher.PrismMesh`</span>
+<span class="sd">        The mesh used in the inversion. Will estimate the physical property</span>
+<span class="sd">        distribution on this mesh</span>
+
+<span class="sd">    * compactness : float</span>
+<span class="sd">        The compactness regularing parameter (i.e., how much should the estimate</span>
+<span class="sd">        be consentrated around the seeds). Must be positive. To find a good</span>
+<span class="sd">        value for this, start with a small value (like 0.001), run the inversion</span>
+<span class="sd">        and increase the value until desired compactness is achieved.</span>
+
+<span class="sd">    * threshold : float</span>
+<span class="sd">        Control how much the solution can grow (usually downward). In order for</span>
+<span class="sd">        estimate to grow by the accretion of 1 prism, this prism must decrease</span>
+<span class="sd">        the data misfit measure by *threshold* decimal percent. Depends on the</span>
+<span class="sd">        size of the cells in the *mesh* and the distance from a cell to the</span>
+<span class="sd">        observations. Use values between 0.001 and 0.000001.</span>
+<span class="sd">        If cells are small and *threshold* is large (0.001), the seeds won&#39;t</span>
+<span class="sd">        grow. If cells are large and *threshold* is small (0.000001), the seeds</span>
+<span class="sd">        will grow too much.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * estimate, predicted_data : a dict and a list</span>
+<span class="sd">        *estimate* is a dict like::</span>
+
+<span class="sd">            {&#39;physical_property&#39;:array, ...}</span>
+
+<span class="sd">        *estimate* contains the estimates physical properties. The properties</span>
+<span class="sd">        present in *estimate* are the ones given to the seeds. Include the</span>
+<span class="sd">        properties in the *mesh* using::</span>
+
+<span class="sd">            mesh.addprop(&#39;density&#39;, estimate[&#39;density&#39;])</span>
+
+<span class="sd">        This way you can plot the estimate using :mod:`fatiando.vis.myv`.</span>
+
+<span class="sd">        *predicted_data* is a list of numpy arrays with the predicted (model)</span>
+<span class="sd">        data. The list is in the same order as *data*. To plot a map of the fit</span>
+<span class="sd">        for visual inspection and a histogram of the residuals::</span>
+
+<span class="sd">            from fatiando.vis import mpl</span>
+<span class="sd">            mpl.figure()</span>
+<span class="sd">            # Plot the observed and predicted data as contours for visual</span>
+<span class="sd">            # inspection</span>
+<span class="sd">            mpl.subplot(1, 2, 1)</span>
+<span class="sd">            mpl.axis(&#39;scaled&#39;)</span>
+<span class="sd">            mpl.title(&#39;Observed and predicted data&#39;)</span>
+<span class="sd">            levels = mpl.contourf(x, y, gz, (ny, nx), 10)</span>
+<span class="sd">            mpl.colorbar()</span>
+<span class="sd">            # Assuming gz is the only data used</span>
+<span class="sd">            mpl.contour(x, y, predicted[0], (ny, nx), levels)</span>
+<span class="sd">            # Plot a histogram of the residuals</span>
+<span class="sd">            residuals = gz - predicted[0]</span>
+<span class="sd">            mpl.subplot(1, 2, 2)</span>
+<span class="sd">            mpl.title(&#39;Residuals&#39;)</span>
+<span class="sd">            mpl.hist(residuals, bins=10)</span>
+<span class="sd">            mpl.show()</span>
+<span class="sd">            # It&#39;s also good to see the mean and standard deviation of the</span>
+<span class="sd">            # residuals</span>
+<span class="sd">            print &quot;Residuals mean:&quot;, residuals.mean()</span>
+<span class="sd">            print &quot;Residuals stddev:&quot;, residuals.std()</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Harvesting inversion results:&#39;</span><span class="p">)</span>
+    <span class="n">nseeds</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">seeds</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;  compactness: </span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">compactness</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;  threshold: </span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">threshold</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;  # of seeds: </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nseeds</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;  # of data types: </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)))</span>
+    <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="c"># Initialize the estimate with the seeds</span>
+    <span class="n">estimate</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">s</span><span class="o">.</span><span class="n">i</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">props</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">seeds</span><span class="p">)</span>
+    <span class="c"># Initialize the neighbors list</span>
+    <span class="n">neighbors</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">seed</span> <span class="ow">in</span> <span class="n">seeds</span><span class="p">:</span>
+        <span class="n">neighbors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_get_neighbors</span><span class="p">(</span><span class="n">seed</span><span class="p">,</span> <span class="n">neighbors</span><span class="p">,</span> <span class="n">estimate</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+    <span class="c"># Initialize the predicted data</span>
+    <span class="n">predicted</span> <span class="o">=</span> <span class="n">_init_predicted</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">seeds</span><span class="p">,</span> <span class="n">mesh</span><span class="p">)</span>
+    <span class="c"># Start the goal function, data-misfit function and regularizing function</span>
+    <span class="n">totalgoal</span> <span class="o">=</span> <span class="n">_shapefunc</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">predicted</span><span class="p">)</span>
+    <span class="n">totalmisfit</span> <span class="o">=</span> <span class="n">_misfitfunc</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">predicted</span><span class="p">)</span>
+    <span class="n">regularizer</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;  initial goal function: </span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">totalgoal</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;  initial data misfit: </span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">totalmisfit</span><span class="p">))</span>
+    <span class="c"># Weight the regularizing function by the mean extent of the mesh</span>
+    <span class="n">mu</span> <span class="o">=</span> <span class="n">compactness</span><span class="o">*</span><span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span>
+    <span class="c"># Begin the growth process</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;  Running...&#39;</span><span class="p">)</span>
+    <span class="n">accretions</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">iteration</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="n">nseeds</span><span class="p">):</span>
+        <span class="n">grew</span> <span class="o">=</span> <span class="bp">False</span> <span class="c"># To check if at least one seed grew (stopping criterion)</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">nseeds</span><span class="p">):</span>
+            <span class="n">best</span><span class="p">,</span> <span class="n">bestgoal</span><span class="p">,</span> <span class="n">bestmisfit</span><span class="p">,</span> <span class="n">bestregularizer</span> <span class="o">=</span> <span class="n">_grow</span><span class="p">(</span><span class="n">neighbors</span><span class="p">[</span><span class="n">s</span><span class="p">],</span>
+                <span class="n">data</span><span class="p">,</span> <span class="n">predicted</span><span class="p">,</span> <span class="n">totalmisfit</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">regularizer</span><span class="p">,</span> <span class="n">threshold</span><span class="p">)</span>
+            <span class="c"># If there was a best, add to estimate, remove it, and add its</span>
+            <span class="c"># neighbors</span>
+            <span class="k">if</span> <span class="n">best</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">best</span><span class="o">.</span><span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">estimate</span><span class="p">:</span>
+                    <span class="n">estimate</span><span class="p">[</span><span class="n">best</span><span class="o">.</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">estimate</span><span class="p">[</span><span class="n">best</span><span class="o">.</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">best</span><span class="o">.</span><span class="n">props</span><span class="p">)</span>
+                <span class="n">totalgoal</span> <span class="o">=</span> <span class="n">bestgoal</span>
+                <span class="n">totalmisfit</span> <span class="o">=</span> <span class="n">bestmisfit</span>
+                <span class="n">regularizer</span> <span class="o">=</span> <span class="n">bestregularizer</span>
+                <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">predicted</span><span class="p">,</span> <span class="n">best</span><span class="o">.</span><span class="n">effect</span><span class="p">):</span>
+                    <span class="n">p</span> <span class="o">+=</span> <span class="n">e</span>
+                <span class="n">neighbors</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">best</span><span class="o">.</span><span class="n">i</span><span class="p">)</span>
+                <span class="n">neighbors</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="n">_get_neighbors</span><span class="p">(</span><span class="n">best</span><span class="p">,</span> <span class="n">neighbors</span><span class="p">,</span> <span class="n">estimate</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+                <span class="k">del</span> <span class="n">best</span>
+                <span class="n">grew</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="n">accretions</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">grew</span><span class="p">:</span>
+            <span class="k">break</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;  # of accretions: </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">accretions</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;  final goal function: </span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">totalgoal</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;  final compactness regularizing function: </span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">regularizer</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;  final data misfit: </span><span class="si">%g</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">totalmisfit</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;  time it took: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">sec2hms</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">tstart</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">_fmt_estimate</span><span class="p">(</span><span class="n">estimate</span><span class="p">,</span> <span class="n">mesh</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="n">predicted</span>
+</div>
+<span class="k">def</span> <span class="nf">_init_predicted</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">seeds</span><span class="p">,</span> <span class="n">mesh</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make a list with the initial predicted data vectors (effect of seeds)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">predicted</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">observed</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">seed</span> <span class="ow">in</span> <span class="n">seeds</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">+=</span> <span class="n">d</span><span class="o">.</span><span class="n">effect</span><span class="p">(</span><span class="n">mesh</span><span class="p">[</span><span class="n">seed</span><span class="o">.</span><span class="n">i</span><span class="p">],</span> <span class="n">seed</span><span class="o">.</span><span class="n">props</span><span class="p">)</span>
+        <span class="n">predicted</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">predicted</span>
+
+<span class="k">def</span> <span class="nf">_fmt_estimate</span><span class="p">(</span><span class="n">estimate</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make a nice dict with the estimated physical properties in separate array</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">estimate</span><span class="p">:</span>
+        <span class="n">props</span> <span class="o">=</span> <span class="n">estimate</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">props</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">p</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">output</span><span class="p">:</span>
+                <span class="n">output</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">SparseList</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+            <span class="n">output</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">props</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">output</span>
+
+<span class="k">def</span> <span class="nf">_grow</span><span class="p">(</span><span class="n">neighbors</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">predicted</span><span class="p">,</span> <span class="n">totalmisfit</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">regularizer</span><span class="p">,</span> <span class="n">threshold</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Find the neighbor with smallest goal function that also decreases the</span>
+<span class="sd">    misfit</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">best</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">bestgoal</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">bestmisfit</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">bestregularizer</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">neighbors</span><span class="p">:</span>
+        <span class="n">pred</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="o">+</span> <span class="n">e</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">predicted</span><span class="p">,</span> <span class="n">neighbors</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">effect</span><span class="p">)]</span>
+        <span class="n">misfit</span> <span class="o">=</span> <span class="n">_misfitfunc</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pred</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">misfit</span> <span class="o">&lt;</span> <span class="n">totalmisfit</span> <span class="ow">and</span>
+            <span class="nb">float</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">misfit</span> <span class="o">-</span> <span class="n">totalmisfit</span><span class="p">))</span><span class="o">/</span><span class="n">totalmisfit</span> <span class="o">&gt;=</span> <span class="n">threshold</span><span class="p">):</span>
+            <span class="n">reg</span> <span class="o">=</span> <span class="n">regularizer</span> <span class="o">+</span> <span class="n">neighbors</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">distance</span>
+            <span class="n">goal</span> <span class="o">=</span> <span class="n">_shapefunc</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pred</span><span class="p">)</span> <span class="o">+</span> <span class="n">mu</span><span class="o">*</span><span class="n">reg</span>
+            <span class="k">if</span> <span class="n">bestgoal</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">goal</span> <span class="o">&lt;</span> <span class="n">bestgoal</span><span class="p">:</span>
+                <span class="n">bestgoal</span> <span class="o">=</span> <span class="n">goal</span>
+                <span class="n">best</span> <span class="o">=</span> <span class="n">neighbors</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+                <span class="n">bestmisfit</span> <span class="o">=</span> <span class="n">misfit</span>
+                <span class="n">bestregularizer</span> <span class="o">=</span> <span class="n">reg</span>
+    <span class="k">return</span> <span class="n">best</span><span class="p">,</span> <span class="n">bestgoal</span><span class="p">,</span> <span class="n">bestmisfit</span><span class="p">,</span> <span class="n">bestregularizer</span>
+
+<span class="k">def</span> <span class="nf">_shapefunc</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">predicted</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the total shape of anomaly function between the observed and</span>
+<span class="sd">    predicted data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">predicted</span><span class="p">):</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">observed</span><span class="o">*</span><span class="n">p</span><span class="p">)</span><span class="o">/</span><span class="n">d</span><span class="o">.</span><span class="n">norm</span><span class="o">**</span><span class="mi">2</span>
+        <span class="n">result</span> <span class="o">+=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">alpha</span><span class="o">*</span><span class="n">d</span><span class="o">.</span><span class="n">observed</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+<span class="k">def</span> <span class="nf">_misfitfunc</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">predicted</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the total data misfit function between the observed and predicted</span>
+<span class="sd">    data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">observed</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span><span class="o">/</span><span class="n">d</span><span class="o">.</span><span class="n">norm</span>
+               <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">predicted</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">_get_neighbors</span><span class="p">(</span><span class="n">cell</span><span class="p">,</span> <span class="n">neighborhood</span><span class="p">,</span> <span class="n">estimate</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a dict with the new neighbors of cell.</span>
+<span class="sd">    keys are the index of the neighbors in the mesh. values are the Neighbor</span>
+<span class="sd">    objects.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">indexes</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">_neighbor_indexes</span><span class="p">(</span><span class="n">cell</span><span class="o">.</span><span class="n">i</span><span class="p">,</span> <span class="n">mesh</span><span class="p">)</span>
+               <span class="k">if</span> <span class="ow">not</span> <span class="n">_is_neighbor</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">cell</span><span class="o">.</span><span class="n">props</span><span class="p">,</span> <span class="n">neighborhood</span><span class="p">)</span>
+                  <span class="ow">and</span> <span class="ow">not</span> <span class="n">_in_estimate</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">cell</span><span class="o">.</span><span class="n">props</span><span class="p">,</span> <span class="n">estimate</span><span class="p">)]</span>
+    <span class="n">neighbors</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">Neighbor</span><span class="p">(</span>
+            <span class="n">i</span><span class="p">,</span> <span class="n">cell</span><span class="o">.</span><span class="n">props</span><span class="p">,</span> <span class="n">cell</span><span class="o">.</span><span class="n">seed</span><span class="p">,</span> <span class="n">_distance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">cell</span><span class="o">.</span><span class="n">seed</span><span class="p">,</span> <span class="n">mesh</span><span class="p">),</span>
+            <span class="n">_calc_effect</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">cell</span><span class="o">.</span><span class="n">props</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">data</span><span class="p">)))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indexes</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">neighbors</span>
+
+<span class="k">def</span> <span class="nf">_calc_effect</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">props</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the effect of cell mesh[index] with physical properties prop for</span>
+<span class="sd">    each data set.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cell</span> <span class="o">=</span> <span class="n">mesh</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">d</span><span class="o">.</span><span class="n">effect</span><span class="p">(</span><span class="n">cell</span><span class="p">,</span> <span class="n">props</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">_distance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">mesh</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the distance (in number of cells) between cells n and m in mesh.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ni</span><span class="p">,</span> <span class="n">nj</span><span class="p">,</span> <span class="n">nk</span> <span class="o">=</span> <span class="n">_index2ijk</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">mesh</span><span class="p">)</span>
+    <span class="n">mi</span><span class="p">,</span> <span class="n">mj</span><span class="p">,</span> <span class="n">mk</span> <span class="o">=</span> <span class="n">_index2ijk</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">mesh</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sqrt</span><span class="p">((</span><span class="n">ni</span> <span class="o">-</span> <span class="n">mi</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">nj</span> <span class="o">-</span> <span class="n">mj</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">nk</span> <span class="o">-</span> <span class="n">mk</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_index2ijk</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">mesh</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Transform the index of a cell in mesh to a 3-dimensional (i,j,k) index.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">nz</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">index</span><span class="o">/</span><span class="p">(</span><span class="n">nx</span><span class="o">*</span><span class="n">ny</span><span class="p">)</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="p">(</span><span class="n">index</span> <span class="o">-</span> <span class="n">k</span><span class="o">*</span><span class="p">(</span><span class="n">nx</span><span class="o">*</span><span class="n">ny</span><span class="p">))</span><span class="o">/</span><span class="n">nx</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="p">(</span><span class="n">index</span> <span class="o">-</span> <span class="n">k</span><span class="o">*</span><span class="p">(</span><span class="n">nx</span><span class="o">*</span><span class="n">ny</span><span class="p">)</span> <span class="o">-</span> <span class="n">j</span><span class="o">*</span><span class="n">nx</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span>
+
+<span class="k">def</span> <span class="nf">_in_estimate</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">props</span><span class="p">,</span> <span class="n">estimate</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check is index is in estimate with props</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">estimate</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">props</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">estimate</span><span class="p">[</span><span class="n">index</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">return</span> <span class="bp">False</span>
+
+<span class="k">def</span> <span class="nf">_is_neighbor</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">props</span><span class="p">,</span> <span class="n">neighborhood</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check if index is already in the neighborhood with props</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">neighbors</span> <span class="ow">in</span> <span class="n">neighborhood</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">neighbors</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">index</span> <span class="o">==</span> <span class="n">neighbors</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">i</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">props</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">neighbors</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">props</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">return</span> <span class="bp">False</span>
+
+<span class="k">def</span> <span class="nf">_neighbor_indexes</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">mesh</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find the indexes of the neighbors of n&quot;&quot;&quot;</span>
+    <span class="n">nz</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">indexes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c"># The guy above</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">n</span> <span class="o">-</span> <span class="n">nx</span><span class="o">*</span><span class="n">ny</span>
+    <span class="k">if</span> <span class="n">tmp</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">indexes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+    <span class="c"># The guy below</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">n</span> <span class="o">+</span> <span class="n">nx</span><span class="o">*</span><span class="n">ny</span>
+    <span class="k">if</span> <span class="n">tmp</span> <span class="o">&lt;</span> <span class="n">mesh</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="n">indexes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+    <span class="c"># The guy in front</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">n</span><span class="o">%</span><span class="n">nx</span> <span class="o">&lt;</span> <span class="n">nx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">indexes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+    <span class="c"># The guy in the back</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">n</span><span class="o">%</span><span class="n">nx</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">indexes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+    <span class="c"># The guy to the left</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">n</span> <span class="o">+</span> <span class="n">nx</span>
+    <span class="k">if</span> <span class="n">n</span><span class="o">%</span><span class="p">(</span><span class="n">nx</span><span class="o">*</span><span class="n">ny</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">nx</span><span class="o">*</span><span class="p">(</span><span class="n">ny</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">indexes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+    <span class="c"># The guy to the right</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">n</span> <span class="o">-</span> <span class="n">nx</span>
+    <span class="k">if</span> <span class="n">n</span><span class="o">%</span><span class="p">(</span><span class="n">nx</span><span class="o">*</span><span class="n">ny</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">nx</span><span class="p">:</span>
+        <span class="n">indexes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+    <span class="c"># Filter out the ones that do not exist or are masked (topography)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indexes</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">mesh</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Seed"><a class="viewcode-back" href="../../../api/gravmag.harvester.html#fatiando.gravmag.harvester.Seed">[docs]</a><span class="k">class</span> <span class="nc">Seed</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A seed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">props</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">i</span> <span class="o">=</span> <span class="n">i</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">props</span> <span class="o">=</span> <span class="n">props</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="o">=</span> <span class="n">i</span>
+</div>
+<div class="viewcode-block" id="Neighbor"><a class="viewcode-back" href="../../../api/gravmag.harvester.html#fatiando.gravmag.harvester.Neighbor">[docs]</a><span class="k">class</span> <span class="nc">Neighbor</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A neighbor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">props</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">effect</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">i</span> <span class="o">=</span> <span class="n">i</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">props</span> <span class="o">=</span> <span class="n">props</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="o">=</span> <span class="n">seed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">effect</span> <span class="o">=</span> <span class="n">effect</span>
+</div>
+<div class="viewcode-block" id="Data"><a class="viewcode-back" href="../../../api/gravmag.harvester.html#fatiando.gravmag.harvester.Data">[docs]</a><span class="k">class</span> <span class="nc">Data</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A container for some potential field data.</span>
+
+<span class="sd">    Know about its data, observation positions, nature of the mesh, and how</span>
+<span class="sd">    to calculate the effect of a single cell.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meshtype</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">z</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observed</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">meshtype</span> <span class="o">=</span> <span class="n">meshtype</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">meshtype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;prism&#39;</span><span class="p">,</span> <span class="s">&#39;tesseroid&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&quot;Invalid mesh type &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">meshtype</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">meshtype</span> <span class="o">==</span> <span class="s">&#39;prism&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="n">prism_engine</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">meshtype</span> <span class="o">==</span> <span class="s">&#39;tesseroid&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="n">tesseroid_engine</span>
+</div>
+<div class="viewcode-block" id="Potential"><a class="viewcode-back" href="../../../api/gravmag.harvester.html#fatiando.gravmag.harvester.Potential">[docs]</a><span class="k">class</span> <span class="nc">Potential</span><span class="p">(</span><span class="n">Data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A container for data of the gravitational potential.</span>
+
+<span class="sd">    Coordinate system used: x-&gt;North y-&gt;East z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * x, y, z : 1D arrays</span>
+<span class="sd">        Arrays with the x, y, z coordinates of the data points</span>
+
+<span class="sd">    * data : 1D array</span>
+<span class="sd">        The values of the data at the observation points</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meshtype</span><span class="o">=</span><span class="s">&#39;prism&#39;</span><span class="p">):</span>
+        <span class="n">Data</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meshtype</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prop</span> <span class="o">=</span> <span class="s">&#39;density&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">effectfunc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">potential</span>
+
+    <span class="k">def</span> <span class="nf">effect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prism</span><span class="p">,</span> <span class="n">props</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">props</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">effectfunc</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="p">[</span><span class="n">prism</span><span class="p">],</span>
+            <span class="n">props</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="p">])</span>
+</div>
+<div class="viewcode-block" id="Gz"><a class="viewcode-back" href="../../../api/gravmag.harvester.html#fatiando.gravmag.harvester.Gz">[docs]</a><span class="k">class</span> <span class="nc">Gz</span><span class="p">(</span><span class="n">Potential</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A container for data of the gravity anomaly.</span>
+
+<span class="sd">    Coordinate system used: x-&gt;North y-&gt;East z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * x, y, z : 1D arrays</span>
+<span class="sd">        Arrays with the x, y, z coordinates of the data points</span>
+
+<span class="sd">    * data : 1D array</span>
+<span class="sd">        The values of the data at the observation points</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meshtype</span><span class="o">=</span><span class="s">&#39;prism&#39;</span><span class="p">):</span>
+        <span class="n">Potential</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meshtype</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">effectfunc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">gz</span>
+</div>
+<div class="viewcode-block" id="Gxx"><a class="viewcode-back" href="../../../api/gravmag.harvester.html#fatiando.gravmag.harvester.Gxx">[docs]</a><span class="k">class</span> <span class="nc">Gxx</span><span class="p">(</span><span class="n">Potential</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A container for data of the xx (north-north) component of the gravity</span>
+<span class="sd">    gradient tensor.</span>
+
+<span class="sd">    Coordinate system used: x-&gt;North y-&gt;East z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * x, y, z : 1D arrays</span>
+<span class="sd">        Arrays with the x, y, z coordinates of the data points</span>
+
+<span class="sd">    * data : 1D array</span>
+<span class="sd">        The values of the data at the observation points</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meshtype</span><span class="o">=</span><span class="s">&#39;prism&#39;</span><span class="p">):</span>
+        <span class="n">Potential</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meshtype</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">effectfunc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">gxx</span>
+</div>
+<div class="viewcode-block" id="Gxy"><a class="viewcode-back" href="../../../api/gravmag.harvester.html#fatiando.gravmag.harvester.Gxy">[docs]</a><span class="k">class</span> <span class="nc">Gxy</span><span class="p">(</span><span class="n">Potential</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A container for data of the xy (north-east) component of the gravity</span>
+<span class="sd">    gradient tensor.</span>
+
+<span class="sd">    Coordinate system used: x-&gt;North y-&gt;East z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * x, y, z : 1D arrays</span>
+<span class="sd">        Arrays with the x, y, z coordinates of the data points</span>
+
+<span class="sd">    * data : 1D array</span>
+<span class="sd">        The values of the data at the observation points</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meshtype</span><span class="o">=</span><span class="s">&#39;prism&#39;</span><span class="p">):</span>
+        <span class="n">Potential</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meshtype</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">effectfunc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">gxy</span>
+</div>
+<div class="viewcode-block" id="Gxz"><a class="viewcode-back" href="../../../api/gravmag.harvester.html#fatiando.gravmag.harvester.Gxz">[docs]</a><span class="k">class</span> <span class="nc">Gxz</span><span class="p">(</span><span class="n">Potential</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A container for data of the xz (north-vertical) component of the gravity</span>
+<span class="sd">    gradient tensor.</span>
+
+<span class="sd">    Coordinate system used: x-&gt;North y-&gt;East z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * x, y, z : 1D arrays</span>
+<span class="sd">        Arrays with the x, y, z coordinates of the data points</span>
+
+<span class="sd">    * data : 1D array</span>
+<span class="sd">        The values of the data at the observation points</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meshtype</span><span class="o">=</span><span class="s">&#39;prism&#39;</span><span class="p">):</span>
+        <span class="n">Potential</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meshtype</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">effectfunc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">gxz</span>
+</div>
+<div class="viewcode-block" id="Gyy"><a class="viewcode-back" href="../../../api/gravmag.harvester.html#fatiando.gravmag.harvester.Gyy">[docs]</a><span class="k">class</span> <span class="nc">Gyy</span><span class="p">(</span><span class="n">Potential</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A container for data of the yy (east-east) component of the gravity</span>
+<span class="sd">    gradient tensor.</span>
+
+<span class="sd">    Coordinate system used: x-&gt;North y-&gt;East z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * x, y, z : 1D arrays</span>
+<span class="sd">        Arrays with the x, y, z coordinates of the data points</span>
+
+<span class="sd">    * data : 1D array</span>
+<span class="sd">        The values of the data at the observation points</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meshtype</span><span class="o">=</span><span class="s">&#39;prism&#39;</span><span class="p">):</span>
+        <span class="n">Potential</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meshtype</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">effectfunc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">gyy</span>
+</div>
+<div class="viewcode-block" id="Gyz"><a class="viewcode-back" href="../../../api/gravmag.harvester.html#fatiando.gravmag.harvester.Gyz">[docs]</a><span class="k">class</span> <span class="nc">Gyz</span><span class="p">(</span><span class="n">Potential</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A container for data of the yz (east-vertical) component of the gravity</span>
+<span class="sd">    gradient tensor.</span>
+
+<span class="sd">    Coordinate system used: x-&gt;North y-&gt;East z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * x, y, z : 1D arrays</span>
+<span class="sd">        Arrays with the x, y, z coordinates of the data points</span>
+
+<span class="sd">    * data : 1D array</span>
+<span class="sd">        The values of the data at the observation points</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meshtype</span><span class="o">=</span><span class="s">&#39;prism&#39;</span><span class="p">):</span>
+        <span class="n">Potential</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meshtype</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">effectfunc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">gyz</span>
+</div>
+<div class="viewcode-block" id="Gzz"><a class="viewcode-back" href="../../../api/gravmag.harvester.html#fatiando.gravmag.harvester.Gzz">[docs]</a><span class="k">class</span> <span class="nc">Gzz</span><span class="p">(</span><span class="n">Potential</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A container for data of the zz (vertical-vertical) component of the gravity</span>
+<span class="sd">    gradient tensor.</span>
+
+<span class="sd">    Coordinate system used: x-&gt;North y-&gt;East z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * x, y, z : 1D arrays</span>
+<span class="sd">        Arrays with the x, y, z coordinates of the data points</span>
+
+<span class="sd">    * data : 1D array</span>
+<span class="sd">        The values of the data at the observation points</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meshtype</span><span class="o">=</span><span class="s">&#39;prism&#39;</span><span class="p">):</span>
+        <span class="n">Potential</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meshtype</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">effectfunc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">gzz</span>
+</div>
+<div class="viewcode-block" id="TotalField"><a class="viewcode-back" href="../../../api/gravmag.harvester.html#fatiando.gravmag.harvester.TotalField">[docs]</a><span class="k">class</span> <span class="nc">TotalField</span><span class="p">(</span><span class="n">Potential</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A container for data of the total field magnetic anomaly.</span>
+
+<span class="sd">    Coordinate system used: x-&gt;North y-&gt;East z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * x, y, z : 1D arrays</span>
+<span class="sd">        Arrays with the x, y, z coordinates of the data points</span>
+
+<span class="sd">    * data : 1D array</span>
+<span class="sd">        The values of the data at the observation points</span>
+
+<span class="sd">    * inc, dec : floats</span>
+<span class="sd">        The inclination and declination of the inducing field</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">inc</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">meshtype</span><span class="o">=</span><span class="s">&#39;prism&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">meshtype</span> <span class="o">!=</span> <span class="s">&#39;prism&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
+                <span class="s">&quot;Unsupported mesh type &#39;</span><span class="si">%s</span><span class="s">&#39; for total field anomaly.&quot;</span>
+                <span class="o">%</span> <span class="p">(</span><span class="n">meshtype</span><span class="p">))</span>
+        <span class="n">Potential</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meshtype</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">effectfunc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">tf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prop</span> <span class="o">=</span> <span class="s">&#39;magnetization&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inc</span> <span class="o">=</span> <span class="n">inc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dec</span> <span class="o">=</span> <span class="n">dec</span>
+
+    <span class="k">def</span> <span class="nf">effect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prism</span><span class="p">,</span> <span class="n">props</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">props</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span>
+        <span class="n">pinc</span><span class="p">,</span> <span class="n">pdec</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="s">&#39;inclination&#39;</span> <span class="ow">in</span> <span class="n">props</span><span class="p">:</span>
+            <span class="n">pinc</span> <span class="o">=</span> <span class="n">props</span><span class="p">[</span><span class="s">&#39;inclination&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s">&#39;declination&#39;</span> <span class="ow">in</span> <span class="n">props</span><span class="p">:</span>
+            <span class="n">pdec</span> <span class="o">=</span> <span class="n">props</span><span class="p">[</span><span class="s">&#39;declination&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">effectfunc</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="p">[</span><span class="n">prism</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">inc</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">pmag</span><span class="o">=</span><span class="n">props</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="p">],</span> <span class="n">pinc</span><span class="o">=</span><span class="n">pinc</span><span class="p">,</span> <span class="n">pdec</span><span class="o">=</span><span class="n">pdec</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+.. _cookbook_mesher_tesseroidmesh:
+
+Meshing: Make and plot a tesseroid mesh
+========================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/mesher_tesseroidmesh.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/mesher_tesseroidmesh.py
+    :language: python
+    :linenos:

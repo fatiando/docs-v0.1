@@ -1,0 +1,748 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Regularizing functions (fatiando.inversion.regularizer) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Inverse problem solving tools (fatiando.inversion)" href="inversion.html" />
+    <link rel="next" title="Base data module class (fatiando.inversion.datamodule)" href="inversion.datamodule.html" />
+    <link rel="prev" title="Heuristic solvers (fatiando.inversion.heuristic)" href="inversion.heuristic.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="inversion.datamodule.html" title="Base data module class (fatiando.inversion.datamodule)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="inversion.heuristic.html" title="Heuristic solvers (fatiando.inversion.heuristic)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="inversion.html" accesskey="U">Inverse problem solving tools (<tt class="docutils literal"><span class="pre">fatiando.inversion</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.inversion.regularizer">
+<span id="regularizing-functions-fatiando-inversion-regularizer"></span><span id="fatiando-inversion-regularizer"></span><h1>Regularizing functions (<tt class="docutils literal"><span class="pre">fatiando.inversion.regularizer</span></tt>)<a class="headerlink" href="#module-fatiando.inversion.regularizer" title="Permalink to this headline">¶</a></h1>
+<p>Base Regularizer class with the format expected by all inverse problem solvers,
+plus a range of regularizing functions already implemented.</p>
+<p><strong>Tikhonov regularization</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.inversion.regularizer.Damping" title="fatiando.inversion.regularizer.Damping"><tt class="xref py py-class docutils literal"><span class="pre">Damping</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.inversion.regularizer.Smoothness1D" title="fatiando.inversion.regularizer.Smoothness1D"><tt class="xref py py-class docutils literal"><span class="pre">Smoothness1D</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.inversion.regularizer.Smoothness2D" title="fatiando.inversion.regularizer.Smoothness2D"><tt class="xref py py-class docutils literal"><span class="pre">Smoothness2D</span></tt></a></li>
+</ul>
+<p><strong>Total Variation</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.inversion.regularizer.TotalVariation1D" title="fatiando.inversion.regularizer.TotalVariation1D"><tt class="xref py py-class docutils literal"><span class="pre">TotalVariation1D</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.inversion.regularizer.TotalVariation2D" title="fatiando.inversion.regularizer.TotalVariation2D"><tt class="xref py py-class docutils literal"><span class="pre">TotalVariation2D</span></tt></a></li>
+</ul>
+<p><strong>Equality constraint</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.inversion.regularizer.Equality" title="fatiando.inversion.regularizer.Equality"><tt class="xref py py-class docutils literal"><span class="pre">Equality</span></tt></a></li>
+</ul>
+<hr class="docutils" />
+<dl class="class">
+<dt id="fatiando.inversion.regularizer.Damping">
+<em class="property">class </em><tt class="descclassname">fatiando.inversion.regularizer.</tt><tt class="descname">Damping</tt><big>(</big><em>mu</em>, <em>nparams</em>, <em>sparse=False</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/regularizer.html#Damping"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.regularizer.Damping" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fatiando.inversion.regularizer.Regularizer" title="fatiando.inversion.regularizer.Regularizer"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.inversion.regularizer.Regularizer</span></tt></a></p>
+<p>Damping regularization. Also known as Tikhonov order 0, Ridge Regression, or
+Minimum Norm.</p>
+<p>Requires that the estimate have its l2-norm as close as possible to zero.</p>
+<p>This regularizing function has the form</p>
+<div class="math">
+\[\theta(\bar{p}) = \bar{p}^T\bar{p}\]</div>
+<p>The gradient and Hessian matrix are, respectively:</p>
+<div class="math">
+\[\bar{g}(\bar{p}) = 2\bar{\bar{I}}\bar{p}\]</div>
+<p>and</p>
+<div class="math">
+\[\bar{\bar{H}}(\bar{p}) = 2\bar{\bar{I}}\]</div>
+<p>where <span class="math">\(\bar{\bar{I}}\)</span> is the identity matrix.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>mu <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The regularizing parameter. A positve scalar that controls the tradeoff
+between data fitting and regularization. I.e., how much damping to apply</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>nparams <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Number of parameters in the inversion</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>sparse <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">Wether or not to use sparce matrices from scipy</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hessian</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">damp</span> <span class="o">=</span> <span class="n">Damping</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">nparams</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">damp</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+<span class="go">0.9</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">damp</span><span class="o">.</span><span class="n">sum_hessian</span><span class="p">(</span><span class="n">hessian</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+<span class="go">[[ 1.2  0.   0. ]</span>
+<span class="go"> [ 2.   0.2  0. ]</span>
+<span class="go"> [ 4.   0.   0.2]]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.inversion.regularizer.Equality">
+<em class="property">class </em><tt class="descclassname">fatiando.inversion.regularizer.</tt><tt class="descname">Equality</tt><big>(</big><em>mu</em>, <em>reference</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/regularizer.html#Equality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.regularizer.Equality" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fatiando.inversion.regularizer.Regularizer" title="fatiando.inversion.regularizer.Regularizer"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.inversion.regularizer.Regularizer</span></tt></a></p>
+<p>Equality constraints.</p>
+<p>Imposes that some or all of the parameters be as close as possible to
+given reference values.</p>
+<p>This regularizing function has the form</p>
+<div class="math">
+\[\theta(\bar{p}) = (\bar{p} - \bar{p}^{\thinspace a})^T
+\bar{\bar{A}}^T\bar{\bar{A}}(\bar{p} - \bar{p}^{\thinspace a})\]</div>
+<p>Vector <span class="math">\(\bar{p}^{\thinspace a}\)</span> contains the refence values and
+matrix <span class="math">\(\bar{\bar{A}}\)</span> is a diagonal matrix. The elements in the
+diagonal of <span class="math">\(\bar{\bar{A}}\)</span> are either 1 or 0. If there is a
+reference for parameter <span class="math">\(i\)</span>, then <span class="math">\(A_{ii} = 1\)</span>, else
+<span class="math">\(A_{ii} = 0\)</span>. Since this is a bit hard to explain, I&#8217;ll just give an
+example. Suppose there are 3 parameters
+and I want to impose that the second one be as close as possible to the
+number 26. Then,</p>
+<div class="math">
+\[\begin{split}\bar{p} =
+    \begin{bmatrix}
+    p_1 \\ p_2 \\ p_3
+    \end{bmatrix} , \quad
+\bar{p}^{\thinspace a} =
+    \begin{bmatrix}
+    0 \\ 26 \\ 0
+    \end{bmatrix} \quad \mathrm{and} \quad
+\bar{\bar{A}} =
+    \begin{bmatrix}
+    0 &amp; 0 &amp; 0 \\
+    0 &amp; 1 &amp; 0 \\
+    0 &amp; 0 &amp; 0
+    \end{bmatrix}\end{split}\]</div>
+<p>The gradient and Hessian matrix are, respectively:</p>
+<div class="math">
+\[\bar{g}(\bar{p}) = 2\bar{\bar{A}}^T\bar{\bar{A}}
+\left(\bar{p} - \bar{p}^{\thinspace a} \right)\]</div>
+<p>and</p>
+<div class="math">
+\[\bar{\bar{H}}(\bar{p}) = 2\bar{\bar{A}}^T\bar{\bar{A}}\]</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>mu <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The regularizing parameter. A positve scalar that controls the tradeoff
+between data fitting and regularization. I.e., how much equality to
+impose</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>reference <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first">Dictionay with the reference values for the parameters you with to
+constrain. The keys are the indexes of the parameters in the parameter
+vector. The respective values are the reference value for each
+parameter. For example, to constrain parameter 1 to be as close as
+possible to 3.4 and parameter 57 to be as close as possible to 43.7:</p>
+<div class="last highlight-python"><div class="highlight"><pre><span class="n">reference</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span><span class="mf">3.4</span><span class="p">,</span> <span class="mi">57</span><span class="p">:</span><span class="mf">43.7</span><span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.inversion.regularizer.Regularizer">
+<em class="property">class </em><tt class="descclassname">fatiando.inversion.regularizer.</tt><tt class="descname">Regularizer</tt><big>(</big><em>mu</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/regularizer.html#Regularizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.regularizer.Regularizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>A generic regularizing function module.</p>
+<p>Use this class as a skeleton for building custom regularizer modules, like
+smoothness, damping, total variation, etc.</p>
+<p>Regularizer classes are how each inverse problem solver knows how to
+calculate things like:</p>
+<ul class="simple">
+<li>Value of the regularizing function</li>
+<li>Gradient of the regularizing function</li>
+<li>Hessian of the regularizing function</li>
+</ul>
+<p>Not all solvers use all of the above. For examples, heuristic solvers don&#8217;t
+require gradient and hessian calculations.</p>
+<p>This class has templates for all of these methods so that all solvers know
+what to expect.</p>
+<p>Constructor parameters common to all methods:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>mu <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The regularizing parameter. A positve scalar that controls the tradeoff
+between data fitting and regularization.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="method">
+<dt id="fatiando.inversion.regularizer.Regularizer.sum_gradient">
+<tt class="descname">sum_gradient</tt><big>(</big><em>gradient</em>, <em>p=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/regularizer.html#Regularizer.sum_gradient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.regularizer.Regularizer.sum_gradient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sums the gradient vector of this regularizer module to <em>gradient</em> and
+returns the result.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>gradient <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The old gradient vector</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>p <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The parameter vector</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Solvers for linear problems will use <tt class="docutils literal"><span class="pre">p</span> <span class="pre">=</span> <span class="pre">None</span></tt> so that the
+class knows how to calculate gradients more efficiently for these
+cases.</p>
+</div>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>new_gradient <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The new gradient vector</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="fatiando.inversion.regularizer.Regularizer.sum_hessian">
+<tt class="descname">sum_hessian</tt><big>(</big><em>hessian</em>, <em>p=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/regularizer.html#Regularizer.sum_hessian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.regularizer.Regularizer.sum_hessian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sums the Hessian matrix of this regularizer module to <em>hessian</em> and
+returns the result.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>hessian <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">2D array with the old Hessian matrix</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>p <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The parameter vector</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Solvers for linear problems will use <tt class="docutils literal"><span class="pre">p</span> <span class="pre">=</span> <span class="pre">None</span></tt> so that the
+class knows how to calculate gradients more efficiently for these
+cases.</p>
+</div>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>new_hessian <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">2D array with the new Hessian matrix</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.inversion.regularizer.Smoothness">
+<em class="property">class </em><tt class="descclassname">fatiando.inversion.regularizer.</tt><tt class="descname">Smoothness</tt><big>(</big><em>mu</em>, <em>nparams</em>, <em>sparse=False</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/regularizer.html#Smoothness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.regularizer.Smoothness" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fatiando.inversion.regularizer.Regularizer" title="fatiando.inversion.regularizer.Regularizer"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.inversion.regularizer.Regularizer</span></tt></a></p>
+<p>Smoothness regularization for n-dimensional problems. Imposes that adjacent
+parameters have values as close as possible to each other. What <em>adjacent</em>
+means depends of the dimension of the problem. It can be spacially adjacent,
+or just adjacent in the parameter vector, or both.</p>
+<p>This class provides a template for smoothness classes of a specific
+dimension.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last"><strong>DON&#8217;T USE THIS CLASS DIRECTLY!</strong> Instead, use the
+Smoothness*D classes.</p>
+</div>
+<p>This regularizing function has the form</p>
+<div class="math">
+\[\theta(\bar{p}) = \bar{p}^T\bar{\bar{R}}^T\bar{\bar{R}}\bar{p}\]</div>
+<p>The gradient and Hessian matrix are, respectively:</p>
+<div class="math">
+\[\bar{g}(\bar{p}) = 2\bar{\bar{R}}^T\bar{\bar{R}}\bar{p}\]</div>
+<p>and</p>
+<div class="math">
+\[\bar{\bar{H}}(\bar{p}) = 2\bar{\bar{R}}^T\bar{\bar{R}}\]</div>
+<p>where <span class="math">\(\bar{\bar{R}}\)</span> is a finite difference matrix.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>mu <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The regularizing parameter. A positve scalar that controls the tradeoff
+between data fitting and regularization. I.e., how much smoothness to
+apply.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>nparams <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Number of parameters in the inversion</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>sparse <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">Wether or not to use sparce matrices from scipy</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.inversion.regularizer.Smoothness1D">
+<em class="property">class </em><tt class="descclassname">fatiando.inversion.regularizer.</tt><tt class="descname">Smoothness1D</tt><big>(</big><em>mu</em>, <em>nparams</em>, <em>sparse=False</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/regularizer.html#Smoothness1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.regularizer.Smoothness1D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fatiando.inversion.regularizer.Smoothness" title="fatiando.inversion.regularizer.Smoothness"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.inversion.regularizer.Smoothness</span></tt></a></p>
+<p>Smoothness regularization for 1D problems. Also known as Tikhonov order 1.
+Imposes that adjacent parameters have values as close as possible to each
+other. By adjacent, I mean next to each other in the parameter vector,
+e.g., p[2] and p[3].</p>
+<p>For example, if there are 7 parameters, matrix <span class="math">\(\bar{\bar{R}}\)</span> will
+be</p>
+<div class="math">
+\[\begin{split}\bar{\bar{R}} =
+\begin{bmatrix}
+1 &amp; -1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0\\
+0 &amp; 1 &amp; -1 &amp; 0 &amp; 0 &amp; 0 &amp; 0\\
+0 &amp; 0 &amp; 1 &amp; -1 &amp; 0 &amp; 0 &amp; 0\\
+0 &amp; 0 &amp; 0 &amp; 1 &amp; -1 &amp; 0 &amp; 0\\
+0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 &amp; -1 &amp; 0\\
+0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 &amp; -1
+\end{bmatrix}\end{split}\]</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>mu <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The regularizing parameter. A positve scalar that controls the tradeoff
+between data fitting and regularization. I.e., how much smoothness to
+apply.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>nparams <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Number of parameters in the inversion</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>sparse <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">Wether or not to use sparce matrices from scipy</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.inversion.regularizer.Smoothness2D">
+<em class="property">class </em><tt class="descclassname">fatiando.inversion.regularizer.</tt><tt class="descname">Smoothness2D</tt><big>(</big><em>mu</em>, <em>shape</em>, <em>sparse=False</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/regularizer.html#Smoothness2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.regularizer.Smoothness2D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fatiando.inversion.regularizer.Smoothness" title="fatiando.inversion.regularizer.Smoothness"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.inversion.regularizer.Smoothness</span></tt></a></p>
+<p>Smoothness regularization for 2D problems. Also known as Tikhonov order 1.</p>
+<p>Imposes that <strong>spacially</strong> adjacent parameters have values as close as
+possible to each other. By spacially adjacent, I mean that I assume the
+parameters are originaly placed on a grid and the grid is then flattened to
+make the parameter vector.</p>
+<p>For example, if the parameters are on a 2 x 2 grid (for example, in 2D
+linear gravimetric problems), there are 4 parameters on the parameter vector</p>
+<div class="math">
+\[\begin{split}\mathrm{grid} =
+\begin{pmatrix}
+p_1 &amp; p_2 \\
+p_3 &amp; p_4
+\end{pmatrix}, \quad
+\bar{p} =
+\begin{pmatrix}
+p_1 \\ p_2 \\
+p_3 \\ p_4
+\end{pmatrix}\end{split}\]</div>
+<p>In the case of our example above, the matrix <span class="math">\(\bar{\bar{R}}\)</span> will be</p>
+<div class="math">
+\[\begin{split}\bar{\bar{R}} =
+\begin{bmatrix}
+1 &amp; -1 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; 1 &amp; -1 \\
+1 &amp; 0 &amp; -1 &amp; 0 \\
+0 &amp; 1 &amp; 0 &amp; -1 \\
+\end{bmatrix}\end{split}\]</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>mu <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The regularizing parameter. A positve scalar that controls the tradeoff
+between data fitting and regularization. I.e., how much smoothness to
+apply.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>shape <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (ny, nx)</span></dt>
+<dd><p class="first last">Number of parameters in each direction of the grid</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>sparse <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">Wether or not to use sparce matrices from scipy</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.inversion.regularizer.TotalVariation">
+<em class="property">class </em><tt class="descclassname">fatiando.inversion.regularizer.</tt><tt class="descname">TotalVariation</tt><big>(</big><em>mu</em>, <em>nparams</em>, <em>beta=1e-10</em>, <em>sparse=False</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/regularizer.html#TotalVariation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.regularizer.TotalVariation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fatiando.inversion.regularizer.Regularizer" title="fatiando.inversion.regularizer.Regularizer"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.inversion.regularizer.Regularizer</span></tt></a></p>
+<p>Total variation regularization for n-dimensional problems. Imposes that
+adjacent parameters have values as close as possible to each other, in a
+<strong>l1-norm</strong> sense. What <em>adjacent</em> means depends of the dimension of the
+problem. It can be spacially adjacent, or just adjacent in the parameter
+vector, or both.</p>
+<p>&#8220;in a l1-norm sense&#8221; means that, instead of smoothness, total variation
+imposes <strong>sharpness</strong> on the solution. This means that most parameters will
+be close to each other in value, but a few will be far apart, allowing
+discontinuities to appear.</p>
+<p>This class provides a template for total variation classes of a specific
+dimension.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last"><strong>DON&#8217;T USE THIS CLASS DIRECTLY!</strong> Instead, use the
+TotalVariation*D classes.</p>
+</div>
+<p>This regularizing function has the form (Martins et al., 2011)</p>
+<div class="math">
+\[\theta(\bar{p}) = \sum\limits_{k=1}^L |v_k|\]</div>
+<p>where <span class="math">\(v_k\)</span> is the kth element of vector <span class="math">\(\bar{v}\)</span></p>
+<div class="math">
+\[\bar{v} = \bar{\bar{R}}\bar{p}\]</div>
+<p>Function <span class="math">\(\theta(\bar{p})\)</span> is not differentiable when <span class="math">\(v_k\)</span>
+approaches zero. We can substitute it with a more friendly version
+(Martins et al., 2011)</p>
+<div class="math">
+\[\theta_{\beta}(\bar{p}) = \sum\limits_{k=1}^L
+\sqrt{v_k^2 + \beta}\]</div>
+<p><span class="math">\(\beta\)</span> should be small and controls how close this function is to
+<span class="math">\(\theta(\bar{p})\)</span>. The larger the value of <span class="math">\(\beta\)</span> is, the
+closer <span class="math">\(\theta_{\beta}\)</span> is to the smoothness regularization.</p>
+<p>The gradient and Hessian matrix are, respectively (Martins et al., 2011):</p>
+<div class="math">
+\[\bar{g}(\bar{p}) = \bar{\bar{R}}^T \bar{q}(\bar{p})\]</div>
+<p>and</p>
+<div class="math">
+\[\bar{\bar{H}}(\bar{p}) = \bar{\bar{R}}^T\bar{\bar{Q}}(\bar{p})
+\bar{\bar{R}}\]</div>
+<p>where <span class="math">\(\bar{\bar{R}}\)</span> is a finite difference matrix, and
+<span class="math">\(\bar{q}\)</span> and <span class="math">\(\bar{\bar{Q}}\)</span> are</p>
+<div class="math">
+\[\begin{split}\bar{q}(\bar{p}) =
+\begin{bmatrix}
+\frac{v_1}{\sqrt{v_1^2 + \beta}} \\
+\frac{v_2}{\sqrt{v_2^2 + \beta}} \\
+\vdots \\ \frac{v_L}{\sqrt{v_L^2 + \beta}}
+\end{bmatrix}\end{split}\]</div>
+<p>and</p>
+<div class="math">
+\[\begin{split}\bar{\bar{Q}}(\bar{p}) =
+\begin{bmatrix}
+\frac{\beta}{(v_1^2 + \beta)^{\frac{3}{2}}} &amp; 0 &amp; \ldots &amp; 0 \\
+0 &amp; \frac{\beta}{(v_2^2 + \beta)^{\frac{3}{2}}} &amp; \ldots &amp; 0 \\
+\vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+0 &amp; 0 &amp; \ldots &amp; \frac{\beta}{(v_L^2 + \beta)^{\frac{3}{2}}}
+\end{bmatrix}\end{split}\]</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>mu <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The regularizing parameter. A positve scalar that controls the tradeoff
+between data fitting and regularization. I.e., how much sharpness to
+apply.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>nparams <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Number of parameters in the inversion</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>sparse <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">Wether or not to use sparce matrices from scipy</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>References:</p>
+<p>Martins, C. M., W. A. Lima, V. C. F. Barbosa, and J. B. C. Silva, 2011,
+Total variation regularization for depth-to-basement estimate: Part 1 -
+mathematical details and applications: Geophysics, 76, I1-I12.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.inversion.regularizer.TotalVariation1D">
+<em class="property">class </em><tt class="descclassname">fatiando.inversion.regularizer.</tt><tt class="descname">TotalVariation1D</tt><big>(</big><em>mu</em>, <em>nparams</em>, <em>beta=1e-10</em>, <em>sparse=False</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/regularizer.html#TotalVariation1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.regularizer.TotalVariation1D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fatiando.inversion.regularizer.TotalVariation" title="fatiando.inversion.regularizer.TotalVariation"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.inversion.regularizer.TotalVariation</span></tt></a></p>
+<p>Total variation regularization for 1D problems.</p>
+<p>Imposes that adjacent parameters have values as close as possible to each
+other, in a <strong>l1-norm</strong> sense. By adjacent, I mean next to each other in the
+parameter vector, e.g., p[2] and p[3].</p>
+<p>In other words, total variation imposes sharpness on the solution. See
+<a class="reference internal" href="#fatiando.inversion.regularizer.TotalVariation" title="fatiando.inversion.regularizer.TotalVariation"><tt class="xref py py-class docutils literal"><span class="pre">TotalVariation</span></tt></a> for more
+explanation on this. See
+<a class="reference internal" href="#fatiando.inversion.regularizer.Smoothness1D" title="fatiando.inversion.regularizer.Smoothness1D"><tt class="xref py py-class docutils literal"><span class="pre">Smoothness1D</span></tt></a> for details on
+matrix <span class="math">\(\bar{\bar{R}}\)</span>.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>mu <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The regularizing parameter. A positve scalar that controls the tradeoff
+between data fitting and regularization. I.e., how much sharpness to
+apply.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>nparams <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Number of parameters in the inversion</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>sparse <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">Wether or not to use sparce matrices from scipy</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.inversion.regularizer.TotalVariation2D">
+<em class="property">class </em><tt class="descclassname">fatiando.inversion.regularizer.</tt><tt class="descname">TotalVariation2D</tt><big>(</big><em>mu</em>, <em>shape</em>, <em>beta=1e-10</em>, <em>sparse=False</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/regularizer.html#TotalVariation2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.regularizer.TotalVariation2D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fatiando.inversion.regularizer.TotalVariation" title="fatiando.inversion.regularizer.TotalVariation"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.inversion.regularizer.TotalVariation</span></tt></a></p>
+<p>Total variation regularization for 1D problems.</p>
+<p>Imposes that spacially adjacent parameters have values as close as possible
+to each other, in a <strong>l1-norm</strong> sense. By spacially adjacent, I mean that I
+assume the parameters are originaly placed on a grid and the grid is then
+flattened to make the parameter vector.</p>
+<p>In other words, total variation imposes sharpness on the solution. See
+<a class="reference internal" href="#fatiando.inversion.regularizer.TotalVariation" title="fatiando.inversion.regularizer.TotalVariation"><tt class="xref py py-class docutils literal"><span class="pre">TotalVariation</span></tt></a> for more
+explanation on this. See
+<a class="reference internal" href="#fatiando.inversion.regularizer.Smoothness2D" title="fatiando.inversion.regularizer.Smoothness2D"><tt class="xref py py-class docutils literal"><span class="pre">Smoothness2D</span></tt></a>
+for details on matrix <span class="math">\(\bar{\bar{R}}\)</span>.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>mu <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The regularizing parameter. A positve scalar that controls the tradeoff
+between data fitting and regularization. I.e., how much smoothness to
+apply.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>shape <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (ny, nx)</span></dt>
+<dd><p class="first last">(ny, nx): number of parameters in each direction of the grid</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>sparse <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">Wether or not to use sparce matrices from scipy</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.inversion.regularizer.fdmatrix1d">
+<tt class="descclassname">fatiando.inversion.regularizer.</tt><tt class="descname">fdmatrix1d</tt><big>(</big><em>n</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/regularizer.html#fdmatrix1d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.regularizer.fdmatrix1d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a finite difference matrix for a 1D problem.</p>
+<p>See <a class="reference internal" href="#fatiando.inversion.regularizer.Smoothness1D" title="fatiando.inversion.regularizer.Smoothness1D"><tt class="xref py py-class docutils literal"><span class="pre">Smoothness1D</span></tt></a> for more
+explanation on this matrix.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>n <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Number of elements in the parameter vector</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>fdmat <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The finite difference matrix for of a 1D problem with n parameters</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.inversion.regularizer.fdmatrix2d">
+<tt class="descclassname">fatiando.inversion.regularizer.</tt><tt class="descname">fdmatrix2d</tt><big>(</big><em>shape</em>, <em>sparse=False</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/regularizer.html#fdmatrix2d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.regularizer.fdmatrix2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a finite difference matrix for a 2D problem.</p>
+<p>See <a class="reference internal" href="#fatiando.inversion.regularizer.Smoothness2D" title="fatiando.inversion.regularizer.Smoothness2D"><tt class="xref py py-class docutils literal"><span class="pre">Smoothness2D</span></tt></a> for more
+explanation on this matrix.</p>
+<p>The diagonal derivatives are not taken into account.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>shape <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (ny, nx)</span></dt>
+<dd><p class="first last">(ny, nx): number of parameters in each direction of the grid
+representing the interpretative model.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>sparse <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">If True, will use <cite>scipy.sparse.csr_matrix</cite> instead of normal numpy
+arrays</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>fdmat <span class="classifier-delimiter">:</span> <span class="classifier">aray</span></dt>
+<dd><p class="first last">The finite difference matrix for of a 2D problem</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="inversion.heuristic.html"
+                        title="previous chapter">Heuristic solvers (<tt class="docutils literal"><span class="pre">fatiando.inversion.heuristic</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="inversion.datamodule.html"
+                        title="next chapter">Base data module class (<tt class="docutils literal"><span class="pre">fatiando.inversion.datamodule</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/inversion.regularizer.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="inversion.datamodule.html" title="Base data module class (fatiando.inversion.datamodule)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="inversion.heuristic.html" title="Heuristic solvers (fatiando.inversion.heuristic)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="inversion.html" >Inverse problem solving tools (<tt class="docutils literal"><span class="pre">fatiando.inversion</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

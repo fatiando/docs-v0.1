@@ -1,0 +1,12 @@
+.. _cookbook_gravmag_basin2d_trapezoidal:
+
+GravMag: Simple gravity inversion for the relief of a 2D trapezoidal basin
+===========================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/gravmag_basin2d_trapezoidal.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/gravmag_basin2d_trapezoidal.py
+    :language: python
+    :linenos:

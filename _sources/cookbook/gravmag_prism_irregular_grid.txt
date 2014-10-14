@@ -1,0 +1,12 @@
+.. _cookbook_gravmag_prism_irregular_grid:
+
+GravMag: Generate synthetic gravity data on an irregular grid
+==============================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/gravmag_prism_irregular_grid.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/gravmag_prism_irregular_grid.py
+    :language: python
+    :linenos:

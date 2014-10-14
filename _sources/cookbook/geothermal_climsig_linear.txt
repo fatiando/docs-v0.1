@@ -1,0 +1,12 @@
+.. _cookbook_geothermal_climsig_linear:
+
+Geothermal: Forward and inverse modeling of a linear change in temperature measured in a well
+==============================================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/geothermal_climsig_linear.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/geothermal_climsig_linear.py
+    :language: python
+    :linenos:

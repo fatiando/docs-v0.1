@@ -1,0 +1,273 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fatiando.gravmag.tesseroid &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for fatiando.gravmag.tesseroid</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Calculates the potential fields of a tesseroid.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="kn">from</span> <span class="nn">fatiando.mesher</span> <span class="kn">import</span> <span class="n">Tesseroid</span>
+<span class="kn">from</span> <span class="nn">fatiando.constants</span> <span class="kn">import</span> <span class="n">SI2MGAL</span><span class="p">,</span> <span class="n">SI2EOTVOS</span><span class="p">,</span> <span class="n">MEAN_EARTH_RADIUS</span><span class="p">,</span> <span class="n">G</span>
+
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">fatiando.gravmag</span> <span class="kn">import</span> <span class="n">_ctesseroid</span> <span class="k">as</span> <span class="n">_kernels</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">fatiando.gravmag</span> <span class="kn">import</span> <span class="n">_tesseroid</span> <span class="k">as</span> <span class="n">_kernels</span>
+
+
+<span class="n">_glq_nodes</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">0.577350269</span><span class="p">,</span> <span class="mf">0.577350269</span><span class="p">])</span>
+<span class="n">_glq_weights</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">])</span>
+
+
+<div class="viewcode-block" id="potential"><a class="viewcode-back" href="../../../api/gravmag.tesseroid.html#fatiando.gravmag.tesseroid.potential">[docs]</a><span class="k">def</span> <span class="nf">potential</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">tesseroids</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the gravitational potential due to a tesseroid model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_optimal_discretize</span><span class="p">(</span><span class="n">tesseroids</span><span class="p">,</span> <span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span>
+        <span class="n">_kernels</span><span class="o">.</span><span class="n">potential</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">dens</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="gx"><a class="viewcode-back" href="../../../api/gravmag.tesseroid.html#fatiando.gravmag.tesseroid.gx">[docs]</a><span class="k">def</span> <span class="nf">gx</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">tesseroids</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the x (North) component of the gravitational attraction due to a</span>
+<span class="sd">    tesseroid model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">SI2MGAL</span><span class="o">*</span><span class="n">_optimal_discretize</span><span class="p">(</span><span class="n">tesseroids</span><span class="p">,</span> <span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span>
+        <span class="n">_kernels</span><span class="o">.</span><span class="n">gx</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">dens</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="gy"><a class="viewcode-back" href="../../../api/gravmag.tesseroid.html#fatiando.gravmag.tesseroid.gy">[docs]</a><span class="k">def</span> <span class="nf">gy</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">tesseroids</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the y (East) component of the gravitational attraction due to a</span>
+<span class="sd">    tesseroid model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">SI2MGAL</span><span class="o">*</span><span class="n">_optimal_discretize</span><span class="p">(</span><span class="n">tesseroids</span><span class="p">,</span> <span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span>
+        <span class="n">_kernels</span><span class="o">.</span><span class="n">gy</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">dens</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="gz"><a class="viewcode-back" href="../../../api/gravmag.tesseroid.html#fatiando.gravmag.tesseroid.gz">[docs]</a><span class="k">def</span> <span class="nf">gz</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">tesseroids</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the z (radial) component of the gravitational attraction due to a</span>
+<span class="sd">    tesseroid model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># Multiply by -1 so that z is pointing down for gz and the gravity anomaly</span>
+    <span class="c"># doesn&#39;t look inverted (ie, negative for positive density)</span>
+    <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">SI2MGAL</span><span class="o">*</span><span class="n">_optimal_discretize</span><span class="p">(</span><span class="n">tesseroids</span><span class="p">,</span> <span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span>
+        <span class="n">_kernels</span><span class="o">.</span><span class="n">gz</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">dens</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="gxx"><a class="viewcode-back" href="../../../api/gravmag.tesseroid.html#fatiando.gravmag.tesseroid.gxx">[docs]</a><span class="k">def</span> <span class="nf">gxx</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">tesseroids</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the xx (North-North) component of the gravity gradient tensor</span>
+<span class="sd">    due to a tesseroid model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">SI2EOTVOS</span><span class="o">*</span><span class="n">_optimal_discretize</span><span class="p">(</span><span class="n">tesseroids</span><span class="p">,</span> <span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span>
+        <span class="n">_kernels</span><span class="o">.</span><span class="n">gxx</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">dens</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="gxy"><a class="viewcode-back" href="../../../api/gravmag.tesseroid.html#fatiando.gravmag.tesseroid.gxy">[docs]</a><span class="k">def</span> <span class="nf">gxy</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">tesseroids</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the xy (North-East) component of the gravity gradient tensor</span>
+<span class="sd">    due to a tesseroid model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">SI2EOTVOS</span><span class="o">*</span><span class="n">_optimal_discretize</span><span class="p">(</span><span class="n">tesseroids</span><span class="p">,</span> <span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span>
+        <span class="n">_kernels</span><span class="o">.</span><span class="n">gxy</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">dens</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="gxz"><a class="viewcode-back" href="../../../api/gravmag.tesseroid.html#fatiando.gravmag.tesseroid.gxz">[docs]</a><span class="k">def</span> <span class="nf">gxz</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">tesseroids</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the xz (North-radial) component of the gravity gradient tensor</span>
+<span class="sd">    due to a tesseroid model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">SI2EOTVOS</span><span class="o">*</span><span class="n">_optimal_discretize</span><span class="p">(</span><span class="n">tesseroids</span><span class="p">,</span> <span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span>
+        <span class="n">_kernels</span><span class="o">.</span><span class="n">gxz</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">dens</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="gyy"><a class="viewcode-back" href="../../../api/gravmag.tesseroid.html#fatiando.gravmag.tesseroid.gyy">[docs]</a><span class="k">def</span> <span class="nf">gyy</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">tesseroids</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the yy (East-East) component of the gravity gradient tensor</span>
+<span class="sd">    due to a tesseroid model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">SI2EOTVOS</span><span class="o">*</span><span class="n">_optimal_discretize</span><span class="p">(</span><span class="n">tesseroids</span><span class="p">,</span> <span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span>
+        <span class="n">_kernels</span><span class="o">.</span><span class="n">gyy</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">dens</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="gyz"><a class="viewcode-back" href="../../../api/gravmag.tesseroid.html#fatiando.gravmag.tesseroid.gyz">[docs]</a><span class="k">def</span> <span class="nf">gyz</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">tesseroids</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the yz (East-radial) component of the gravity gradient tensor</span>
+<span class="sd">    due to a tesseroid model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">SI2EOTVOS</span><span class="o">*</span><span class="n">_optimal_discretize</span><span class="p">(</span><span class="n">tesseroids</span><span class="p">,</span> <span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span>
+        <span class="n">_kernels</span><span class="o">.</span><span class="n">gyz</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">dens</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="gzz"><a class="viewcode-back" href="../../../api/gravmag.tesseroid.html#fatiando.gravmag.tesseroid.gzz">[docs]</a><span class="k">def</span> <span class="nf">gzz</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">tesseroids</span><span class="p">,</span> <span class="n">dens</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the zz (radial-radial) component of the gravity gradient tensor</span>
+<span class="sd">    due to a tesseroid model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">SI2EOTVOS</span><span class="o">*</span><span class="n">_optimal_discretize</span><span class="p">(</span><span class="n">tesseroids</span><span class="p">,</span> <span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span>
+        <span class="n">_kernels</span><span class="o">.</span><span class="n">gzz</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">dens</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+</div>
+<span class="k">def</span> <span class="nf">_optimal_discretize</span><span class="p">(</span><span class="n">tesseroids</span><span class="p">,</span> <span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">dens</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the effect of a given kernal in the most precise way by adaptively</span>
+<span class="sd">    discretizing the tesseroids into smaller ones.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ndata</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">lons</span><span class="p">)</span>
+    <span class="c"># Convert things to radians</span>
+    <span class="n">d2r</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.</span>
+    <span class="n">rlons</span> <span class="o">=</span> <span class="n">d2r</span><span class="o">*</span><span class="n">lons</span>
+    <span class="n">rlats</span> <span class="o">=</span> <span class="n">d2r</span><span class="o">*</span><span class="n">lats</span>
+    <span class="c"># Transform the heights into radii</span>
+    <span class="n">radii</span> <span class="o">=</span> <span class="n">MEAN_EARTH_RADIUS</span> <span class="o">+</span> <span class="n">heights</span>
+    <span class="c"># Start the computations</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ndata</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+    <span class="n">maxsize</span> <span class="o">=</span> <span class="mi">10000</span>
+    <span class="k">for</span> <span class="n">tesseroid</span> <span class="ow">in</span> <span class="n">tesseroids</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">tesseroid</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span>
+            <span class="p">(</span><span class="s">&#39;density&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tesseroid</span><span class="o">.</span><span class="n">props</span> <span class="ow">and</span> <span class="n">dens</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)):</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">dens</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">dens</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">tesseroid</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="s">&#39;density&#39;</span><span class="p">]</span>
+        <span class="n">lifo</span> <span class="o">=</span> <span class="p">[[</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ndata</span><span class="p">),</span> <span class="n">tesseroid</span><span class="p">]]</span>
+        <span class="k">while</span> <span class="n">lifo</span><span class="p">:</span>
+            <span class="n">points_to_calc</span><span class="p">,</span> <span class="n">tess</span> <span class="o">=</span> <span class="n">lifo</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">MEAN_EARTH_RADIUS</span><span class="o">*</span><span class="n">d2r</span><span class="o">*</span><span class="p">(</span><span class="n">tess</span><span class="o">.</span><span class="n">e</span> <span class="o">-</span> <span class="n">tess</span><span class="o">.</span><span class="n">w</span><span class="p">),</span>
+                        <span class="n">MEAN_EARTH_RADIUS</span><span class="o">*</span><span class="n">d2r</span><span class="o">*</span><span class="p">(</span><span class="n">tess</span><span class="o">.</span><span class="n">n</span> <span class="o">-</span> <span class="n">tess</span><span class="o">.</span><span class="n">s</span><span class="p">),</span>
+                        <span class="n">tess</span><span class="o">.</span><span class="n">top</span> <span class="o">-</span> <span class="n">tess</span><span class="o">.</span><span class="n">bottom</span><span class="p">])</span>
+            <span class="n">distances</span> <span class="o">=</span> <span class="n">_distance</span><span class="p">(</span><span class="n">tess</span><span class="p">,</span> <span class="n">rlons</span><span class="p">,</span> <span class="n">rlats</span><span class="p">,</span> <span class="n">radii</span><span class="p">,</span> <span class="n">points_to_calc</span><span class="p">)</span>
+            <span class="n">too_close</span> <span class="o">=</span> <span class="p">(</span><span class="n">distances</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">distances</span> <span class="o">&lt;</span> <span class="n">ratio</span><span class="o">*</span><span class="n">size</span><span class="p">)</span>
+            <span class="n">need_divide</span> <span class="o">=</span> <span class="n">points_to_calc</span><span class="p">[</span><span class="n">too_close</span><span class="p">]</span>
+            <span class="n">dont_divide</span> <span class="o">=</span> <span class="n">points_to_calc</span><span class="p">[</span><span class="o">~</span><span class="n">too_close</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">need_divide</span><span class="p">):</span>
+                <span class="c">#if len(lifo) + 8 &gt; maxsize:</span>
+                <span class="c">#    log.warning(&quot;Maximum LIFO size reached&quot;)</span>
+                <span class="c">#    dont_divide.extend(need_divide)</span>
+                <span class="c">#else:</span>
+                <span class="c">#    lifo.extend([need_divide, t] for t in _split(tess))</span>
+                <span class="n">lifo</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">need_divide</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">_split</span><span class="p">(</span><span class="n">tess</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dont_divide</span><span class="p">):</span>
+                <span class="n">result</span><span class="p">[</span><span class="n">dont_divide</span><span class="p">]</span> <span class="o">+=</span> <span class="n">G</span><span class="o">*</span><span class="n">density</span><span class="o">*</span><span class="n">kernel</span><span class="p">(</span>
+                    <span class="n">tess</span><span class="p">,</span> <span class="n">rlons</span><span class="p">[</span><span class="n">dont_divide</span><span class="p">],</span> <span class="n">rlats</span><span class="p">[</span><span class="n">dont_divide</span><span class="p">],</span>
+                    <span class="n">radii</span><span class="p">[</span><span class="n">dont_divide</span><span class="p">],</span> <span class="n">_glq_nodes</span><span class="p">,</span> <span class="n">_glq_weights</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+<span class="k">def</span> <span class="nf">_split</span><span class="p">(</span><span class="n">tesseroid</span><span class="p">):</span>
+    <span class="n">dlon</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">e</span> <span class="o">-</span> <span class="n">tesseroid</span><span class="o">.</span><span class="n">w</span><span class="p">)</span>
+    <span class="n">dlat</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">n</span> <span class="o">-</span> <span class="n">tesseroid</span><span class="o">.</span><span class="n">s</span><span class="p">)</span>
+    <span class="n">dh</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">top</span> <span class="o">-</span> <span class="n">tesseroid</span><span class="o">.</span><span class="n">bottom</span><span class="p">)</span>
+    <span class="n">wests</span> <span class="o">=</span> <span class="p">[</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="n">tesseroid</span><span class="o">.</span><span class="n">w</span> <span class="o">+</span> <span class="n">dlon</span><span class="p">]</span>
+    <span class="n">souths</span> <span class="o">=</span> <span class="p">[</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">s</span><span class="p">,</span> <span class="n">tesseroid</span><span class="o">.</span><span class="n">s</span> <span class="o">+</span> <span class="n">dlat</span><span class="p">]</span>
+    <span class="n">bottoms</span> <span class="o">=</span> <span class="p">[</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">bottom</span><span class="p">,</span> <span class="n">tesseroid</span><span class="o">.</span><span class="n">bottom</span> <span class="o">+</span> <span class="n">dh</span><span class="p">]</span>
+    <span class="n">split</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">Tesseroid</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="n">dlon</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">j</span> <span class="o">+</span> <span class="n">dlat</span><span class="p">,</span> <span class="n">k</span> <span class="o">+</span> <span class="n">dh</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">props</span><span class="o">=</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">props</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">wests</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">souths</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">bottoms</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">split</span>
+
+<span class="k">def</span> <span class="nf">_distance</span><span class="p">(</span><span class="n">tesseroid</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">points</span><span class="p">):</span>
+    <span class="n">lons</span> <span class="o">=</span> <span class="n">lon</span><span class="p">[</span><span class="n">points</span><span class="p">]</span>
+    <span class="n">lats</span> <span class="o">=</span> <span class="n">lat</span><span class="p">[</span><span class="n">points</span><span class="p">]</span>
+    <span class="n">radii</span> <span class="o">=</span> <span class="n">radius</span><span class="p">[</span><span class="n">points</span><span class="p">]</span>
+    <span class="n">d2r</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.</span>
+    <span class="n">tes_radius</span> <span class="o">=</span> <span class="n">tesseroid</span><span class="o">.</span><span class="n">top</span> <span class="o">+</span> <span class="n">MEAN_EARTH_RADIUS</span>
+    <span class="n">tes_lat</span> <span class="o">=</span> <span class="n">d2r</span><span class="o">*</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">s</span> <span class="o">+</span> <span class="n">tesseroid</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">tes_lon</span> <span class="o">=</span> <span class="n">d2r</span><span class="o">*</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">tesseroid</span><span class="o">.</span><span class="n">w</span> <span class="o">+</span> <span class="n">tesseroid</span><span class="o">.</span><span class="n">e</span><span class="p">)</span>
+    <span class="n">distance</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
+        <span class="n">radii</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">tes_radius</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mf">2.</span><span class="o">*</span><span class="n">radii</span><span class="o">*</span><span class="n">tes_radius</span><span class="o">*</span><span class="p">(</span>
+            <span class="n">numpy</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lats</span><span class="p">)</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">tes_lat</span><span class="p">)</span> <span class="o">+</span>
+            <span class="n">numpy</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lats</span><span class="p">)</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">tes_lat</span><span class="p">)</span><span class="o">*</span>
+            <span class="n">numpy</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lons</span> <span class="o">-</span> <span class="n">tes_lon</span><span class="p">)</span>
+        <span class="p">))</span>
+    <span class="k">return</span> <span class="n">distance</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Gravity and magnetics (fatiando.gravmag) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="API Reference: The fatiando package" href="fatiando.html" />
+    <link rel="next" title="3D inversion by planting anomalous densities (fatiando.gravmag.harvester)" href="gravmag.harvester.html" />
+    <link rel="prev" title="API Reference: The fatiando package" href="fatiando.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag.harvester.html" title="3D inversion by planting anomalous densities (fatiando.gravmag.harvester)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="fatiando.html" title="API Reference: The fatiando package"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" accesskey="U">API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.gravmag">
+<span id="gravity-and-magnetics-fatiando-gravmag"></span><span id="fatiando-gravmag"></span><h1>Gravity and magnetics (<tt class="docutils literal"><span class="pre">fatiando.gravmag</span></tt>)<a class="headerlink" href="#module-fatiando.gravmag" title="Permalink to this headline">¶</a></h1>
+<p>Gravity and magnetics forward modeling, inversion, transformations and
+utilities.</p>
+<p><strong>Forward modeling</strong></p>
+<p>The forward modeling modules provide ways to calculate the gravitational and
+magnetic field of various types of geometric objects:</p>
+<ul class="simple">
+<li><a class="reference internal" href="gravmag.prism.html#module-fatiando.gravmag.prism" title="fatiando.gravmag.prism"><tt class="xref py py-mod docutils literal"><span class="pre">prism</span></tt></a>: 3D right rectangular prisms</li>
+<li><a class="reference internal" href="gravmag.polyprism.html#module-fatiando.gravmag.polyprism" title="fatiando.gravmag.polyprism"><tt class="xref py py-mod docutils literal"><span class="pre">polyprism</span></tt></a>: 3D prisms with polygonal horizontal
+cross-sections</li>
+<li><a class="reference internal" href="gravmag.sphere.html#module-fatiando.gravmag.sphere" title="fatiando.gravmag.sphere"><tt class="xref py py-mod docutils literal"><span class="pre">sphere</span></tt></a>: Spheres in Cartesian coordinates</li>
+<li><a class="reference internal" href="gravmag.tesseroid.html#module-fatiando.gravmag.tesseroid" title="fatiando.gravmag.tesseroid"><tt class="xref py py-mod docutils literal"><span class="pre">tesseroid</span></tt></a>: Tesseroids (spherical prisms) for modeling
+in spherical coordinates</li>
+<li><a class="reference internal" href="gravmag.talwani.html#module-fatiando.gravmag.talwani" title="fatiando.gravmag.talwani"><tt class="xref py py-mod docutils literal"><span class="pre">talwani</span></tt></a>: 2D bodies with polygonal vertical
+cross-sections</li>
+<li><a class="reference internal" href="gravmag.half_sph_shell.html#module-fatiando.gravmag.half_sph_shell" title="fatiando.gravmag.half_sph_shell"><tt class="xref py py-mod docutils literal"><span class="pre">half_sph_shell</span></tt></a>: Gravity fields of half a spherical
+shell. Useful for benchmarking and testing.</li>
+</ul>
+<p><strong>Inversion</strong></p>
+<p>The inversion modules use the forward modeling models and the
+<a class="reference internal" href="inversion.html#module-fatiando.inversion" title="fatiando.inversion"><tt class="xref py py-mod docutils literal"><span class="pre">fatiando.inversion</span></tt></a> package to solve potential field inverse problems:</p>
+<ul class="simple">
+<li><a class="reference internal" href="gravmag.basin2d.html#module-fatiando.gravmag.basin2d" title="fatiando.gravmag.basin2d"><tt class="xref py py-mod docutils literal"><span class="pre">basin2d</span></tt></a>: 2D inversion of the shape of sedimentary
+basins and other outcropping bodies</li>
+<li><a class="reference internal" href="gravmag.harvester.html#module-fatiando.gravmag.harvester" title="fatiando.gravmag.harvester"><tt class="xref py py-mod docutils literal"><span class="pre">harvester</span></tt></a>: 3D inversion of compact bodies by
+planting anomalous densities</li>
+<li><a class="reference internal" href="gravmag.euler.html#module-fatiando.gravmag.euler" title="fatiando.gravmag.euler"><tt class="xref py py-mod docutils literal"><span class="pre">euler</span></tt></a>: 3D Euler deconvolution methods to estimate source
+location</li>
+</ul>
+<p><strong>Processing</strong></p>
+<p>The processing modules offer tools to prepare potential field data before or
+after modeling.</p>
+<ul class="simple">
+<li><a class="reference internal" href="gravmag.transform.html#module-fatiando.gravmag.transform" title="fatiando.gravmag.transform"><tt class="xref py py-mod docutils literal"><span class="pre">transform</span></tt></a>: Space domain potential field
+transformations, like upward continuation</li>
+<li><a class="reference internal" href="gravmag.fourier.html#module-fatiando.gravmag.fourier" title="fatiando.gravmag.fourier"><tt class="xref py py-mod docutils literal"><span class="pre">fourier</span></tt></a>: Potential field transformations using the
+FFT</li>
+<li><a class="reference internal" href="gravmag.imaging.html#module-fatiando.gravmag.imaging" title="fatiando.gravmag.imaging"><tt class="xref py py-mod docutils literal"><span class="pre">imaging</span></tt></a>: Imaging methods for potential fields for
+estimating physical property distributions</li>
+<li><a class="reference internal" href="gravmag.tensor.html#module-fatiando.gravmag.tensor" title="fatiando.gravmag.tensor"><tt class="xref py py-mod docutils literal"><span class="pre">tensor</span></tt></a>: Utilities for operating on the gradient
+tensor</li>
+</ul>
+<hr class="docutils" />
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="gravmag.harvester.html">3D inversion by planting anomalous densities (<tt class="docutils literal"><span class="pre">fatiando.gravmag.harvester</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gravmag.prism.html">Forward modeling with 3D right rectangular prisms (<tt class="docutils literal"><span class="pre">fatiando.gravmag.prism</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gravmag.polyprism.html">Forward modeling with 3D polygonal prisms (<tt class="docutils literal"><span class="pre">fatiando.gravmag.polyprism</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gravmag.sphere.html">Forward modeling with spheres (<tt class="docutils literal"><span class="pre">fatiando.gravmag.sphere</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gravmag.tesseroid.html">Forward modeling with tesseroids (<tt class="docutils literal"><span class="pre">fatiando.gravmag.tesseroid</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gravmag.talwani.html">Forward modeling with 2D polygons (<tt class="docutils literal"><span class="pre">fatiando.gravmag.talwani</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gravmag.half_sph_shell.html">Forward modeling of half a spherical shell (<tt class="docutils literal"><span class="pre">fatiando.gravmag.half_sph_shell</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gravmag.basin2d.html">Inversion for the relief of 2D basins  (<tt class="docutils literal"><span class="pre">fatiando.gravmag.basin2d</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gravmag.fourier.html">Processing and transformations using the FFT (<tt class="docutils literal"><span class="pre">fatiando.gravmag.fourier</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gravmag.imaging.html">Imaging methods for potential fields (<tt class="docutils literal"><span class="pre">fatiando.gravmag.imaging</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gravmag.tensor.html">Utilities for operating on the gradient tensor (<tt class="docutils literal"><span class="pre">fatiando.gravmag.tensor</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gravmag.euler.html">3D Euler deconvolution methods (<tt class="docutils literal"><span class="pre">fatiando.gravmag.euler</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gravmag.transform.html">Space domain processing (<tt class="docutils literal"><span class="pre">fatiando.gravmag.transform</span></tt>)</a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="fatiando.html"
+                        title="previous chapter">API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gravmag.harvester.html"
+                        title="next chapter">3D inversion by planting anomalous densities (<tt class="docutils literal"><span class="pre">fatiando.gravmag.harvester</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/gravmag.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag.harvester.html" title="3D inversion by planting anomalous densities (fatiando.gravmag.harvester)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="fatiando.html" title="API Reference: The fatiando package"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,522 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Inversion for the relief of 2D basins (fatiando.gravmag.basin2d) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Gravity and magnetics (fatiando.gravmag)" href="gravmag.html" />
+    <link rel="next" title="Processing and transformations using the FFT (fatiando.gravmag.fourier)" href="gravmag.fourier.html" />
+    <link rel="prev" title="Forward modeling of half a spherical shell (fatiando.gravmag.half_sph_shell)" href="gravmag.half_sph_shell.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag.fourier.html" title="Processing and transformations using the FFT (fatiando.gravmag.fourier)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gravmag.half_sph_shell.html" title="Forward modeling of half a spherical shell (fatiando.gravmag.half_sph_shell)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="gravmag.html" accesskey="U">Gravity and magnetics (<tt class="docutils literal"><span class="pre">fatiando.gravmag</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.gravmag.basin2d">
+<span id="inversion-for-the-relief-of-2d-basins-fatiando-gravmag-basin2d"></span><span id="fatiando-gravmag-basin2d"></span><h1>Inversion for the relief of 2D basins  (<tt class="docutils literal"><span class="pre">fatiando.gravmag.basin2d</span></tt>)<a class="headerlink" href="#module-fatiando.gravmag.basin2d" title="Permalink to this headline">¶</a></h1>
+<p>Estimate the basement relief of two-dimensional basins from potential field
+data.</p>
+<p><strong>POLYGONAL PARAMETRIZATION</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.gravmag.basin2d.triangular" title="fatiando.gravmag.basin2d.triangular"><tt class="xref py py-func docutils literal"><span class="pre">triangular</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.gravmag.basin2d.trapezoidal" title="fatiando.gravmag.basin2d.trapezoidal"><tt class="xref py py-func docutils literal"><span class="pre">trapezoidal</span></tt></a></li>
+</ul>
+<p>Uses 2D bodies with a polygonal cross-section to parameterize the basin relief.
+Potential fields are calculated using the <a class="reference internal" href="gravmag.talwani.html#module-fatiando.gravmag.talwani" title="fatiando.gravmag.talwani"><tt class="xref py py-mod docutils literal"><span class="pre">fatiando.gravmag.talwani</span></tt></a>
+module.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Vertices of polygons must always be in clockwise order!</p>
+</div>
+<p><strong>Triangular basin</strong></p>
+<p>Use when the basin can be approximated by a 2D body with <strong>triangular</strong> vertical
+cross-section. The triangle is assumed to have 2 known vertices at the surface
+(the edges of the basin) and one unknown vertice in the subsurface. The
+inversion will then estimate the (x, z) coordinates of the unknown vertice.</p>
+<p>Example using synthetic data:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">fatiando</span> <span class="kn">as</span> <span class="nn">ft</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Make a triangular basin model (will estimate the last point)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">verts</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">10000</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">90000</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">50000</span><span class="p">,</span> <span class="mi">5000</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">left</span><span class="p">,</span> <span class="n">middle</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="n">verts</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">mesher</span><span class="o">.</span><span class="n">Polygon</span><span class="p">(</span><span class="n">verts</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="mi">500</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Generate the synthetic gz profile</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">xs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100000</span><span class="p">,</span> <span class="mi">10000</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">zs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gz</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">gravmag</span><span class="o">.</span><span class="n">talwani</span><span class="o">.</span><span class="n">gz</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">zs</span><span class="p">,</span> <span class="p">[</span><span class="n">model</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Estimate the coordinates of the last point using Levenberg-Marquardt</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">solver</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">inversion</span><span class="o">.</span><span class="n">gradient</span><span class="o">.</span><span class="n">levmarq</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="mi">1000</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span><span class="p">,</span> <span class="n">residuals</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">gravmag</span><span class="o">.</span><span class="n">basin2d</span><span class="o">.</span><span class="n">triangular</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">zs</span><span class="p">,</span> <span class="n">gz</span><span class="p">,</span> <span class="p">[</span><span class="n">left</span><span class="p">,</span> <span class="n">middle</span><span class="p">],</span>
+<span class="gp">... </span>    <span class="mi">500</span><span class="p">,</span> <span class="n">solver</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&#39;</span><span class="si">%.1f</span><span class="s">, </span><span class="si">%.1f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">vertices</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">p</span><span class="o">.</span><span class="n">vertices</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+<span class="go">50000.0, 5000.0</span>
+</pre></div>
+</div>
+<p>Same example but this time using <tt class="docutils literal"><span class="pre">iterate=True</span></tt> to view the steps of the
+algorithm:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">fatiando</span> <span class="kn">as</span> <span class="nn">ft</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Make a triangular basin model (will estimate the last point)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">verts</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">10000</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">90000</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">50000</span><span class="p">,</span> <span class="mi">5000</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">left</span><span class="p">,</span> <span class="n">middle</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="n">verts</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">mesher</span><span class="o">.</span><span class="n">Polygon</span><span class="p">(</span><span class="n">verts</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="mi">500</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Generate the synthetic gz profile</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">xs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100000</span><span class="p">,</span> <span class="mi">10000</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">zs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gz</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">gravmag</span><span class="o">.</span><span class="n">talwani</span><span class="o">.</span><span class="n">gz</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">zs</span><span class="p">,</span> <span class="p">[</span><span class="n">model</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Estimate the coordinates of the last point using Levenberg-Marquardt</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">solver</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">inversion</span><span class="o">.</span><span class="n">gradient</span><span class="o">.</span><span class="n">levmarq</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="p">(</span><span class="mi">70000</span><span class="p">,</span> <span class="mi">2000</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">iterator</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">gravmag</span><span class="o">.</span><span class="n">basin2d</span><span class="o">.</span><span class="n">triangular</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">zs</span><span class="p">,</span> <span class="n">gz</span><span class="p">,</span> <span class="p">[</span><span class="n">left</span><span class="p">,</span> <span class="n">middle</span><span class="p">],</span> <span class="mi">500</span><span class="p">,</span>
+<span class="gp">... </span>                                     <span class="n">solver</span><span class="p">,</span> <span class="n">iterate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">residuals</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="s">&#39;</span><span class="si">%.4f</span><span class="s">, </span><span class="si">%.4f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="go">70000.0000, 2000.0000</span>
+<span class="go">69999.8803, 2005.4746</span>
+<span class="go">69998.6825, 2059.0979</span>
+<span class="go">69986.4671, 2502.6963</span>
+<span class="go">69843.9902, 3960.5022</span>
+<span class="go">67972.7679, 4728.4970</span>
+<span class="go">59022.3186, 4820.1359</span>
+<span class="go">50714.4178, 4952.5628</span>
+<span class="go">50001.0118, 4999.4345</span>
+<span class="go">50000.0006, 4999.9999</span>
+</pre></div>
+</div>
+<p><strong>Trapezoidal basin</strong></p>
+<p>Use when the basin can be approximated by a 2D body with <strong>trapezoidal</strong>
+vertical cross-section.
+The trapezoid is assumed to have 2 known vertices at the surface
+(the edges of the basin) and two unknown vertice in the subsurface.
+We assume that the x coordinates of the unknown vertices are the same as the x
+coordinates of the known vertices (i.e., the unknown vertices are directly under
+the known vertices). The inversion will then estimate the z coordinates of the
+unknown vertices.</p>
+<p>Example of inverting for the z coordinates of the unknown vertices:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">fatiando</span> <span class="kn">as</span> <span class="nn">ft</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Make a trapezoidal basin model (will estimate the last two point)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">verts</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">10000</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">90000</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">90000</span><span class="p">,</span> <span class="mi">5000</span><span class="p">),</span> <span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="mi">3000</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">mesher</span><span class="o">.</span><span class="n">Polygon</span><span class="p">(</span><span class="n">verts</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="mi">500</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Generate the synthetic gz profile</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">xs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100000</span><span class="p">,</span> <span class="mi">10000</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">zs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gz</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">gravmag</span><span class="o">.</span><span class="n">talwani</span><span class="o">.</span><span class="n">gz</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">zs</span><span class="p">,</span> <span class="p">[</span><span class="n">model</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Estimate the coordinates of the two z coords using Levenberg-Marquardt</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">solver</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">inversion</span><span class="o">.</span><span class="n">gradient</span><span class="o">.</span><span class="n">levmarq</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">500</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span><span class="p">,</span> <span class="n">residuals</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">gravmag</span><span class="o">.</span><span class="n">basin2d</span><span class="o">.</span><span class="n">trapezoidal</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">zs</span><span class="p">,</span> <span class="n">gz</span><span class="p">,</span> <span class="n">verts</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="mi">500</span><span class="p">,</span>
+<span class="gp">... </span>                                          <span class="n">solver</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="s">&#39;</span><span class="si">%.1f</span><span class="s">, </span><span class="si">%.1f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">vertices</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">p</span><span class="o">.</span><span class="n">vertices</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+<span class="go">5000.0, 3000.0</span>
+</pre></div>
+</div>
+<p>Same example but this time using <tt class="docutils literal"><span class="pre">iterate=True</span></tt> to view the steps of the
+algorithm:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">fatiando</span> <span class="kn">as</span> <span class="nn">ft</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Make a trapezoidal basin model (will estimate the last two point)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">verts</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">10000</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="mi">90000</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="p">(</span><span class="mi">90000</span><span class="p">,</span> <span class="mi">5000</span><span class="p">),</span> <span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="mi">3000</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">mesher</span><span class="o">.</span><span class="n">Polygon</span><span class="p">(</span><span class="n">verts</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="mi">500</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Generate the synthetic gz profile</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">xs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100000</span><span class="p">,</span> <span class="mi">10000</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">zs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gz</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">gravmag</span><span class="o">.</span><span class="n">talwani</span><span class="o">.</span><span class="n">gz</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">zs</span><span class="p">,</span> <span class="p">[</span><span class="n">model</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Estimate the coordinates of the two z coords using Levenberg-Marquardt</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">solver</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">inversion</span><span class="o">.</span><span class="n">gradient</span><span class="o">.</span><span class="n">levmarq</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">500</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">iterator</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">gravmag</span><span class="o">.</span><span class="n">basin2d</span><span class="o">.</span><span class="n">trapezoidal</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">zs</span><span class="p">,</span> <span class="n">gz</span><span class="p">,</span> <span class="n">verts</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="mi">500</span><span class="p">,</span>
+<span class="gp">... </span>                                      <span class="n">solver</span><span class="p">,</span> <span class="n">iterate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">residuals</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="s">&#39;</span><span class="si">%.4f</span><span class="s">, </span><span class="si">%.4f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="go">1000.0000, 500.0000</span>
+<span class="go">1010.4375, 509.4191</span>
+<span class="go">1111.6975, 600.5546</span>
+<span class="go">1888.0846, 1281.9163</span>
+<span class="go">3926.6071, 2780.5317</span>
+<span class="go">4903.8174, 3040.3444</span>
+<span class="go">4998.6977, 3001.0087</span>
+<span class="go">4999.9980, 3000.0017</span>
+<span class="go">5000.0000, 2999.9999</span>
+</pre></div>
+</div>
+<hr class="docutils" />
+<dl class="class">
+<dt id="fatiando.gravmag.basin2d.TrapezoidalGzDM">
+<em class="property">class </em><tt class="descclassname">fatiando.gravmag.basin2d.</tt><tt class="descname">TrapezoidalGzDM</tt><big>(</big><em>xp</em>, <em>zp</em>, <em>data</em>, <em>verts</em>, <em>density</em>, <em>delta=1.0</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/basin2d.html#TrapezoidalGzDM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.basin2d.TrapezoidalGzDM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="inversion.datamodule.html#fatiando.inversion.datamodule.DataModule" title="fatiando.inversion.datamodule.DataModule"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.inversion.datamodule.DataModule</span></tt></a></p>
+<p>Data module for the inversion to estimate the relief of a trapezoidal basin.</p>
+<p>Packs the necessary data and interpretative model information.</p>
+<p>The forward modeling is done using <a class="reference internal" href="gravmag.talwani.html#module-fatiando.gravmag.talwani" title="fatiando.gravmag.talwani"><tt class="xref py py-mod docutils literal"><span class="pre">talwani</span></tt></a>.
+Derivatives are calculated using a 2-point finite difference approximation.
+The Hessian matrix is calculated using a Gauss-Newton approximation.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>xp, zp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">Arrays with the x and z coordinates of the profile data points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>data <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The profile gravity anomaly data</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>verts <span class="classifier-delimiter">:</span> <span class="classifier">list of lists</span></dt>
+<dd><p class="first">List of the [x, z] coordinates of the two know vertices.</p>
+<div class="last admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Very important that the vertices in the list be ordered from left to
+right! Otherwise the forward model will give results with an
+inverted sign and terrible things may happen!</p>
+</div>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>density <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Density contrast of the basin</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>delta <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Interval used to calculate the approximate derivatives</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">It is very important that the vertices in the list be ordered
+clockwise! Otherwise the forward model will give results with an
+inverted sign and terrible things may happen!</p>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="fatiando.gravmag.basin2d.TriangularGzDM">
+<em class="property">class </em><tt class="descclassname">fatiando.gravmag.basin2d.</tt><tt class="descname">TriangularGzDM</tt><big>(</big><em>xp</em>, <em>zp</em>, <em>data</em>, <em>verts</em>, <em>density</em>, <em>delta=1.0</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/basin2d.html#TriangularGzDM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.basin2d.TriangularGzDM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="inversion.datamodule.html#fatiando.inversion.datamodule.DataModule" title="fatiando.inversion.datamodule.DataModule"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.inversion.datamodule.DataModule</span></tt></a></p>
+<p>Data module for the inversion to estimate the relief of a triangular basin.</p>
+<p>Packs the necessary gravity anomaly data and interpretative model
+information.</p>
+<p>The forward modeling is done using <a class="reference internal" href="gravmag.talwani.html#module-fatiando.gravmag.talwani" title="fatiando.gravmag.talwani"><tt class="xref py py-mod docutils literal"><span class="pre">talwani</span></tt></a>.
+Derivatives are calculated using a 2-point finite difference approximation.
+The Hessian matrix is calculated using a Gauss-Newton approximation.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>xp, zp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">Arrays with the x and z coordinates of the profile data points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>data <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The profile gravity anomaly data</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>verts <span class="classifier-delimiter">:</span> <span class="classifier">list of lists</span></dt>
+<dd><p class="first">List of the [x, z] coordinates of the two know vertices.</p>
+<div class="last admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Very important that the vertices in the list be ordered from left to
+right! Otherwise the forward model will give results with an
+inverted sign and terrible things may happen!</p>
+</div>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>density <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Density contrast of the basin</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>delta <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Interval used to calculate the approximate derivatives</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">It is very important that the vertices in the list be ordered
+clockwise! Otherwise the forward model will give results with an
+inverted sign and terrible things may happen!</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.basin2d.trapezoidal">
+<tt class="descclassname">fatiando.gravmag.basin2d.</tt><tt class="descname">trapezoidal</tt><big>(</big><em>xp</em>, <em>zp</em>, <em>data</em>, <em>verts</em>, <em>density</em>, <em>solver</em>, <em>iterate=False</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/basin2d.html#trapezoidal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.basin2d.trapezoidal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate basement relief of a triangular basin. The basin is modeled as a
+triangle with two known vertices at the surface. The parameters estimated
+are the x and z coordinates of the third vertice.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>xp, zp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">Arrays with the x and z coordinates of the profile data points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>data <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The profile gravity anomaly data</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>verts <span class="classifier-delimiter">:</span> <span class="classifier">list of lists</span></dt>
+<dd><p class="first">List of the [x, z] coordinates of the two know vertices.</p>
+<div class="last admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Very important that the vertices in the list be ordered from left to
+right! Otherwise the forward model will give results with an
+inverted sign and terrible things may happen!</p>
+</div>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>density <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Density contrast of the basin</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>solver <span class="classifier-delimiter">:</span> <span class="classifier">function</span></dt>
+<dd><p class="first last">A non-linear inverse problem solver generated by a factory function
+from the <a class="reference internal" href="inversion.gradient.html#module-fatiando.inversion.gradient" title="fatiando.inversion.gradient"><tt class="xref py py-mod docutils literal"><span class="pre">fatiando.inversion.gradient</span></tt></a> package.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>iterate <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">If True, will yield the current estimate at each iteration yielded by
+<em>solver</em>. In Python terms, <tt class="docutils literal"><span class="pre">iterate=True</span></tt> transforms this function
+into a generator function.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><p class="first">results : list = [estimate, residuals]:</p>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt>estimate <span class="classifier-delimiter">:</span> <span class="classifier">array or <a class="reference internal" href="mesher.html#fatiando.mesher.Polygon" title="fatiando.mesher.Polygon"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.Polygon</span></tt></a></span></dt>
+<dd><p class="first last">If <tt class="docutils literal"><span class="pre">iterate==False</span></tt>, will return a Polygon, else will yield
+the estimated [z1, z2] coordinates of the bottom vertices.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>residuals <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The residuals of the inversion (difference between measured and
+predicted data)</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.basin2d.triangular">
+<tt class="descclassname">fatiando.gravmag.basin2d.</tt><tt class="descname">triangular</tt><big>(</big><em>xp</em>, <em>zp</em>, <em>data</em>, <em>verts</em>, <em>density</em>, <em>solver</em>, <em>iterate=False</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/basin2d.html#triangular"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.basin2d.triangular" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate basement relief of a triangular basin. The basin is modeled as a
+triangle with two known vertices at the surface. The parameters estimated
+are the x and z coordinates of the third vertice.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>xp, zp <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">Arrays with the x and z coordinates of the profile data points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>data <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The profile gravity anomaly data</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>verts <span class="classifier-delimiter">:</span> <span class="classifier">list of lists</span></dt>
+<dd><p class="first">List of the [x, z] coordinates of the two know vertices.</p>
+<div class="last admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Very important that the vertices in the list be ordered from left to
+right! Otherwise the forward model will give results with an
+inverted sign and terrible things may happen!</p>
+</div>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>density <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Density contrast of the basin</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>solver <span class="classifier-delimiter">:</span> <span class="classifier">function</span></dt>
+<dd><p class="first last">A non-linear inverse problem solver generated by a factory function
+from the <a class="reference internal" href="inversion.gradient.html#module-fatiando.inversion.gradient" title="fatiando.inversion.gradient"><tt class="xref py py-mod docutils literal"><span class="pre">fatiando.inversion.gradient</span></tt></a> package.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>iterate <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">If True, will yield the current estimate at each iteration yielded by
+<em>solver</em>. In Python terms, <tt class="docutils literal"><span class="pre">iterate=True</span></tt> transforms this function
+into a generator function.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><p class="first">results : list = [estimate, residuals]:</p>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt>estimate <span class="classifier-delimiter">:</span> <span class="classifier">array or <a class="reference internal" href="mesher.html#fatiando.mesher.Polygon" title="fatiando.mesher.Polygon"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.Polygon</span></tt></a></span></dt>
+<dd><p class="first last">If <tt class="docutils literal"><span class="pre">iterate==False</span></tt>, will return a Polygon, else will yield
+the estimated [x, z] coordinates of the missing vertice</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>residuals <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The residuals of the inversion (difference between measured and
+predicted data)</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gravmag.half_sph_shell.html"
+                        title="previous chapter">Forward modeling of half a spherical shell (<tt class="docutils literal"><span class="pre">fatiando.gravmag.half_sph_shell</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gravmag.fourier.html"
+                        title="next chapter">Processing and transformations using the FFT (<tt class="docutils literal"><span class="pre">fatiando.gravmag.fourier</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/gravmag.basin2d.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag.fourier.html" title="Processing and transformations using the FFT (fatiando.gravmag.fourier)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gravmag.half_sph_shell.html" title="Forward modeling of half a spherical shell (fatiando.gravmag.half_sph_shell)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="gravmag.html" >Gravity and magnetics (<tt class="docutils literal"><span class="pre">fatiando.gravmag</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

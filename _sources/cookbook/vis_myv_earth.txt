@@ -1,0 +1,12 @@
+.. _cookbook_vis_myv_earth:
+
+Vis: Plot the Earth, continents, inner and outer core in 3D with Mayavi2
+=========================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/vis_myv_earth.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/vis_myv_earth.py
+    :language: python
+    :linenos:

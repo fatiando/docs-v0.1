@@ -1,0 +1,189 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Forward modeling with 2D polygons (fatiando.gravmag.talwani) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Gravity and magnetics (fatiando.gravmag)" href="gravmag.html" />
+    <link rel="next" title="Forward modeling of half a spherical shell (fatiando.gravmag.half_sph_shell)" href="gravmag.half_sph_shell.html" />
+    <link rel="prev" title="Forward modeling with tesseroids (fatiando.gravmag.tesseroid)" href="gravmag.tesseroid.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag.half_sph_shell.html" title="Forward modeling of half a spherical shell (fatiando.gravmag.half_sph_shell)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gravmag.tesseroid.html" title="Forward modeling with tesseroids (fatiando.gravmag.tesseroid)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="gravmag.html" accesskey="U">Gravity and magnetics (<tt class="docutils literal"><span class="pre">fatiando.gravmag</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.gravmag.talwani">
+<span id="forward-modeling-with-2d-polygons-fatiando-gravmag-talwani"></span><span id="fatiando-gravmag-talwani"></span><h1>Forward modeling with 2D polygons (<tt class="docutils literal"><span class="pre">fatiando.gravmag.talwani</span></tt>)<a class="headerlink" href="#module-fatiando.gravmag.talwani" title="Permalink to this headline">¶</a></h1>
+<p>Calculate the gravitational attraction of a 2D body with polygonal vertical
+cross-section using the formula of Talwani et al. (1959)</p>
+<p>Use the <a class="reference internal" href="mesher.html#fatiando.mesher.Polygon" title="fatiando.mesher.Polygon"><tt class="xref py py-func docutils literal"><span class="pre">Polygon</span></tt></a> object to create polygons.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">the vertices must be given clockwise! If not, the result will have
+an inverted sign.</p>
+</div>
+<p><strong>Components</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.gravmag.talwani.gz" title="fatiando.gravmag.talwani.gz"><tt class="xref py py-func docutils literal"><span class="pre">gz</span></tt></a></li>
+</ul>
+<p><strong>References</strong></p>
+<p>Talwani, M., J. L. Worzel, and M. Landisman (1959), Rapid Gravity Computations
+for Two-Dimensional Bodies with Application to the Mendocino Submarine
+Fracture Zone, J. Geophys. Res., 64(1), 49-59, doi:10.1029/JZ064i001p00049.</p>
+<hr class="docutils" />
+<dl class="function">
+<dt id="fatiando.gravmag.talwani.gz">
+<tt class="descclassname">fatiando.gravmag.talwani.</tt><tt class="descname">gz</tt><big>(</big><em>xp</em>, <em>zp</em>, <em>polygons</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/talwani.html#gz"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.talwani.gz" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the <span class="math">\(g_z\)</span> gravity acceleration component.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The coordinate system of the input parameters is z -&gt; <strong>DOWN</strong>.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">All input values in <strong>SI</strong> units(!) and output in <strong>mGal</strong>!</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>xp, zp <span class="classifier-delimiter">:</span> <span class="classifier">arrays</span></dt>
+<dd><p class="first last">The x and z coordinates of the computation points.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>polygons <span class="classifier-delimiter">:</span> <span class="classifier">list of <a class="reference internal" href="mesher.html#fatiando.mesher.Polygon" title="fatiando.mesher.Polygon"><tt class="xref py py-func docutils literal"><span class="pre">Polygon</span></tt></a></span></dt>
+<dd><p class="first">The density model used.
+Polygons must have the property <tt class="docutils literal"><span class="pre">'density'</span></tt>. Polygons that don&#8217;t have
+this property will be ignored in the computations. Elements of
+<em>polygons</em> that are None will also be ignored.</p>
+<div class="last admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The y coordinate of the polygons is used as z!</p>
+</div>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>gz <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The <span class="math">\(g_z\)</span> component calculated on the computation points</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gravmag.tesseroid.html"
+                        title="previous chapter">Forward modeling with tesseroids (<tt class="docutils literal"><span class="pre">fatiando.gravmag.tesseroid</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gravmag.half_sph_shell.html"
+                        title="next chapter">Forward modeling of half a spherical shell (<tt class="docutils literal"><span class="pre">fatiando.gravmag.half_sph_shell</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/gravmag.talwani.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag.half_sph_shell.html" title="Forward modeling of half a spherical shell (fatiando.gravmag.half_sph_shell)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gravmag.tesseroid.html" title="Forward modeling with tesseroids (fatiando.gravmag.tesseroid)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="gravmag.html" >Gravity and magnetics (<tt class="docutils literal"><span class="pre">fatiando.gravmag</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,325 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fatiando.gravmag.tensor &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for fatiando.gravmag.tensor</h1><div class="highlight"><pre>
+<span class="sd">r&quot;&quot;&quot;</span>
+<span class="sd">Utilities for operating on the gradient tensor of potential fields.</span>
+
+<span class="sd">**Functions**</span>
+
+<span class="sd">* :func:`~fatiando.gravmag.tensor.invariants`: Calculates the first</span>
+<span class="sd">  (:math:`I_1`), second (:math:`I_2`), and dimensionless (:math:`I`) invariants</span>
+<span class="sd">* :func:`~fatiando.gravmag.tensor.eigen`: Calculates the eigenvalues and</span>
+<span class="sd">  eigenvectors of the an array of gradient tensor measurements</span>
+<span class="sd">* :func:`~fatiando.gravmag.tensor.center_of_mass`: Estimate the center of</span>
+<span class="sd">  mass of sources from the first eigenvector using the method of</span>
+<span class="sd">  Beiki and Pedersen (2010)</span>
+
+<span class="sd">**Theory**</span>
+
+<span class="sd">Following Pedersen and Rasmussen (1990), the characteristic polynomail of the</span>
+<span class="sd">gravity gradient tensor :math:`\mathbf{\Gamma}` is</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">    \lambda^3 + I_1\lambda - I_2 = 0</span>
+
+<span class="sd">where :math:`\lambda` is an eigen value and :math:`I_1` and :math:`I_2` are</span>
+<span class="sd">the two invariants. The dimensionless invariant :math:`I` is</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">    I = -\dfrac{(I_2/2)^2}{(I_1/3)^3}</span>
+
+<span class="sd">The invariant :math:`I` indicates the dimensionality of the source.</span>
+<span class="sd">:math:`I = 0` for 2 dimensional bodies and :math:`I = 1` for a monopole.</span>
+
+<span class="sd">**References**</span>
+
+<span class="sd">Beiki, M., and L. B. Pedersen (2010), Eigenvector analysis of gravity gradient</span>
+<span class="sd">tensor to locate geologic bodies, Geophysics, 75(6), I37, doi:10.1190/1.3484098</span>
+
+<span class="sd">Pedersen, L. B., and T. M. Rasmussen (1990), The gradient tensor of potential</span>
+<span class="sd">field anomalies: Some implications on data collection and data processing of</span>
+<span class="sd">maps, Geophysics, 55(12), 1558, doi:10.1190/1.1442807</span>
+
+<span class="sd">----</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">numpy.linalg</span>
+
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">gridder</span>
+
+
+<div class="viewcode-block" id="invariants"><a class="viewcode-back" href="../../../api/gravmag.tensor.html#fatiando.gravmag.tensor.invariants">[docs]</a><span class="k">def</span> <span class="nf">invariants</span><span class="p">(</span><span class="n">tensor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the first, second, and dimensionless invariants of the gradient</span>
+<span class="sd">    tensor.</span>
+
+<span class="sd">    .. note:: The coordinate system used is x-&gt;North, y-&gt;East, z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * tensor : list</span>
+<span class="sd">        A list of arrays with the 6 components of the gradient tensor measured</span>
+<span class="sd">        on a set of points. The order of the list should be:</span>
+<span class="sd">        [gxx, gxy, gxz, gyy, gyz, gzz]</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * invariants : list = [:math:`I_1`, :math:`I_2`, :math:`I`]</span>
+<span class="sd">        The invariants calculated for each point</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">gxx</span><span class="p">,</span> <span class="n">gxy</span><span class="p">,</span> <span class="n">gxz</span><span class="p">,</span> <span class="n">gyy</span><span class="p">,</span> <span class="n">gyz</span><span class="p">,</span> <span class="n">gzz</span> <span class="o">=</span> <span class="n">tensor</span>
+    <span class="n">gyyzz</span> <span class="o">=</span> <span class="n">gyy</span><span class="o">*</span><span class="n">gzz</span>
+    <span class="n">gyz_sqr</span> <span class="o">=</span> <span class="n">gyz</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">inv1</span> <span class="o">=</span> <span class="n">gxx</span><span class="o">*</span><span class="n">gyy</span> <span class="o">+</span> <span class="n">gyyzz</span> <span class="o">+</span> <span class="n">gxx</span><span class="o">*</span><span class="n">gzz</span> <span class="o">-</span> <span class="n">gxy</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">gyz_sqr</span> <span class="o">-</span> <span class="n">gxz</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">inv2</span> <span class="o">=</span> <span class="p">(</span><span class="n">gxx</span><span class="o">*</span><span class="p">(</span><span class="n">gyyzz</span> <span class="o">-</span> <span class="n">gyz_sqr</span><span class="p">)</span> <span class="o">+</span> <span class="n">gxy</span><span class="o">*</span><span class="p">(</span><span class="n">gyz</span><span class="o">*</span><span class="n">gxz</span> <span class="o">-</span> <span class="n">gxy</span><span class="o">*</span><span class="n">gzz</span><span class="p">)</span>
+            <span class="o">+</span> <span class="n">gxz</span><span class="o">*</span><span class="p">(</span><span class="n">gxy</span><span class="o">*</span><span class="n">gyz</span> <span class="o">-</span> <span class="n">gxz</span><span class="o">*</span><span class="n">gyy</span><span class="p">))</span>
+    <span class="n">inv</span> <span class="o">=</span> <span class="o">-</span><span class="p">((</span><span class="mf">0.5</span><span class="o">*</span><span class="n">inv2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="p">((</span><span class="n">inv1</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">inv1</span><span class="p">,</span> <span class="n">inv2</span><span class="p">,</span> <span class="n">inv</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="eigen"><a class="viewcode-back" href="../../../api/gravmag.tensor.html#fatiando.gravmag.tensor.eigen">[docs]</a><span class="k">def</span> <span class="nf">eigen</span><span class="p">(</span><span class="n">tensor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the eigenvalues and eigenvectors of the gradient tensor.</span>
+
+<span class="sd">    .. note:: The coordinate system used is x-&gt;North, y-&gt;East, z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * tensor : list</span>
+<span class="sd">        A list of arrays with the 6 components of the gradient tensor measured</span>
+<span class="sd">        on a set of points. The order of the list should be:</span>
+<span class="sd">        [gxx, gxy, gxz, gyy, gyz, gzz]</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * result : list = [[eigval1, eigval2, eigval3], [eigvec1, eigvec2, eigvec3]]</span>
+<span class="sd">        The eigenvalues and eigenvectors at each observation point.</span>
+
+<span class="sd">        * eigval1,2,3 : array</span>
+<span class="sd">            The first, second, and third eigenvalues</span>
+<span class="sd">        * eigvec1,2,3 : array (shape = (N, 3) where N is the number of points)</span>
+<span class="sd">            The first, second, and third eigenvectors</span>
+
+<span class="sd">    Example::</span>
+
+<span class="sd">        &gt;&gt;&gt; tensor = [[2], [0], [0], [3], [0], [1]]</span>
+<span class="sd">        &gt;&gt;&gt; eigenvals, eigenvecs = eigen(tensor)</span>
+<span class="sd">        &gt;&gt;&gt; print eigenvals[0], eigenvecs[0]</span>
+<span class="sd">        [ 3.] [[ 0.  1.  0.]]</span>
+<span class="sd">        &gt;&gt;&gt; print eigenvals[1], eigenvecs[1]</span>
+<span class="sd">        [ 2.] [[ 1.  0.  0.]]</span>
+<span class="sd">        &gt;&gt;&gt; print eigenvals[2], eigenvecs[2]</span>
+<span class="sd">        [ 1.] [[ 0.  0.  1.]]</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">eigvals</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">eigvec1</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">eigvec2</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">eigvec3</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">gxx</span><span class="p">,</span> <span class="n">gxy</span><span class="p">,</span> <span class="n">gxz</span><span class="p">,</span> <span class="n">gyy</span><span class="p">,</span> <span class="n">gyz</span><span class="p">,</span> <span class="n">gzz</span> <span class="ow">in</span> <span class="n">numpy</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">tensor</span><span class="p">):</span>
+        <span class="n">matrix</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">gxx</span><span class="p">,</span> <span class="n">gxy</span><span class="p">,</span> <span class="n">gxz</span><span class="p">],</span>
+                              <span class="p">[</span><span class="n">gxy</span><span class="p">,</span> <span class="n">gyy</span><span class="p">,</span> <span class="n">gyz</span><span class="p">],</span>
+                              <span class="p">[</span><span class="n">gxz</span><span class="p">,</span> <span class="n">gyz</span><span class="p">,</span> <span class="n">gzz</span><span class="p">]])</span>
+        <span class="n">eigval</span><span class="p">,</span> <span class="n">eigvec</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eig</span><span class="p">(</span><span class="n">matrix</span><span class="p">)</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">eigval</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">eigvals</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">eigval</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">args</span><span class="p">])</span>
+        <span class="n">eigvec1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eigvec</span><span class="p">[:,</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+        <span class="n">eigvec2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eigvec</span><span class="p">[:,</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="n">eigvec3</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eigvec</span><span class="p">[:,</span><span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">]])</span>
+    <span class="n">eigvec1</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">eigvec1</span><span class="p">)</span>
+    <span class="n">eigvec2</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">eigvec2</span><span class="p">)</span>
+    <span class="n">eigvec3</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">eigvec3</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">eigvals</span><span class="p">),</span> <span class="p">[</span><span class="n">eigvec1</span><span class="p">,</span> <span class="n">eigvec2</span><span class="p">,</span> <span class="n">eigvec3</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="center_of_mass"><a class="viewcode-back" href="../../../api/gravmag.tensor.html#fatiando.gravmag.tensor.center_of_mass">[docs]</a><span class="k">def</span> <span class="nf">center_of_mass</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">eigvec1</span><span class="p">,</span> <span class="n">windows</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">wcenter</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">wmin</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+    <span class="n">wmax</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimates the center of mass of a source using the method of Beiki and</span>
+<span class="sd">    Pedersen (2010).</span>
+
+<span class="sd">    Uses an expanding window to get the best estimate and deal with multiple</span>
+<span class="sd">    sources.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * x, y, z : arrays</span>
+<span class="sd">        The x, y, and z coordinates of the observation points</span>
+<span class="sd">    * eigvec1 : array (shape = (N, 3) where N is the number of observations)</span>
+<span class="sd">        The first eigenvector of the gravity gradient tensor at each observation</span>
+<span class="sd">        point</span>
+<span class="sd">    * windows : int</span>
+<span class="sd">        The number of expanding windows to use</span>
+<span class="sd">    * wcenter : list = [x, y]</span>
+<span class="sd">        The [x, y] coordinates of the center of the expanding windows. Will</span>
+<span class="sd">        default to the middle of the data area if None</span>
+<span class="sd">    * wmin, wmax : float</span>
+<span class="sd">        Minimum and maximum size of the expanding windows. Will default to</span>
+<span class="sd">        10% data area and 100% data area, respectively, if None</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * [xo, yo, zo], sigma : float</span>
+<span class="sd">        xo, yo, zo are the coordinates of the estimated center of mass. sigma is</span>
+<span class="sd">        the estimated standard deviation of the distances between the estimated</span>
+<span class="sd">        center of mass and the lines passing through the observation point in</span>
+<span class="sd">        the direction of the eigenvector</span>
+
+<span class="sd">    Example::</span>
+
+<span class="sd">        &gt;&gt;&gt; import fatiando as ft</span>
+<span class="sd">        &gt;&gt;&gt; # Generate synthetic data using a prism</span>
+<span class="sd">        &gt;&gt;&gt; prism = ft.mesher.Prism(-200,0,-100,100,0,200,{&#39;density&#39;:1000})</span>
+<span class="sd">        &gt;&gt;&gt; x, y, z = ft.gridder.regular((-500,500,-500,500), (20,20), z=-100)</span>
+<span class="sd">        &gt;&gt;&gt; tensor = [ft.gravmag.prism.gxx(x, y, z, [prism]),</span>
+<span class="sd">        ...           ft.gravmag.prism.gxy(x, y, z, [prism]),</span>
+<span class="sd">        ...           ft.gravmag.prism.gxz(x, y, z, [prism]),</span>
+<span class="sd">        ...           ft.gravmag.prism.gyy(x, y, z, [prism]),</span>
+<span class="sd">        ...           ft.gravmag.prism.gyz(x, y, z, [prism]),</span>
+<span class="sd">        ...           ft.gravmag.prism.gzz(x, y, z, [prism])]</span>
+<span class="sd">        &gt;&gt;&gt; # Get the eigenvector</span>
+<span class="sd">        &gt;&gt;&gt; eigenvals, eigenvecs = ft.gravmag.tensor.eigen(tensor)</span>
+<span class="sd">        &gt;&gt;&gt; # Now estimate the center of mass</span>
+<span class="sd">        &gt;&gt;&gt; cm, sigma = ft.gravmag.tensor.center_of_mass(x, y, z, eigenvecs[0])</span>
+<span class="sd">        &gt;&gt;&gt; xo, yo, zo = cm</span>
+<span class="sd">        &gt;&gt;&gt; print &quot;%.2lf, %.2lf, %.2lf&quot; % (xo, yo, zo)</span>
+<span class="sd">        -100.05, 0.00, 99.86</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">wmin</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">wmin</span> <span class="o">=</span> <span class="mf">0.1</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">-</span> <span class="n">x</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">-</span> <span class="n">y</span><span class="o">.</span><span class="n">min</span><span class="p">()])</span>
+    <span class="k">if</span> <span class="n">wmax</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">wmax</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">-</span> <span class="n">x</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">-</span> <span class="n">y</span><span class="o">.</span><span class="n">min</span><span class="p">()])</span>
+    <span class="c"># To ensure that if there is only one window, it will use the largest</span>
+    <span class="c"># possible</span>
+    <span class="k">if</span> <span class="n">windows</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">wmin</span> <span class="o">=</span> <span class="n">wmax</span>
+    <span class="k">if</span> <span class="n">wcenter</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">wcenter</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">+</span> <span class="n">x</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">+</span> <span class="n">y</span><span class="o">.</span><span class="n">max</span><span class="p">())]</span>
+    <span class="n">xc</span><span class="p">,</span> <span class="n">yc</span> <span class="o">=</span> <span class="n">wcenter</span>
+    <span class="n">best</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">for</span> <span class="n">size</span> <span class="ow">in</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">wmin</span><span class="p">,</span> <span class="n">wmax</span><span class="p">,</span> <span class="n">windows</span><span class="p">):</span>
+        <span class="n">area</span> <span class="o">=</span> <span class="p">[</span><span class="n">xc</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">size</span><span class="p">,</span> <span class="n">xc</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">size</span><span class="p">,</span> <span class="n">yc</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">size</span><span class="p">,</span> <span class="n">yc</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">size</span><span class="p">]</span>
+        <span class="n">wx</span><span class="p">,</span> <span class="n">wy</span><span class="p">,</span> <span class="n">scalars</span> <span class="o">=</span> <span class="n">gridder</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="p">[</span><span class="n">z</span><span class="p">,</span> <span class="n">eigvec1</span><span class="p">],</span> <span class="n">area</span><span class="p">)</span>
+        <span class="n">wz</span><span class="p">,</span> <span class="n">weigvec1</span> <span class="o">=</span> <span class="n">scalars</span>
+        <span class="c"># Estimate the center of mass for the data in this window</span>
+        <span class="n">vx</span><span class="p">,</span> <span class="n">vy</span><span class="p">,</span> <span class="n">vz</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">weigvec1</span><span class="p">)</span>
+        <span class="n">m11</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">vx</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">m12</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="n">vx</span><span class="o">*</span><span class="n">vy</span><span class="p">)</span>
+        <span class="n">m13</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="n">vx</span><span class="o">*</span><span class="n">vz</span><span class="p">)</span>
+        <span class="n">m22</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">vy</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">m23</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="n">vy</span><span class="o">*</span><span class="n">vz</span><span class="p">)</span>
+        <span class="n">m33</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">vz</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">matrix</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[[</span><span class="n">m11</span><span class="p">,</span> <span class="n">m12</span><span class="p">,</span> <span class="n">m13</span><span class="p">],</span>
+             <span class="p">[</span><span class="n">m12</span><span class="p">,</span> <span class="n">m22</span><span class="p">,</span> <span class="n">m23</span><span class="p">],</span>
+             <span class="p">[</span><span class="n">m13</span><span class="p">,</span> <span class="n">m23</span><span class="p">,</span> <span class="n">m33</span><span class="p">]])</span>
+        <span class="n">vector</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+            <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="n">vx</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">wx</span> <span class="o">-</span> <span class="n">vx</span><span class="o">*</span><span class="n">vy</span><span class="o">*</span><span class="n">wy</span> <span class="o">-</span> <span class="n">vx</span><span class="o">*</span><span class="n">vz</span><span class="o">*</span><span class="n">wz</span><span class="p">),</span>
+            <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="n">vx</span><span class="o">*</span><span class="n">vy</span><span class="o">*</span><span class="n">wx</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">vy</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">wy</span> <span class="o">-</span> <span class="n">vy</span><span class="o">*</span><span class="n">vz</span><span class="o">*</span><span class="n">wz</span><span class="p">),</span>
+            <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="n">vx</span><span class="o">*</span><span class="n">vz</span><span class="o">*</span><span class="n">wx</span> <span class="o">-</span> <span class="n">vy</span><span class="o">*</span><span class="n">vz</span><span class="o">*</span><span class="n">wy</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">vz</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">wz</span><span class="p">)])</span>
+        <span class="n">cm</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">vector</span><span class="p">)</span>
+        <span class="n">xo</span><span class="p">,</span> <span class="n">yo</span><span class="p">,</span> <span class="n">zo</span> <span class="o">=</span> <span class="n">cm</span>
+        <span class="n">dists</span> <span class="o">=</span> <span class="p">((</span><span class="n">xo</span> <span class="o">-</span> <span class="n">wx</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">yo</span> <span class="o">-</span> <span class="n">wy</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">zo</span> <span class="o">-</span> <span class="n">wz</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span>
+                 <span class="p">((</span><span class="n">xo</span> <span class="o">-</span> <span class="n">wx</span><span class="p">)</span><span class="o">*</span><span class="n">vx</span> <span class="o">+</span> <span class="p">(</span><span class="n">yo</span> <span class="o">-</span> <span class="n">wy</span><span class="p">)</span><span class="o">*</span><span class="n">vy</span> <span class="o">+</span> <span class="p">(</span><span class="n">zo</span> <span class="o">-</span> <span class="n">wz</span><span class="p">)</span><span class="o">*</span><span class="n">vz</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">sigma</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dists</span><span class="p">)</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">wx</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">best</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">sigma</span> <span class="o">&lt;</span> <span class="n">best</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">best</span> <span class="o">=</span> <span class="p">[</span><span class="n">cm</span><span class="p">,</span> <span class="n">sigma</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">best</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

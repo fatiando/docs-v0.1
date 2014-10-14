@@ -1,0 +1,12 @@
+.. _cookbook_gravmag_imaging_geninv:
+
+GravMag: 3D imaging using the Generalized Inverse method on synthetic gravity data (simple model)
+==================================================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/gravmag_imaging_geninv.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/gravmag_imaging_geninv.py
+    :language: python
+    :linenos:

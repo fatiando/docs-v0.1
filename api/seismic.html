@@ -1,0 +1,149 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Seismics and seismology (fatiando.seismic) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="API Reference: The fatiando package" href="fatiando.html" />
+    <link rel="next" title="2D seismic ray travel-time modeling (fatiando.seismic.ttime2d)" href="seismic.ttime2d.html" />
+    <link rel="prev" title="Space domain processing (fatiando.gravmag.transform)" href="gravmag.transform.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="seismic.ttime2d.html" title="2D seismic ray travel-time modeling (fatiando.seismic.ttime2d)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gravmag.transform.html" title="Space domain processing (fatiando.gravmag.transform)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" accesskey="U">API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.seismic">
+<span id="seismics-and-seismology-fatiando-seismic"></span><span id="fatiando-seismic"></span><h1>Seismics and seismology (<tt class="docutils literal"><span class="pre">fatiando.seismic</span></tt>)<a class="headerlink" href="#module-fatiando.seismic" title="Permalink to this headline">¶</a></h1>
+<p>Various tools for seismic and seismology, like direct modeling, inversion
+(tomography), epicenter determination, etc.</p>
+<p><strong>Forward modeling and inversion</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="seismic.ttime2d.html#module-fatiando.seismic.ttime2d" title="fatiando.seismic.ttime2d"><tt class="xref py py-mod docutils literal"><span class="pre">ttime2d</span></tt></a>: 2D seismic ray travel-time modeling</li>
+<li><a class="reference internal" href="seismic.epic2d.html#module-fatiando.seismic.epic2d" title="fatiando.seismic.epic2d"><tt class="xref py py-mod docutils literal"><span class="pre">epic2d</span></tt></a>: 2D epicenter determination</li>
+<li><a class="reference internal" href="seismic.profile.html#module-fatiando.seismic.profile" title="fatiando.seismic.profile"><tt class="xref py py-mod docutils literal"><span class="pre">profile</span></tt></a>: Modeling and inversion of seismic profiling</li>
+<li><a class="reference internal" href="seismic.wavefd.html#module-fatiando.seismic.wavefd" title="fatiando.seismic.wavefd"><tt class="xref py py-mod docutils literal"><span class="pre">wavefd</span></tt></a>: Finite difference solution of the 2D elastic
+wave equation</li>
+</ul>
+<p><strong>Tomography</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="seismic.srtomo.html#module-fatiando.seismic.srtomo" title="fatiando.seismic.srtomo"><tt class="xref py py-mod docutils literal"><span class="pre">srtomo</span></tt></a>: 2D straight-ray tomography</li>
+</ul>
+<hr class="docutils" />
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="seismic.ttime2d.html">2D seismic ray travel-time modeling (<tt class="docutils literal"><span class="pre">fatiando.seismic.ttime2d</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="seismic.epic2d.html">2D epicenter determination (<tt class="docutils literal"><span class="pre">fatiando.seismic.epic2d</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="seismic.profile.html">Seismic profiling (<tt class="docutils literal"><span class="pre">fatiando.seismic.profile</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="seismic.srtomo.html">Straigh-ray 2D tomography with SrTomo (<tt class="docutils literal"><span class="pre">fatiando.seismic.srtomo</span></tt>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="seismic.wavefd.html">Finite difference solution of the 2D wave equation (<tt class="docutils literal"><span class="pre">fatiando.seismic.wavefd</span></tt>)</a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gravmag.transform.html"
+                        title="previous chapter">Space domain processing (<tt class="docutils literal"><span class="pre">fatiando.gravmag.transform</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="seismic.ttime2d.html"
+                        title="next chapter">2D seismic ray travel-time modeling (<tt class="docutils literal"><span class="pre">fatiando.seismic.ttime2d</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/seismic.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="seismic.ttime2d.html" title="2D seismic ray travel-time modeling (fatiando.seismic.ttime2d)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gravmag.transform.html" title="Space domain processing (fatiando.gravmag.transform)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

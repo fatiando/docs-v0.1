@@ -1,0 +1,294 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Base data module class (fatiando.inversion.datamodule) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Inverse problem solving tools (fatiando.inversion)" href="inversion.html" />
+    <link rel="next" title="Cookbook" href="../cookbook.html" />
+    <link rel="prev" title="Regularizing functions (fatiando.inversion.regularizer)" href="inversion.regularizer.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../cookbook.html" title="Cookbook"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="inversion.regularizer.html" title="Regularizing functions (fatiando.inversion.regularizer)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="inversion.html" accesskey="U">Inverse problem solving tools (<tt class="docutils literal"><span class="pre">fatiando.inversion</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.inversion.datamodule">
+<span id="base-data-module-class-fatiando-inversion-datamodule"></span><span id="fatiando-inversion-datamodule"></span><h1>Base data module class (<tt class="docutils literal"><span class="pre">fatiando.inversion.datamodule</span></tt>)<a class="headerlink" href="#module-fatiando.inversion.datamodule" title="Permalink to this headline">¶</a></h1>
+<p>Base DataModule class with the format expected by all inverse problem solvers.</p>
+<p>See the docs for the <a class="reference internal" href="inversion.html#module-fatiando.inversion" title="fatiando.inversion"><tt class="xref py py-mod docutils literal"><span class="pre">fatiando.inversion</span></tt></a> package for more information on
+the role of the data modules.</p>
+<hr class="docutils" />
+<dl class="class">
+<dt id="fatiando.inversion.datamodule.DataModule">
+<em class="property">class </em><tt class="descclassname">fatiando.inversion.datamodule.</tt><tt class="descname">DataModule</tt><big>(</big><em>data</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/datamodule.html#DataModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.datamodule.DataModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>A generic data module.</p>
+<p>Use this class as a skeleton for building custom data modules for a specific
+geophysical data set and interpretative model, like gravity anomaly for
+right rectangular prism models, travel time residuals for epicenter
+calculation, etc.</p>
+<p>Data modules are how each inverse problem solver knows how to calculate
+things like:</p>
+<ul class="simple">
+<li>Predicted data</li>
+<li>Data-misfit function</li>
+<li>Gradient of the data-misfit function</li>
+<li>Hessian of the data-misfit function</li>
+</ul>
+<p>Not all solvers use all of the above. For examples, heuristic solvers don&#8217;t
+require gradient and hessian calculations.</p>
+<p>This class has templates for all of these methods so that all solvers know
+what to expect.</p>
+<p>Normally, all data modules should store the value of the latest residual
+vector calculated.</p>
+<p>Constructor parameters common to all methods:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>data <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The observed data.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="method">
+<dt id="fatiando.inversion.datamodule.DataModule.get_misfit">
+<tt class="descname">get_misfit</tt><big>(</big><em>residuals</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/datamodule.html#DataModule.get_misfit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.datamodule.DataModule.get_misfit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the value of the data-misfit function for a given residual
+vector</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>residuals <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The residual vector</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>misfit <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Scalar value of the data-misfit</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="fatiando.inversion.datamodule.DataModule.get_predicted">
+<tt class="descname">get_predicted</tt><big>(</big><em>p</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/datamodule.html#DataModule.get_predicted"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.datamodule.DataModule.get_predicted" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the predicted data vector for a given parameter vector.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>p <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The parameter vector</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>pred <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The calculated predicted data vector</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="fatiando.inversion.datamodule.DataModule.sum_gradient">
+<tt class="descname">sum_gradient</tt><big>(</big><em>gradient</em>, <em>p=None</em>, <em>residuals=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/datamodule.html#DataModule.sum_gradient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.datamodule.DataModule.sum_gradient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sums the gradient vector of this data module to <em>gradient</em> and returns
+the result.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>gradient <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The old gradient vector</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>p <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The parameter vector</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>residuals <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The residuals evaluated for parameter vector <em>p</em></p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Solvers for linear problems will use <tt class="docutils literal"><span class="pre">p</span> <span class="pre">=</span> <span class="pre">None</span></tt> and
+<tt class="docutils literal"><span class="pre">residuals</span> <span class="pre">=</span> <span class="pre">None</span></tt> so that the class knows how to calculate
+gradients more efficiently for these cases.</p>
+</div>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>new_gradient <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The new gradient vector</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="fatiando.inversion.datamodule.DataModule.sum_hessian">
+<tt class="descname">sum_hessian</tt><big>(</big><em>hessian</em>, <em>p=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/inversion/datamodule.html#DataModule.sum_hessian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.inversion.datamodule.DataModule.sum_hessian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sums the Hessian matrix of this data module to <em>hessian</em> and returns
+the result.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>hessian <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">2D array with the old Hessian matrix</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>p <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The parameter vector</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Solvers for linear problems will use <tt class="docutils literal"><span class="pre">p</span> <span class="pre">=</span> <span class="pre">None</span></tt> so that the
+class knows how to calculate gradients more efficiently for these
+cases.</p>
+</div>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>new_hessian <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">2D array with the new Hessian matrix</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="inversion.regularizer.html"
+                        title="previous chapter">Regularizing functions (<tt class="docutils literal"><span class="pre">fatiando.inversion.regularizer</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../cookbook.html"
+                        title="next chapter">Cookbook</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/inversion.datamodule.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../cookbook.html" title="Cookbook"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="inversion.regularizer.html" title="Regularizing functions (fatiando.inversion.regularizer)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="inversion.html" >Inverse problem solving tools (<tt class="docutils literal"><span class="pre">fatiando.inversion</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Forward modeling with tesseroids (fatiando.gravmag.tesseroid) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Gravity and magnetics (fatiando.gravmag)" href="gravmag.html" />
+    <link rel="next" title="Forward modeling with 2D polygons (fatiando.gravmag.talwani)" href="gravmag.talwani.html" />
+    <link rel="prev" title="Forward modeling with spheres (fatiando.gravmag.sphere)" href="gravmag.sphere.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag.talwani.html" title="Forward modeling with 2D polygons (fatiando.gravmag.talwani)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gravmag.sphere.html" title="Forward modeling with spheres (fatiando.gravmag.sphere)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="gravmag.html" accesskey="U">Gravity and magnetics (<tt class="docutils literal"><span class="pre">fatiando.gravmag</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.gravmag.tesseroid">
+<span id="forward-modeling-with-tesseroids-fatiando-gravmag-tesseroid"></span><span id="fatiando-gravmag-tesseroid"></span><h1>Forward modeling with tesseroids (<tt class="docutils literal"><span class="pre">fatiando.gravmag.tesseroid</span></tt>)<a class="headerlink" href="#module-fatiando.gravmag.tesseroid" title="Permalink to this headline">¶</a></h1>
+<p>Calculates the potential fields of a tesseroid.</p>
+<dl class="function">
+<dt id="fatiando.gravmag.tesseroid.gx">
+<tt class="descclassname">fatiando.gravmag.tesseroid.</tt><tt class="descname">gx</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>heights</em>, <em>tesseroids</em>, <em>dens=None</em>, <em>ratio=1.0</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/tesseroid.html#gx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.tesseroid.gx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the x (North) component of the gravitational attraction due to a
+tesseroid model.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.tesseroid.gxx">
+<tt class="descclassname">fatiando.gravmag.tesseroid.</tt><tt class="descname">gxx</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>heights</em>, <em>tesseroids</em>, <em>dens=None</em>, <em>ratio=3</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/tesseroid.html#gxx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.tesseroid.gxx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the xx (North-North) component of the gravity gradient tensor
+due to a tesseroid model.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.tesseroid.gxy">
+<tt class="descclassname">fatiando.gravmag.tesseroid.</tt><tt class="descname">gxy</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>heights</em>, <em>tesseroids</em>, <em>dens=None</em>, <em>ratio=3</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/tesseroid.html#gxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.tesseroid.gxy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the xy (North-East) component of the gravity gradient tensor
+due to a tesseroid model.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.tesseroid.gxz">
+<tt class="descclassname">fatiando.gravmag.tesseroid.</tt><tt class="descname">gxz</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>heights</em>, <em>tesseroids</em>, <em>dens=None</em>, <em>ratio=3</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/tesseroid.html#gxz"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.tesseroid.gxz" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the xz (North-radial) component of the gravity gradient tensor
+due to a tesseroid model.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.tesseroid.gy">
+<tt class="descclassname">fatiando.gravmag.tesseroid.</tt><tt class="descname">gy</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>heights</em>, <em>tesseroids</em>, <em>dens=None</em>, <em>ratio=1.0</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/tesseroid.html#gy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.tesseroid.gy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the y (East) component of the gravitational attraction due to a
+tesseroid model.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.tesseroid.gyy">
+<tt class="descclassname">fatiando.gravmag.tesseroid.</tt><tt class="descname">gyy</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>heights</em>, <em>tesseroids</em>, <em>dens=None</em>, <em>ratio=3</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/tesseroid.html#gyy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.tesseroid.gyy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the yy (East-East) component of the gravity gradient tensor
+due to a tesseroid model.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.tesseroid.gyz">
+<tt class="descclassname">fatiando.gravmag.tesseroid.</tt><tt class="descname">gyz</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>heights</em>, <em>tesseroids</em>, <em>dens=None</em>, <em>ratio=3</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/tesseroid.html#gyz"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.tesseroid.gyz" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the yz (East-radial) component of the gravity gradient tensor
+due to a tesseroid model.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.tesseroid.gz">
+<tt class="descclassname">fatiando.gravmag.tesseroid.</tt><tt class="descname">gz</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>heights</em>, <em>tesseroids</em>, <em>dens=None</em>, <em>ratio=1.0</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/tesseroid.html#gz"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.tesseroid.gz" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the z (radial) component of the gravitational attraction due to a
+tesseroid model.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.tesseroid.gzz">
+<tt class="descclassname">fatiando.gravmag.tesseroid.</tt><tt class="descname">gzz</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>heights</em>, <em>tesseroids</em>, <em>dens=None</em>, <em>ratio=3</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/tesseroid.html#gzz"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.tesseroid.gzz" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the zz (radial-radial) component of the gravity gradient tensor
+due to a tesseroid model.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.tesseroid.potential">
+<tt class="descclassname">fatiando.gravmag.tesseroid.</tt><tt class="descname">potential</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>heights</em>, <em>tesseroids</em>, <em>dens=None</em>, <em>ratio=1.0</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/tesseroid.html#potential"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.tesseroid.potential" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the gravitational potential due to a tesseroid model.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gravmag.sphere.html"
+                        title="previous chapter">Forward modeling with spheres (<tt class="docutils literal"><span class="pre">fatiando.gravmag.sphere</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gravmag.talwani.html"
+                        title="next chapter">Forward modeling with 2D polygons (<tt class="docutils literal"><span class="pre">fatiando.gravmag.talwani</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/gravmag.tesseroid.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag.talwani.html" title="Forward modeling with 2D polygons (fatiando.gravmag.talwani)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gravmag.sphere.html" title="Forward modeling with spheres (fatiando.gravmag.sphere)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="gravmag.html" >Gravity and magnetics (<tt class="docutils literal"><span class="pre">fatiando.gravmag</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

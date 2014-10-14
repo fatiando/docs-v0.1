@@ -1,0 +1,516 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fatiando.gravmag.basin2d &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for fatiando.gravmag.basin2d</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Estimate the basement relief of two-dimensional basins from potential field</span>
+<span class="sd">data.</span>
+
+<span class="sd">**POLYGONAL PARAMETRIZATION**</span>
+
+<span class="sd">* :func:`~fatiando.gravmag.basin2d.triangular`</span>
+<span class="sd">* :func:`~fatiando.gravmag.basin2d.trapezoidal`</span>
+
+<span class="sd">Uses 2D bodies with a polygonal cross-section to parameterize the basin relief.</span>
+<span class="sd">Potential fields are calculated using the :mod:`fatiando.gravmag.talwani`</span>
+<span class="sd">module.</span>
+
+<span class="sd">.. warning:: Vertices of polygons must always be in clockwise order!</span>
+
+<span class="sd">**Triangular basin**</span>
+
+<span class="sd">Use when the basin can be approximated by a 2D body with **triangular** vertical</span>
+<span class="sd">cross-section. The triangle is assumed to have 2 known vertices at the surface</span>
+<span class="sd">(the edges of the basin) and one unknown vertice in the subsurface. The</span>
+<span class="sd">inversion will then estimate the (x, z) coordinates of the unknown vertice.</span>
+
+<span class="sd">Example using synthetic data::</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy</span>
+<span class="sd">    &gt;&gt;&gt; import fatiando as ft</span>
+<span class="sd">    &gt;&gt;&gt; # Make a triangular basin model (will estimate the last point)</span>
+<span class="sd">    &gt;&gt;&gt; verts = [(10000, 1), (90000, 1), (50000, 5000)]</span>
+<span class="sd">    &gt;&gt;&gt; left, middle, right = verts</span>
+<span class="sd">    &gt;&gt;&gt; model = ft.mesher.Polygon(verts, {&#39;density&#39;:500})</span>
+<span class="sd">    &gt;&gt;&gt; # Generate the synthetic gz profile</span>
+<span class="sd">    &gt;&gt;&gt; xs = numpy.arange(0, 100000, 10000)</span>
+<span class="sd">    &gt;&gt;&gt; zs = numpy.zeros_like(xs)</span>
+<span class="sd">    &gt;&gt;&gt; gz = ft.gravmag.talwani.gz(xs, zs, [model])</span>
+<span class="sd">    &gt;&gt;&gt; # Estimate the coordinates of the last point using Levenberg-Marquardt</span>
+<span class="sd">    &gt;&gt;&gt; solver = ft.inversion.gradient.levmarq(initial=(10000, 1000))</span>
+<span class="sd">    &gt;&gt;&gt; p, residuals = ft.gravmag.basin2d.triangular(xs, zs, gz, [left, middle],</span>
+<span class="sd">    ...     500, solver)</span>
+<span class="sd">    &gt;&gt;&gt; print &#39;%.1f, %.1f&#39; % (p.vertices[-1][0], p.vertices[-1][1])</span>
+<span class="sd">    50000.0, 5000.0</span>
+
+<span class="sd">Same example but this time using ``iterate=True`` to view the steps of the</span>
+<span class="sd">algorithm::</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy</span>
+<span class="sd">    &gt;&gt;&gt; import fatiando as ft</span>
+<span class="sd">    &gt;&gt;&gt; # Make a triangular basin model (will estimate the last point)</span>
+<span class="sd">    &gt;&gt;&gt; verts = [(10000, 1), (90000, 1), (50000, 5000)]</span>
+<span class="sd">    &gt;&gt;&gt; left, middle, right = verts</span>
+<span class="sd">    &gt;&gt;&gt; model = ft.mesher.Polygon(verts, {&#39;density&#39;:500})</span>
+<span class="sd">    &gt;&gt;&gt; # Generate the synthetic gz profile</span>
+<span class="sd">    &gt;&gt;&gt; xs = numpy.arange(0, 100000, 10000)</span>
+<span class="sd">    &gt;&gt;&gt; zs = numpy.zeros_like(xs)</span>
+<span class="sd">    &gt;&gt;&gt; gz = ft.gravmag.talwani.gz(xs, zs, [model])</span>
+<span class="sd">    &gt;&gt;&gt; # Estimate the coordinates of the last point using Levenberg-Marquardt</span>
+<span class="sd">    &gt;&gt;&gt; solver = ft.inversion.gradient.levmarq(initial=(70000, 2000))</span>
+<span class="sd">    &gt;&gt;&gt; iterator = ft.gravmag.basin2d.triangular(xs, zs, gz, [left, middle], 500,</span>
+<span class="sd">    ...                                      solver, iterate=True)</span>
+<span class="sd">    &gt;&gt;&gt; for p, residuals in iterator:</span>
+<span class="sd">    ...     print &#39;%.4f, %.4f&#39; % (p[0], p[1])</span>
+<span class="sd">    70000.0000, 2000.0000</span>
+<span class="sd">    69999.8803, 2005.4746</span>
+<span class="sd">    69998.6825, 2059.0979</span>
+<span class="sd">    69986.4671, 2502.6963</span>
+<span class="sd">    69843.9902, 3960.5022</span>
+<span class="sd">    67972.7679, 4728.4970</span>
+<span class="sd">    59022.3186, 4820.1359</span>
+<span class="sd">    50714.4178, 4952.5628</span>
+<span class="sd">    50001.0118, 4999.4345</span>
+<span class="sd">    50000.0006, 4999.9999</span>
+
+<span class="sd">**Trapezoidal basin**</span>
+
+<span class="sd">Use when the basin can be approximated by a 2D body with **trapezoidal**</span>
+<span class="sd">vertical cross-section.</span>
+<span class="sd">The trapezoid is assumed to have 2 known vertices at the surface</span>
+<span class="sd">(the edges of the basin) and two unknown vertice in the subsurface.</span>
+<span class="sd">We assume that the x coordinates of the unknown vertices are the same as the x</span>
+<span class="sd">coordinates of the known vertices (i.e., the unknown vertices are directly under</span>
+<span class="sd">the known vertices). The inversion will then estimate the z coordinates of the</span>
+<span class="sd">unknown vertices.</span>
+
+<span class="sd">Example of inverting for the z coordinates of the unknown vertices::</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy</span>
+<span class="sd">    &gt;&gt;&gt; import fatiando as ft</span>
+<span class="sd">    &gt;&gt;&gt; # Make a trapezoidal basin model (will estimate the last two point)</span>
+<span class="sd">    &gt;&gt;&gt; verts = [(10000, 1), (90000, 1), (90000, 5000), (10000, 3000)]</span>
+<span class="sd">    &gt;&gt;&gt; model = ft.mesher.Polygon(verts, {&#39;density&#39;:500})</span>
+<span class="sd">    &gt;&gt;&gt; # Generate the synthetic gz profile</span>
+<span class="sd">    &gt;&gt;&gt; xs = numpy.arange(0, 100000, 10000)</span>
+<span class="sd">    &gt;&gt;&gt; zs = numpy.zeros_like(xs)</span>
+<span class="sd">    &gt;&gt;&gt; gz = ft.gravmag.talwani.gz(xs, zs, [model])</span>
+<span class="sd">    &gt;&gt;&gt; # Estimate the coordinates of the two z coords using Levenberg-Marquardt</span>
+<span class="sd">    &gt;&gt;&gt; solver = ft.inversion.gradient.levmarq(initial=(1000, 500))</span>
+<span class="sd">    &gt;&gt;&gt; p, residuals = ft.gravmag.basin2d.trapezoidal(xs, zs, gz, verts[0:2], 500,</span>
+<span class="sd">    ...                                           solver)</span>
+<span class="sd">    &gt;&gt;&gt; print &#39;%.1f, %.1f&#39; % (p.vertices[-2][1], p.vertices[-1][1])</span>
+<span class="sd">    5000.0, 3000.0</span>
+
+<span class="sd">Same example but this time using ``iterate=True`` to view the steps of the</span>
+<span class="sd">algorithm::</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy</span>
+<span class="sd">    &gt;&gt;&gt; import fatiando as ft</span>
+<span class="sd">    &gt;&gt;&gt; # Make a trapezoidal basin model (will estimate the last two point)</span>
+<span class="sd">    &gt;&gt;&gt; verts = [(10000, 5), (90000, 10), (90000, 5000), (10000, 3000)]</span>
+<span class="sd">    &gt;&gt;&gt; model = ft.mesher.Polygon(verts, {&#39;density&#39;:500})</span>
+<span class="sd">    &gt;&gt;&gt; # Generate the synthetic gz profile</span>
+<span class="sd">    &gt;&gt;&gt; xs = numpy.arange(0, 100000, 10000)</span>
+<span class="sd">    &gt;&gt;&gt; zs = numpy.zeros_like(xs)</span>
+<span class="sd">    &gt;&gt;&gt; gz = ft.gravmag.talwani.gz(xs, zs, [model])</span>
+<span class="sd">    &gt;&gt;&gt; # Estimate the coordinates of the two z coords using Levenberg-Marquardt</span>
+<span class="sd">    &gt;&gt;&gt; solver = ft.inversion.gradient.levmarq(initial=(1000, 500))</span>
+<span class="sd">    &gt;&gt;&gt; iterator = ft.gravmag.basin2d.trapezoidal(xs, zs, gz, verts[0:2], 500,</span>
+<span class="sd">    ...                                       solver, iterate=True)</span>
+<span class="sd">    &gt;&gt;&gt; for p, residuals in iterator:</span>
+<span class="sd">    ...     print &#39;%.4f, %.4f&#39; % (p[0], p[1])</span>
+<span class="sd">    1000.0000, 500.0000</span>
+<span class="sd">    1010.4375, 509.4191</span>
+<span class="sd">    1111.6975, 600.5546</span>
+<span class="sd">    1888.0846, 1281.9163</span>
+<span class="sd">    3926.6071, 2780.5317</span>
+<span class="sd">    4903.8174, 3040.3444</span>
+<span class="sd">    4998.6977, 3001.0087</span>
+<span class="sd">    4999.9980, 3000.0017</span>
+<span class="sd">    5000.0000, 2999.9999</span>
+
+<span class="sd">----</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="kn">from</span> <span class="nn">fatiando.gravmag</span> <span class="kn">import</span> <span class="n">talwani</span>
+<span class="kn">from</span> <span class="nn">fatiando.mesher</span> <span class="kn">import</span> <span class="n">Polygon</span>
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">inversion</span><span class="p">,</span> <span class="n">utils</span>
+<span class="kn">import</span> <span class="nn">fatiando.logger</span>
+
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">fatiando</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">dummy</span><span class="p">(</span><span class="s">&#39;fatiando.gravmag.basin2d&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TriangularGzDM"><a class="viewcode-back" href="../../../api/gravmag.basin2d.html#fatiando.gravmag.basin2d.TriangularGzDM">[docs]</a><span class="k">class</span> <span class="nc">TriangularGzDM</span><span class="p">(</span><span class="n">inversion</span><span class="o">.</span><span class="n">datamodule</span><span class="o">.</span><span class="n">DataModule</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Data module for the inversion to estimate the relief of a triangular basin.</span>
+
+<span class="sd">    Packs the necessary gravity anomaly data and interpretative model</span>
+<span class="sd">    information.</span>
+
+<span class="sd">    The forward modeling is done using :mod:`~fatiando.gravmag.talwani`.</span>
+<span class="sd">    Derivatives are calculated using a 2-point finite difference approximation.</span>
+<span class="sd">    The Hessian matrix is calculated using a Gauss-Newton approximation.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, zp : array</span>
+<span class="sd">        Arrays with the x and z coordinates of the profile data points</span>
+<span class="sd">    * data : array</span>
+<span class="sd">        The profile gravity anomaly data</span>
+<span class="sd">    * verts : list of lists</span>
+<span class="sd">        List of the [x, z] coordinates of the two know vertices.</span>
+
+<span class="sd">        .. warning::</span>
+
+<span class="sd">            Very important that the vertices in the list be ordered from left to</span>
+<span class="sd">            right! Otherwise the forward model will give results with an</span>
+<span class="sd">            inverted sign and terrible things may happen!</span>
+
+<span class="sd">    * density : float</span>
+<span class="sd">        Density contrast of the basin</span>
+<span class="sd">    * delta : float</span>
+<span class="sd">        Interval used to calculate the approximate derivatives</span>
+
+<span class="sd">    .. warning:: It is very important that the vertices in the list be ordered</span>
+<span class="sd">        clockwise! Otherwise the forward model will give results with an</span>
+<span class="sd">        inverted sign and terrible things may happen!</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">verts</span><span class="p">,</span> <span class="n">density</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
+        <span class="n">inversion</span><span class="o">.</span><span class="n">datamodule</span><span class="o">.</span><span class="n">DataModule</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">zp</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;xp, zp, and data must be of same length&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">verts</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;Need exactly 2 vertices. </span><span class="si">%d</span><span class="s"> given&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">verts</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">zp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prop</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="n">density</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verts</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">verts</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta</span> <span class="o">=</span> <span class="n">delta</span>
+
+    <span class="k">def</span> <span class="nf">get_predicted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="n">polygon</span> <span class="o">=</span> <span class="n">Polygon</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">verts</span> <span class="o">+</span> <span class="p">[</span><span class="n">p</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">talwani</span><span class="o">.</span><span class="n">gz</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">,</span> <span class="p">[</span><span class="n">polygon</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">sum_gradient</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">residuals</span><span class="p">):</span>
+        <span class="n">polygon</span> <span class="o">=</span> <span class="n">Polygon</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">verts</span> <span class="o">+</span> <span class="p">[</span><span class="n">p</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="p">)</span>
+        <span class="n">at_p</span> <span class="o">=</span> <span class="n">talwani</span><span class="o">.</span><span class="n">gz</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">,</span> <span class="p">[</span><span class="n">polygon</span><span class="p">])</span>
+        <span class="n">polygon</span> <span class="o">=</span> <span class="n">Polygon</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">verts</span> <span class="o">+</span> <span class="p">[[</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span><span class="p">,</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]]],</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="p">)</span>
+        <span class="n">jacx</span> <span class="o">=</span> <span class="p">(</span><span class="n">talwani</span><span class="o">.</span><span class="n">gz</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">,</span> <span class="p">[</span><span class="n">polygon</span><span class="p">])</span> <span class="o">-</span> <span class="n">at_p</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">delta</span>
+        <span class="n">polygon</span> <span class="o">=</span> <span class="n">Polygon</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">verts</span> <span class="o">+</span> <span class="p">[[</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span><span class="p">]],</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="p">)</span>
+        <span class="n">jacz</span> <span class="o">=</span> <span class="p">(</span><span class="n">talwani</span><span class="o">.</span><span class="n">gz</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">,</span> <span class="p">[</span><span class="n">polygon</span><span class="p">])</span> <span class="o">-</span> <span class="n">at_p</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">delta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">jac_T</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jacx</span><span class="p">,</span> <span class="n">jacz</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">gradient</span> <span class="o">-</span> <span class="mf">2.</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jac_T</span><span class="p">,</span> <span class="n">residuals</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">sum_hessian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hessian</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">hessian</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jac_T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">jac_T</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="triangular"><a class="viewcode-back" href="../../../api/gravmag.basin2d.html#fatiando.gravmag.basin2d.triangular">[docs]</a><span class="k">def</span> <span class="nf">triangular</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">verts</span><span class="p">,</span> <span class="n">density</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">iterate</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimate basement relief of a triangular basin. The basin is modeled as a</span>
+<span class="sd">    triangle with two known vertices at the surface. The parameters estimated</span>
+<span class="sd">    are the x and z coordinates of the third vertice.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, zp : array</span>
+<span class="sd">        Arrays with the x and z coordinates of the profile data points</span>
+<span class="sd">    * data : array</span>
+<span class="sd">        The profile gravity anomaly data</span>
+<span class="sd">    * verts : list of lists</span>
+<span class="sd">        List of the [x, z] coordinates of the two know vertices.</span>
+
+<span class="sd">        .. warning::</span>
+
+<span class="sd">            Very important that the vertices in the list be ordered from left to</span>
+<span class="sd">            right! Otherwise the forward model will give results with an</span>
+<span class="sd">            inverted sign and terrible things may happen!</span>
+
+<span class="sd">    * density : float</span>
+<span class="sd">        Density contrast of the basin</span>
+<span class="sd">    * solver : function</span>
+<span class="sd">        A non-linear inverse problem solver generated by a factory function</span>
+<span class="sd">        from the :mod:`fatiando.inversion.gradient` package.</span>
+<span class="sd">    * iterate : True or False</span>
+<span class="sd">        If True, will yield the current estimate at each iteration yielded by</span>
+<span class="sd">        *solver*. In Python terms, ``iterate=True`` transforms this function</span>
+<span class="sd">        into a generator function.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * results : list = [estimate, residuals]:</span>
+
+<span class="sd">        * estimate : array or :class:`fatiando.mesher.Polygon`</span>
+<span class="sd">            If ``iterate==False``, will return a Polygon, else will yield</span>
+<span class="sd">            the estimated [x, z] coordinates of the missing vertice</span>
+<span class="sd">        * residuals : array</span>
+<span class="sd">            The residuals of the inversion (difference between measured and</span>
+<span class="sd">            predicted data)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Estimating relief of a triangular basin:&quot;</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  iterate: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">iterate</span><span class="p">)))</span>
+    <span class="n">dms</span> <span class="o">=</span> <span class="p">[</span><span class="n">TriangularGzDM</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">verts</span><span class="p">,</span> <span class="n">density</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">iterate</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_iterator</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">log</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">estimate</span><span class="p">,</span> <span class="n">residuals</span> <span class="o">=</span> <span class="n">_solver</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">log</span><span class="p">)</span>
+        <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="n">verts</span>
+        <span class="k">return</span> <span class="n">Polygon</span><span class="p">([</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="n">estimate</span><span class="p">]),</span> <span class="n">residuals</span>
+</div>
+<div class="viewcode-block" id="TrapezoidalGzDM"><a class="viewcode-back" href="../../../api/gravmag.basin2d.html#fatiando.gravmag.basin2d.TrapezoidalGzDM">[docs]</a><span class="k">class</span> <span class="nc">TrapezoidalGzDM</span><span class="p">(</span><span class="n">inversion</span><span class="o">.</span><span class="n">datamodule</span><span class="o">.</span><span class="n">DataModule</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Data module for the inversion to estimate the relief of a trapezoidal basin.</span>
+
+<span class="sd">    Packs the necessary data and interpretative model information.</span>
+
+<span class="sd">    The forward modeling is done using :mod:`~fatiando.gravmag.talwani`.</span>
+<span class="sd">    Derivatives are calculated using a 2-point finite difference approximation.</span>
+<span class="sd">    The Hessian matrix is calculated using a Gauss-Newton approximation.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, zp : array</span>
+<span class="sd">        Arrays with the x and z coordinates of the profile data points</span>
+<span class="sd">    * data : array</span>
+<span class="sd">        The profile gravity anomaly data</span>
+<span class="sd">    * verts : list of lists</span>
+<span class="sd">        List of the [x, z] coordinates of the two know vertices.</span>
+
+<span class="sd">        .. warning::</span>
+
+<span class="sd">            Very important that the vertices in the list be ordered from left to</span>
+<span class="sd">            right! Otherwise the forward model will give results with an</span>
+<span class="sd">            inverted sign and terrible things may happen!</span>
+
+<span class="sd">    * density : float</span>
+<span class="sd">        Density contrast of the basin</span>
+<span class="sd">    * delta : float</span>
+<span class="sd">        Interval used to calculate the approximate derivatives</span>
+
+<span class="sd">    .. warning:: It is very important that the vertices in the list be ordered</span>
+<span class="sd">        clockwise! Otherwise the forward model will give results with an</span>
+<span class="sd">        inverted sign and terrible things may happen!</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">field</span> <span class="o">=</span> <span class="s">&quot;gz&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">verts</span><span class="p">,</span> <span class="n">density</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
+        <span class="n">inversion</span><span class="o">.</span><span class="n">datamodule</span><span class="o">.</span><span class="n">DataModule</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">zp</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;xp, zp, and data must be of same length&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">verts</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;Need exactly 2 vertices. </span><span class="si">%d</span><span class="s"> given&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">verts</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">zp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prop</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="n">density</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verts</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">verts</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta</span> <span class="o">=</span> <span class="n">delta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xs</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">verts</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+
+    <span class="k">def</span> <span class="nf">get_predicted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">verts</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">verts</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">z1</span><span class="p">,</span> <span class="n">z2</span> <span class="o">=</span> <span class="n">p</span>
+        <span class="n">polygon</span> <span class="o">=</span> <span class="n">Polygon</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">verts</span> <span class="o">+</span> <span class="p">[[</span><span class="n">x1</span><span class="p">,</span> <span class="n">z1</span><span class="p">],</span> <span class="p">[</span><span class="n">x2</span><span class="p">,</span> <span class="n">z2</span><span class="p">]],</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">talwani</span><span class="o">.</span><span class="n">gz</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">,</span> <span class="p">[</span><span class="n">polygon</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">sum_gradient</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">residuals</span><span class="p">):</span>
+        <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">verts</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">verts</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">z1</span><span class="p">,</span> <span class="n">z2</span> <span class="o">=</span> <span class="n">p</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span>
+        <span class="n">polygon</span> <span class="o">=</span> <span class="n">Polygon</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">verts</span> <span class="o">+</span> <span class="p">[[</span><span class="n">x1</span><span class="p">,</span> <span class="n">z1</span><span class="p">],</span> <span class="p">[</span><span class="n">x2</span><span class="p">,</span> <span class="n">z2</span><span class="p">]],</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="p">)</span>
+        <span class="n">at_p</span> <span class="o">=</span> <span class="n">talwani</span><span class="o">.</span><span class="n">gz</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">,</span> <span class="p">[</span><span class="n">polygon</span><span class="p">])</span>
+        <span class="n">polygon</span> <span class="o">=</span> <span class="n">Polygon</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">verts</span> <span class="o">+</span> <span class="p">[[</span><span class="n">x1</span><span class="p">,</span> <span class="n">z1</span> <span class="o">+</span> <span class="n">delta</span><span class="p">],</span> <span class="p">[</span><span class="n">x2</span><span class="p">,</span> <span class="n">z2</span><span class="p">]],</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="p">)</span>
+        <span class="n">jacz1</span> <span class="o">=</span> <span class="p">(</span><span class="n">talwani</span><span class="o">.</span><span class="n">gz</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">,</span> <span class="p">[</span><span class="n">polygon</span><span class="p">])</span> <span class="o">-</span> <span class="n">at_p</span><span class="p">)</span><span class="o">/</span><span class="n">delta</span>
+        <span class="n">polygon</span> <span class="o">=</span> <span class="n">Polygon</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">verts</span> <span class="o">+</span> <span class="p">[[</span><span class="n">x1</span><span class="p">,</span> <span class="n">z1</span><span class="p">],</span> <span class="p">[</span><span class="n">x2</span><span class="p">,</span> <span class="n">z2</span> <span class="o">+</span> <span class="n">delta</span><span class="p">]],</span> <span class="bp">self</span><span class="o">.</span><span class="n">prop</span><span class="p">)</span>
+        <span class="n">jacz2</span> <span class="o">=</span> <span class="p">(</span><span class="n">talwani</span><span class="o">.</span><span class="n">gz</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zp</span><span class="p">,</span> <span class="p">[</span><span class="n">polygon</span><span class="p">])</span> <span class="o">-</span> <span class="n">at_p</span><span class="p">)</span><span class="o">/</span><span class="n">delta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">jac_T</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jacz1</span><span class="p">,</span> <span class="n">jacz2</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">gradient</span> <span class="o">-</span> <span class="mf">2.</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jac_T</span><span class="p">,</span> <span class="n">residuals</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">sum_hessian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hessian</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">hessian</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jac_T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">jac_T</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="trapezoidal"><a class="viewcode-back" href="../../../api/gravmag.basin2d.html#fatiando.gravmag.basin2d.trapezoidal">[docs]</a><span class="k">def</span> <span class="nf">trapezoidal</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">verts</span><span class="p">,</span> <span class="n">density</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">iterate</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimate basement relief of a triangular basin. The basin is modeled as a</span>
+<span class="sd">    triangle with two known vertices at the surface. The parameters estimated</span>
+<span class="sd">    are the x and z coordinates of the third vertice.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * xp, zp : array</span>
+<span class="sd">        Arrays with the x and z coordinates of the profile data points</span>
+<span class="sd">    * data : array</span>
+<span class="sd">        The profile gravity anomaly data</span>
+<span class="sd">    * verts : list of lists</span>
+<span class="sd">        List of the [x, z] coordinates of the two know vertices.</span>
+
+<span class="sd">        .. warning::</span>
+
+<span class="sd">            Very important that the vertices in the list be ordered from left to</span>
+<span class="sd">            right! Otherwise the forward model will give results with an</span>
+<span class="sd">            inverted sign and terrible things may happen!</span>
+
+<span class="sd">    * density : float</span>
+<span class="sd">        Density contrast of the basin</span>
+<span class="sd">    * solver : function</span>
+<span class="sd">        A non-linear inverse problem solver generated by a factory function</span>
+<span class="sd">        from the :mod:`fatiando.inversion.gradient` package.</span>
+<span class="sd">    * iterate : True or False</span>
+<span class="sd">        If True, will yield the current estimate at each iteration yielded by</span>
+<span class="sd">        *solver*. In Python terms, ``iterate=True`` transforms this function</span>
+<span class="sd">        into a generator function.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * results : list = [estimate, residuals]:</span>
+
+<span class="sd">        * estimate : array or :class:`fatiando.mesher.Polygon`</span>
+<span class="sd">            If ``iterate==False``, will return a Polygon, else will yield</span>
+<span class="sd">            the estimated [z1, z2] coordinates of the bottom vertices.</span>
+<span class="sd">        * residuals : array</span>
+<span class="sd">            The residuals of the inversion (difference between measured and</span>
+<span class="sd">            predicted data)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Estimating relief of a trapezoidal basin:&quot;</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  iterate: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">iterate</span><span class="p">)))</span>
+    <span class="n">dms</span> <span class="o">=</span> <span class="p">[</span><span class="n">TrapezoidalGzDM</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">verts</span><span class="p">,</span> <span class="n">density</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">iterate</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_iterator</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">log</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">estimate</span><span class="p">,</span> <span class="n">residuals</span> <span class="o">=</span> <span class="n">_solver</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">log</span><span class="p">)</span>
+        <span class="n">z1</span><span class="p">,</span> <span class="n">z2</span> <span class="o">=</span> <span class="n">estimate</span>
+        <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="n">verts</span>
+        <span class="k">return</span> <span class="n">Polygon</span><span class="p">([</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="p">(</span><span class="n">right</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">z1</span><span class="p">),</span> <span class="p">(</span><span class="n">left</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">z2</span><span class="p">)]),</span> <span class="n">residuals</span>
+</div>
+<span class="k">def</span> <span class="nf">_solver</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">log</span><span class="p">):</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chset</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">solver</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="p">[])):</span>
+            <span class="k">continue</span>
+    <span class="k">except</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">LinAlgError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="p">(</span><span class="s">&quot;Oops, the Hessian is a singular matrix.&quot;</span> <span class="o">+</span>
+                           <span class="s">&quot; Try applying more regularization&quot;</span><span class="p">)</span>
+    <span class="n">stop</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  number of iterations: </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  final data misfit: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chset</span><span class="p">[</span><span class="s">&#39;misfits&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  final goal function: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chset</span><span class="p">[</span><span class="s">&#39;goals&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  time: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">sec2hms</span><span class="p">(</span><span class="n">stop</span> <span class="o">-</span> <span class="n">start</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">chset</span><span class="p">[</span><span class="s">&#39;estimate&#39;</span><span class="p">],</span> <span class="n">chset</span><span class="p">[</span><span class="s">&#39;residuals&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">_iterator</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">log</span><span class="p">):</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chset</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">solver</span><span class="p">(</span><span class="n">dms</span><span class="p">,</span> <span class="p">[])):</span>
+            <span class="k">yield</span> <span class="n">chset</span><span class="p">[</span><span class="s">&#39;estimate&#39;</span><span class="p">],</span> <span class="n">chset</span><span class="p">[</span><span class="s">&#39;residuals&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">except</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">LinAlgError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="p">(</span><span class="s">&quot;Oops, the Hessian is a singular matrix.&quot;</span> <span class="o">+</span>
+                           <span class="s">&quot; Try applying more regularization&quot;</span><span class="p">)</span>
+    <span class="n">stop</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  number of iterations: </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  final data misfit: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chset</span><span class="p">[</span><span class="s">&#39;misfits&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  final goal function: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chset</span><span class="p">[</span><span class="s">&#39;goals&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  time: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">sec2hms</span><span class="p">(</span><span class="n">stop</span> <span class="o">-</span> <span class="n">start</span><span class="p">)))</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

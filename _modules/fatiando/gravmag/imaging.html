@@ -1,0 +1,386 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fatiando.gravmag.imaging &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for fatiando.gravmag.imaging</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Imaging methods for potential fields.</span>
+
+<span class="sd">Implements some of the methods described in Fedi and Pilkington (2012).</span>
+<span class="sd">Most methods convert the observed data (gravity, magnetic, etc) into a physical</span>
+<span class="sd">property distribution (density, magnetization, etc). Most methods require</span>
+<span class="sd">gridded data to work.</span>
+
+<span class="sd">* :func:`~fatiando.gravmag.imaging.geninv`: The Generalized Inverse solver in the</span>
+<span class="sd">  frequency domain (Cribb, 1976)</span>
+<span class="sd">* :func:`~fatiando.gravmag.imaging.sandwich`: Sandwich model (Pedersen, 1991). Uses</span>
+<span class="sd">  depth weighting as in Pilkington (1997)</span>
+<span class="sd">* :func:`~fatiando.gravmag.imaging.migrate`: 3D potential field migration</span>
+<span class="sd">  (Zhdanov et al., 2011). Actually uses the formula of Fedi and Pilkington</span>
+<span class="sd">  (2012), which are comprehensible.</span>
+
+<span class="sd">.. warning::</span>
+
+<span class="sd">    Most of these methods provide estimates of physical property values that are</span>
+<span class="sd">    completely out of scale (mostly due to depth weighting). Therefore, I don&#39;t</span>
+<span class="sd">    recommend using the actual values of the physical properties for anything</span>
+<span class="sd">    other than finding an approximate location for the sources.</span>
+
+<span class="sd">.. note::</span>
+
+<span class="sd">    If you want the estimate physical property values in SI units, you</span>
+<span class="sd">    must pass the data also in SI units! Use the unit conversion functions in</span>
+<span class="sd">    :mod:`fatiando.utils`</span>
+
+
+<span class="sd">**References**</span>
+
+<span class="sd">Cribb, J. (1976), Application of the generalized linear inverse to the inversion</span>
+<span class="sd">of static potential data, Geophysics, 41(6), 1365, doi:10.1190/1.1440686</span>
+
+<span class="sd">Fedi, M., and M. Pilkington (2012), Understanding imaging methods for potential</span>
+<span class="sd">field data, Geophysics, 77(1), G13, doi:10.1190/geo2011-0078.1</span>
+
+<span class="sd">Pedersen, L. B. (1991), Relations between potential fields and some equivalent</span>
+<span class="sd">sources, Geophysics, 56(7), 961, doi:10.1190/1.1443129</span>
+
+<span class="sd">Pilkington, M. (1997), 3-D magnetic imaging using conjugate gradients,</span>
+<span class="sd">Geophysics, 62(4), 1132, doi:10.1190/1.1444214</span>
+
+<span class="sd">Zhdanov, M. S., X. Liu, G. A. Wilson, and L. Wan (2011), Potential field</span>
+<span class="sd">migration for rapid imaging of gravity gradiometry data, Geophysical</span>
+<span class="sd">Prospecting, 59(6), 1052-1071, doi:10.1111/j.1365-2478.2011.01005.x</span>
+
+<span class="sd">----</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="kn">from</span> <span class="nn">fatiando.mesher</span> <span class="kn">import</span> <span class="n">PrismMesh</span>
+<span class="kn">from</span> <span class="nn">fatiando.gravmag</span> <span class="kn">import</span> <span class="n">fourier</span>
+<span class="kn">from</span> <span class="nn">fatiando.gravmag</span> <span class="kn">import</span> <span class="n">prism</span> <span class="k">as</span> <span class="n">pot_prism</span>
+<span class="kn">from</span> <span class="nn">fatiando.constants</span> <span class="kn">import</span> <span class="n">G</span>
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">import</span> <span class="nn">fatiando.logger</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">fatiando</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">dummy</span><span class="p">(</span><span class="s">&#39;fatiando.gravmag.imaging&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="migrate"><a class="viewcode-back" href="../../../api/gravmag.imaging.html#fatiando.gravmag.imaging.migrate">[docs]</a><span class="k">def</span> <span class="nf">migrate</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">gz</span><span class="p">,</span> <span class="n">zmin</span><span class="p">,</span> <span class="n">zmax</span><span class="p">,</span> <span class="n">meshshape</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    3D potential field migration (Zhdanov et al., 2011).</span>
+
+<span class="sd">    Actually uses the formula of Fedi and Pilkington (2012), which are</span>
+<span class="sd">    comprehensible.</span>
+
+<span class="sd">    .. note:: Only works on **gravity** data for now.</span>
+
+<span class="sd">    .. note:: The data **do not** need to be leveled or on a regular grid.</span>
+
+<span class="sd">    .. note:: The coordinate system adopted is x-&gt;North, y-&gt;East, and z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * x, y : 1D-arrays</span>
+<span class="sd">        The x and y coordinates of the grid points</span>
+<span class="sd">    * z : float or 1D-array</span>
+<span class="sd">        The z coordinate of the grid points</span>
+<span class="sd">    * gz : 1D-array</span>
+<span class="sd">        The gravity anomaly data at the grid points</span>
+<span class="sd">    * zmin, zmax : float</span>
+<span class="sd">        The top and bottom, respectively, of the region where the physical</span>
+<span class="sd">        property distribution is calculated</span>
+<span class="sd">    * meshshape : tuple = (nz, ny, nx)</span>
+<span class="sd">        Number of prisms in the output mesh in the x, y, and z directions,</span>
+<span class="sd">        respectively</span>
+<span class="sd">    * power : float</span>
+<span class="sd">        The power law used for the depth weighting. This controls what depth</span>
+<span class="sd">        the bulk of the solution will be.</span>
+<span class="sd">    * scale : float</span>
+<span class="sd">        A scale factor for the depth weights. Simply changes the scale of the</span>
+<span class="sd">        physical property values.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * mesh : :class:`fatiando.mesher.PrismMesh`</span>
+<span class="sd">        The estimated physical property distribution set in a prism mesh (for</span>
+<span class="sd">        easy 3D plotting)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">nlayers</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="n">meshshape</span>
+    <span class="n">mesh</span> <span class="o">=</span> <span class="n">_makemesh</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="n">ny</span><span class="p">,</span> <span class="n">nx</span><span class="p">),</span> <span class="n">zmin</span><span class="p">,</span> <span class="n">zmax</span><span class="p">,</span> <span class="n">nlayers</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;3D migration of gravity data:&quot;</span><span class="p">)</span>
+    <span class="c"># This way, if z is not an array, it is now</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">z</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  number of data: </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gz</span><span class="p">)))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  mesh zmin and zmax: </span><span class="si">%g</span><span class="s">, </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">zmin</span><span class="p">,</span> <span class="n">zmax</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  mesh shape: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">meshshape</span><span class="p">)))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  depth weighting power law: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">power</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  depth weighting scale factor: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">scale</span><span class="p">))</span>
+    <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+    <span class="n">dx</span><span class="p">,</span> <span class="n">dy</span><span class="p">,</span> <span class="n">dz</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">dims</span>
+    <span class="c"># Synthetic tests show that its not good to offset the weights with the data</span>
+    <span class="c"># z coordinate. No idea why</span>
+    <span class="n">depths</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">get_zs</span><span class="p">()[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">dz</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">depths</span><span class="p">)</span><span class="o">**</span><span class="n">power</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">G</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+    <span class="n">density</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">nlayers</span><span class="p">):</span>
+        <span class="n">sensibility_T</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">pot_prism</span><span class="o">.</span><span class="n">gz</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="p">[</span><span class="n">p</span><span class="p">],</span> <span class="n">dens</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">mesh</span><span class="o">.</span><span class="n">get_layer</span><span class="p">(</span><span class="n">l</span><span class="p">)])</span>
+        <span class="n">density</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">scale</span><span class="o">*</span><span class="n">weights</span><span class="p">[</span><span class="n">l</span><span class="p">]</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">sensibility_T</span><span class="p">,</span> <span class="n">gz</span><span class="p">))</span>
+    <span class="n">tend</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  total time for imaging: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">sec2hms</span><span class="p">(</span><span class="n">tend</span> <span class="o">-</span> <span class="n">tstart</span><span class="p">)))</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">addprop</span><span class="p">(</span><span class="s">&#39;density&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">density</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">mesh</span>
+</div>
+<div class="viewcode-block" id="sandwich"><a class="viewcode-back" href="../../../api/gravmag.imaging.html#fatiando.gravmag.imaging.sandwich">[docs]</a><span class="k">def</span> <span class="nf">sandwich</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">zmin</span><span class="p">,</span> <span class="n">zmax</span><span class="p">,</span> <span class="n">nlayers</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Sandwich model (Pedersen, 1991).</span>
+
+<span class="sd">    Calculates a physical property distribution given potential field data on a</span>
+<span class="sd">    **regular grid**. Uses depth weights.</span>
+
+<span class="sd">    .. note:: Only works on **gravity** data for now.</span>
+
+<span class="sd">    .. note:: The data **must** be leveled, i.e., on the same height!</span>
+
+<span class="sd">    .. note:: The coordinate system adopted is x-&gt;North, y-&gt;East, and z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * x, y : 1D-arrays</span>
+<span class="sd">        The x and y coordinates of the grid points</span>
+<span class="sd">    * z : float or 1D-array</span>
+<span class="sd">        The z coordinate of the grid points</span>
+<span class="sd">    * data : 1D-array</span>
+<span class="sd">        The potential field at the grid points</span>
+<span class="sd">    * shape : tuple = (ny, nx)</span>
+<span class="sd">        The shape of the grid</span>
+<span class="sd">    * zmin, zmax : float</span>
+<span class="sd">        The top and bottom, respectively, of the region where the physical</span>
+<span class="sd">        property distribution is calculated</span>
+<span class="sd">    * nlayers : int</span>
+<span class="sd">        The number of layers used to divide the region where the physical</span>
+<span class="sd">        property distribution is calculated</span>
+<span class="sd">    * power : float</span>
+<span class="sd">        The power law used for the depth weighting. This controls what depth</span>
+<span class="sd">        the bulk of the solution will be.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * mesh : :class:`fatiando.mesher.PrismMesh`</span>
+<span class="sd">        The estimated physical property distribution set in a prism mesh (for</span>
+<span class="sd">        easy 3D plotting)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mesh</span> <span class="o">=</span> <span class="n">_makemesh</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">zmin</span><span class="p">,</span> <span class="n">zmax</span><span class="p">,</span> <span class="n">nlayers</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Sandwich model of gravity data:&quot;</span><span class="p">)</span>
+    <span class="c"># This way, if z is not an array, it is now</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">z</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  data z coordinate: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  data shape: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">shape</span><span class="p">)))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  mesh zmin and zmax: </span><span class="si">%g</span><span class="s">, </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">zmin</span><span class="p">,</span> <span class="n">zmax</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  number of layers in the mesh: </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nlayers</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  depth weighting power law: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">power</span><span class="p">))</span>
+    <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+    <span class="n">freq</span><span class="p">,</span> <span class="n">dataft</span> <span class="o">=</span> <span class="n">_getdataft</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span>
+    <span class="n">dx</span><span class="p">,</span> <span class="n">dy</span><span class="p">,</span> <span class="n">dz</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">dims</span>
+    <span class="c"># Remove the last z because I only want depths to the top of the layers</span>
+    <span class="n">depths</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">get_zs</span><span class="p">()[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">depths</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">dz</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">power</span><span class="p">)</span>
+    <span class="n">density</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c"># Offset by the data z because in the paper the data is at z=0</span>
+    <span class="k">for</span> <span class="n">depth</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">depths</span> <span class="o">-</span> <span class="n">z</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">weights</span><span class="p">):</span>
+        <span class="n">density</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+            <span class="n">numpy</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft2</span><span class="p">(</span>
+                <span class="n">weight</span><span class="o">*</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">freq</span><span class="o">*</span><span class="n">depth</span><span class="p">)</span> <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">freq</span><span class="o">*</span><span class="p">(</span><span class="n">depth</span> <span class="o">+</span> <span class="n">dz</span><span class="p">)))</span>
+                <span class="o">*</span><span class="n">freq</span><span class="o">*</span><span class="n">dataft</span> <span class="o">/</span>
+                <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">G</span><span class="o">*</span>
+                 <span class="nb">reduce</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">add</span><span class="p">,</span>
+                     <span class="p">[</span><span class="n">w</span><span class="o">*</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">freq</span><span class="o">*</span><span class="n">h</span><span class="p">)</span> <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">freq</span><span class="o">*</span><span class="p">(</span><span class="n">h</span> <span class="o">+</span> <span class="n">dz</span><span class="p">)))</span><span class="o">**</span><span class="mi">2</span>
+                      <span class="o">+</span> <span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">)</span> <span class="c"># To avoid zero division when freq[i]==0</span>
+                      <span class="k">for</span> <span class="n">h</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">depths</span><span class="p">,</span> <span class="n">weights</span><span class="p">)])</span>
+                <span class="p">)</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()))</span>
+    <span class="n">tend</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  total time for imaging: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">sec2hms</span><span class="p">(</span><span class="n">tend</span> <span class="o">-</span> <span class="n">tstart</span><span class="p">)))</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">addprop</span><span class="p">(</span><span class="s">&#39;density&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">density</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">mesh</span>
+</div>
+<div class="viewcode-block" id="geninv"><a class="viewcode-back" href="../../../api/gravmag.imaging.html#fatiando.gravmag.imaging.geninv">[docs]</a><span class="k">def</span> <span class="nf">geninv</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">zmin</span><span class="p">,</span> <span class="n">zmax</span><span class="p">,</span> <span class="n">nlayers</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generalized Inverse imaging in the frequency domain (Cribb, 1976).</span>
+
+<span class="sd">    Calculates a physical property distribution given potential field data on a</span>
+<span class="sd">    **regular grid**.</span>
+
+<span class="sd">    .. note:: Only works on **gravity** data for now.</span>
+
+<span class="sd">    .. note:: The data **must** be leveled, i.e., on the same height!</span>
+
+<span class="sd">    .. note:: The coordinate system adopted is x-&gt;North, y-&gt;East, and z-&gt;Down</span>
+
+<span class="sd">    .. warning:: The Generalized Inverse does **not** use depth weights. This</span>
+<span class="sd">        means that the solution will tend to be concentrated on the surface!</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * x, y : 1D-arrays</span>
+<span class="sd">        The x and y coordinates of the grid points</span>
+<span class="sd">    * z : float or 1D-array</span>
+<span class="sd">        The z coordinate of the grid points</span>
+<span class="sd">    * data : 1D-array</span>
+<span class="sd">        The potential field at the grid points</span>
+<span class="sd">    * shape : tuple = (ny, nx)</span>
+<span class="sd">        The shape of the grid</span>
+<span class="sd">    * zmin, zmax : float</span>
+<span class="sd">        The top and bottom, respectively, of the region where the physical</span>
+<span class="sd">        property distribution is calculated</span>
+<span class="sd">    * nlayers : int</span>
+<span class="sd">        The number of layers used to divide the region where the physical</span>
+<span class="sd">        property distribution is calculated</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * mesh : :class:`fatiando.mesher.PrismMesh`</span>
+<span class="sd">        The estimated physical property distribution set in a prism mesh (for</span>
+<span class="sd">        easy 3D plotting)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mesh</span> <span class="o">=</span> <span class="n">_makemesh</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">zmin</span><span class="p">,</span> <span class="n">zmax</span><span class="p">,</span> <span class="n">nlayers</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Generalized Inverse imaging of gravity data:&quot;</span><span class="p">)</span>
+    <span class="c"># This way, if z is not an array, it is now</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">z</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  data z coordinate: </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  data shape: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">shape</span><span class="p">)))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  mesh zmin and zmax: </span><span class="si">%g</span><span class="s">, </span><span class="si">%g</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">zmin</span><span class="p">,</span> <span class="n">zmax</span><span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  number of layers in the mesh: </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nlayers</span><span class="p">))</span>
+    <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+    <span class="n">freq</span><span class="p">,</span> <span class="n">dataft</span> <span class="o">=</span> <span class="n">_getdataft</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span>
+    <span class="n">dx</span><span class="p">,</span> <span class="n">dy</span><span class="p">,</span> <span class="n">dz</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">dims</span>
+    <span class="c"># Remove the last z because I only want depths to the top of the layers</span>
+    <span class="n">depths</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">get_zs</span><span class="p">()[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">dz</span> <span class="o">-</span> <span class="n">z</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c"># Offset by the data height</span>
+    <span class="n">density</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">depth</span> <span class="ow">in</span> <span class="n">depths</span><span class="p">:</span>
+        <span class="n">density</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+            <span class="n">numpy</span><span class="o">.</span><span class="n">real</span><span class="p">(</span>
+                <span class="n">numpy</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft2</span><span class="p">(</span>
+                    <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">freq</span><span class="o">*</span><span class="n">depth</span><span class="p">)</span><span class="o">*</span><span class="n">freq</span><span class="o">*</span><span class="n">dataft</span><span class="o">/</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">G</span><span class="p">)</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+            <span class="p">))</span>
+    <span class="n">tend</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  total time for imaging: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">sec2hms</span><span class="p">(</span><span class="n">tend</span> <span class="o">-</span> <span class="n">tstart</span><span class="p">)))</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">addprop</span><span class="p">(</span><span class="s">&#39;density&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">density</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">mesh</span>
+</div>
+<span class="k">def</span> <span class="nf">_getdataft</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">shape</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the Fourier transform of the data and the norm of the wavenumber vector</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">Fx</span><span class="p">,</span> <span class="n">Fy</span> <span class="o">=</span> <span class="n">fourier</span><span class="o">.</span><span class="n">_getfreqs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span>
+    <span class="n">freq</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">Fx</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">Fy</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">dataft</span> <span class="o">=</span> <span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft2</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">shape</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">freq</span><span class="p">,</span> <span class="n">dataft</span>
+
+<span class="k">def</span> <span class="nf">_makemesh</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">zmin</span><span class="p">,</span> <span class="n">zmax</span><span class="p">,</span> <span class="n">nlayers</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make a prism mesh bounded by the data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ny</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="n">shape</span>
+    <span class="n">bounds</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">x</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">zmin</span><span class="p">,</span> <span class="n">zmax</span><span class="p">]</span>
+    <span class="n">mesh</span> <span class="o">=</span> <span class="n">PrismMesh</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="p">(</span><span class="n">nlayers</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">nx</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">mesh</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

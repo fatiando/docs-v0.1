@@ -1,0 +1,12 @@
+.. _cookbook_geothermal_climsig_abrupt:
+
+Geothermal: Forward and inverse modeling of an abrupt change in temperature measured in a well
+===============================================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/geothermal_climsig_abrupt.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/geothermal_climsig_abrupt.py
+    :language: python
+    :linenos:

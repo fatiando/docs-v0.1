@@ -1,0 +1,12 @@
+.. _cookbook_vis_mpl_basemap3:
+
+Vis: Plot a map using the Robinson map projection and contours
+===============================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/vis_mpl_basemap3.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/vis_mpl_basemap3.py
+    :language: python
+    :linenos:

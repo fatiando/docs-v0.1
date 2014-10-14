@@ -1,0 +1,1091 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plot 2D objects, maps and grids with matplotlib (fatiando.vis.mpl) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Visualization (fatiando.vis)" href="vis.html" />
+    <link rel="next" title="Plot 3D objects in Mayavi2 (fatiando.vis.myv)" href="vis.myv.html" />
+    <link rel="prev" title="Visualization (fatiando.vis)" href="vis.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="vis.myv.html" title="Plot 3D objects in Mayavi2 (fatiando.vis.myv)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="vis.html" title="Visualization (fatiando.vis)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="vis.html" accesskey="U">Visualization (<tt class="docutils literal"><span class="pre">fatiando.vis</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.vis.mpl">
+<span id="plot-2d-objects-maps-and-grids-with-matplotlib-fatiando-vis-mpl"></span><span id="fatiando-vis-mpl"></span><h1>Plot 2D objects, maps and grids with matplotlib (<tt class="docutils literal"><span class="pre">fatiando.vis.mpl</span></tt>)<a class="headerlink" href="#module-fatiando.vis.mpl" title="Permalink to this headline">¶</a></h1>
+<p>Wrappers for <tt class="xref py py-mod docutils literal"><span class="pre">matplotlib</span></tt> functions to facilitate plotting grids,
+2D objects, etc.</p>
+<p>This module loads all functions from <tt class="xref py py-mod docutils literal"><span class="pre">matplotlib.pyplot</span></tt>, adds new
+functions and overwrites some others (like <a class="reference internal" href="#fatiando.vis.mpl.contour" title="fatiando.vis.mpl.contour"><tt class="xref py py-func docutils literal"><span class="pre">contour</span></tt></a>,
+<a class="reference internal" href="#fatiando.vis.mpl.pcolor" title="fatiando.vis.mpl.pcolor"><tt class="xref py py-func docutils literal"><span class="pre">pcolor</span></tt></a>, etc).</p>
+<p><strong>Grids</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.vis.mpl.contour" title="fatiando.vis.mpl.contour"><tt class="xref py py-func docutils literal"><span class="pre">contour</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.mpl.contourf" title="fatiando.vis.mpl.contourf"><tt class="xref py py-func docutils literal"><span class="pre">contourf</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.mpl.pcolor" title="fatiando.vis.mpl.pcolor"><tt class="xref py py-func docutils literal"><span class="pre">pcolor</span></tt></a></li>
+</ul>
+<p>Grids are automatically reshaped and interpolated if desired or necessary.</p>
+<p><strong>2D objects</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.vis.mpl.points" title="fatiando.vis.mpl.points"><tt class="xref py py-func docutils literal"><span class="pre">points</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.mpl.paths" title="fatiando.vis.mpl.paths"><tt class="xref py py-func docutils literal"><span class="pre">paths</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.mpl.square" title="fatiando.vis.mpl.square"><tt class="xref py py-func docutils literal"><span class="pre">square</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.mpl.squaremesh" title="fatiando.vis.mpl.squaremesh"><tt class="xref py py-func docutils literal"><span class="pre">squaremesh</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.mpl.polygon" title="fatiando.vis.mpl.polygon"><tt class="xref py py-func docutils literal"><span class="pre">polygon</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.mpl.layers" title="fatiando.vis.mpl.layers"><tt class="xref py py-func docutils literal"><span class="pre">layers</span></tt></a></li>
+</ul>
+<p><strong>Interactive</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.vis.mpl.draw_polygon" title="fatiando.vis.mpl.draw_polygon"><tt class="xref py py-func docutils literal"><span class="pre">draw_polygon</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.mpl.draw_layers" title="fatiando.vis.mpl.draw_layers"><tt class="xref py py-func docutils literal"><span class="pre">draw_layers</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.mpl.pick_points" title="fatiando.vis.mpl.pick_points"><tt class="xref py py-func docutils literal"><span class="pre">pick_points</span></tt></a></li>
+</ul>
+<p><strong>Basemap (map projections)</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.vis.mpl.basemap" title="fatiando.vis.mpl.basemap"><tt class="xref py py-func docutils literal"><span class="pre">basemap</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.mpl.draw_geolines" title="fatiando.vis.mpl.draw_geolines"><tt class="xref py py-func docutils literal"><span class="pre">draw_geolines</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.mpl.draw_countries" title="fatiando.vis.mpl.draw_countries"><tt class="xref py py-func docutils literal"><span class="pre">draw_countries</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.mpl.draw_coastlines" title="fatiando.vis.mpl.draw_coastlines"><tt class="xref py py-func docutils literal"><span class="pre">draw_coastlines</span></tt></a></li>
+</ul>
+<p><strong>Auxiliary</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.vis.mpl.set_area" title="fatiando.vis.mpl.set_area"><tt class="xref py py-func docutils literal"><span class="pre">set_area</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.vis.mpl.m2km" title="fatiando.vis.mpl.m2km"><tt class="xref py py-func docutils literal"><span class="pre">m2km</span></tt></a></li>
+</ul>
+<hr class="docutils" />
+<dl class="function">
+<dt id="fatiando.vis.mpl.basemap">
+<tt class="descclassname">fatiando.vis.mpl.</tt><tt class="descname">basemap</tt><big>(</big><em>area</em>, <em>projection</em>, <em>resolution='c'</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/mpl.html#basemap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.mpl.basemap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a basemap to use when plotting with map projections.</p>
+<p>Uses the matplotlib basemap toolkit.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>area <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last"><tt class="docutils literal"><span class="pre">[west,</span> <span class="pre">east,</span> <span class="pre">south,</span> <span class="pre">north]</span></tt>, i.e., the area of the data that is going
+to be plotted</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>projection <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first">The name of the projection you want to use. Choose from:</p>
+<ul class="last simple">
+<li>&#8216;ortho&#8217;: Orthographic</li>
+<li>&#8216;geos&#8217;: Geostationary</li>
+<li>&#8216;robin&#8217;: Robinson</li>
+<li>&#8216;cass&#8217;: Cassini</li>
+<li>&#8216;merc&#8217;: Mercator</li>
+<li>&#8216;poly&#8217;: Polyconic</li>
+<li>&#8216;lcc&#8217;: Lambert Conformal</li>
+<li>&#8216;stere&#8217;: Stereographic</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>resolution <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">The resolution for the coastlines. Can be &#8216;c&#8217; for crude, &#8216;l&#8217; for low,
+&#8216;i&#8217; for intermediate, &#8216;h&#8217; for high</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>basemap <span class="classifier-delimiter">:</span> <span class="classifier">mpl_toolkits.basemap.Basemap</span></dt>
+<dd><p class="first last">The basemap</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.mpl.contour">
+<tt class="descclassname">fatiando.vis.mpl.</tt><tt class="descname">contour</tt><big>(</big><em>x</em>, <em>y</em>, <em>v</em>, <em>shape</em>, <em>levels</em>, <em>interp=False</em>, <em>color='k'</em>, <em>label=None</em>, <em>clabel=True</em>, <em>style='solid'</em>, <em>linewidth=1.0</em>, <em>basemap=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/mpl.html#contour"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.mpl.contour" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a contour plot of the data.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>x, y <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">Arrays with the x and y coordinates of the grid points. If the data is
+on a regular grid, then assume x varies first (ie, inner loop), then y.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>v <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The scalar value assigned to the grid points.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>shape <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (ny, nx)</span></dt>
+<dd><p class="first last">Shape of the regular grid.
+If interpolation is not False, then will use <em>shape</em> to grid the data.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>levels <span class="classifier-delimiter">:</span> <span class="classifier">int or list</span></dt>
+<dd><p class="first last">Number of contours to use or a list with the contour values.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>interp <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">Wether or not to interpolate before trying to plot. If data is not on
+regular grid, set to True!</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Color of the contour lines.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>label <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">String with the label of the contour that would show in a legend.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>clabel <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">Wether or not to print the numerical value of the contour lines</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>style <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">The style of the contour lines. Can be <tt class="docutils literal"><span class="pre">'dashed'</span></tt>, <tt class="docutils literal"><span class="pre">'solid'</span></tt> or
+<tt class="docutils literal"><span class="pre">'mixed'</span></tt> (solid lines for positive contours and dashed for negative)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>linewidth <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Width of the contour lines</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>basemap <span class="classifier-delimiter">:</span> <span class="classifier">mpl_toolkits.basemap.Basemap</span></dt>
+<dd><p class="first last">If not None, will use this basemap for plotting with a map projection
+(see <a class="reference internal" href="#fatiando.vis.mpl.basemap" title="fatiando.vis.mpl.basemap"><tt class="xref py py-func docutils literal"><span class="pre">basemap</span></tt></a> for creating basemaps)</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>levels <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">List with the values of the contour levels</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.mpl.contourf">
+<tt class="descclassname">fatiando.vis.mpl.</tt><tt class="descname">contourf</tt><big>(</big><em>x</em>, <em>y</em>, <em>v</em>, <em>shape</em>, <em>levels</em>, <em>interp=False</em>, <em>cmap=&lt;matplotlib.colors.LinearSegmentedColormap object at 0x2adf8b4f3750&gt;</em>, <em>basemap=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/mpl.html#contourf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.mpl.contourf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a filled contour plot of the data.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>x, y <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">Arrays with the x and y coordinates of the grid points. If the data is
+on a regular grid, then assume x varies first (ie, inner loop), then y.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>v <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The scalar value assigned to the grid points.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>shape <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (ny, nx)</span></dt>
+<dd><p class="first last">Shape of the regular grid.
+If interpolation is not False, then will use <em>shape</em> to grid the data.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>levels <span class="classifier-delimiter">:</span> <span class="classifier">int or list</span></dt>
+<dd><p class="first last">Number of contours to use or a list with the contour values.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>interp <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">Wether or not to interpolate before trying to plot. If data is not on
+regular grid, set to True!</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>cmap <span class="classifier-delimiter">:</span> <span class="classifier">colormap</span></dt>
+<dd><p class="first last">Color map to be used. (see pyplot.cm module)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>basemap <span class="classifier-delimiter">:</span> <span class="classifier">mpl_toolkits.basemap.Basemap</span></dt>
+<dd><p class="first last">If not None, will use this basemap for plotting with a map projection
+(see <a class="reference internal" href="#fatiando.vis.mpl.basemap" title="fatiando.vis.mpl.basemap"><tt class="xref py py-func docutils literal"><span class="pre">basemap</span></tt></a> for creating basemaps)</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>levels <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">List with the values of the contour levels</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.mpl.draw_coastlines">
+<tt class="descclassname">fatiando.vis.mpl.</tt><tt class="descname">draw_coastlines</tt><big>(</big><em>basemap</em>, <em>linewidth=1</em>, <em>style='solid'</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/mpl.html#draw_coastlines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.mpl.draw_coastlines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw the coastlines using the given basemap.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>basemap <span class="classifier-delimiter">:</span> <span class="classifier">mpl_toolkits.basemap.Basemap</span></dt>
+<dd><p class="first last">The basemap used for plotting (see <a class="reference internal" href="#fatiando.vis.mpl.basemap" title="fatiando.vis.mpl.basemap"><tt class="xref py py-func docutils literal"><span class="pre">basemap</span></tt></a>)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>linewidth <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The width of the lines</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>style <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">The style of the lines. Can be: &#8216;solid&#8217;, &#8216;dashed&#8217;, &#8216;dashdot&#8217; or &#8216;dotted&#8217;</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.mpl.draw_countries">
+<tt class="descclassname">fatiando.vis.mpl.</tt><tt class="descname">draw_countries</tt><big>(</big><em>basemap</em>, <em>linewidth=1</em>, <em>style='dashed'</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/mpl.html#draw_countries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.mpl.draw_countries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw the country borders using the given basemap.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>basemap <span class="classifier-delimiter">:</span> <span class="classifier">mpl_toolkits.basemap.Basemap</span></dt>
+<dd><p class="first last">The basemap used for plotting (see <a class="reference internal" href="#fatiando.vis.mpl.basemap" title="fatiando.vis.mpl.basemap"><tt class="xref py py-func docutils literal"><span class="pre">basemap</span></tt></a>)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>linewidth <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The width of the lines</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>style <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">The style of the lines. Can be: &#8216;solid&#8217;, &#8216;dashed&#8217;, &#8216;dashdot&#8217; or &#8216;dotted&#8217;</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.mpl.draw_geolines">
+<tt class="descclassname">fatiando.vis.mpl.</tt><tt class="descname">draw_geolines</tt><big>(</big><em>area</em>, <em>dlon</em>, <em>dlat</em>, <em>basemap</em>, <em>linewidth=1</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/mpl.html#draw_geolines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.mpl.draw_geolines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw the parallels and meridians on a basemap plot.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>area <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last"><tt class="docutils literal"><span class="pre">[west,</span> <span class="pre">east,</span> <span class="pre">south,</span> <span class="pre">north]</span></tt>, i.e., the area where the lines will
+be plotted</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>dlon, dlat <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The spacing between the lines in the longitude and latitude directions,
+respectively (in decimal degrees)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>basemap <span class="classifier-delimiter">:</span> <span class="classifier">mpl_toolkits.basemap.Basemap</span></dt>
+<dd><p class="first last">The basemap used for plotting (see <a class="reference internal" href="#fatiando.vis.mpl.basemap" title="fatiando.vis.mpl.basemap"><tt class="xref py py-func docutils literal"><span class="pre">basemap</span></tt></a>)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>linewidth <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The width of the lines</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.mpl.draw_layers">
+<tt class="descclassname">fatiando.vis.mpl.</tt><tt class="descname">draw_layers</tt><big>(</big><em>area</em>, <em>axes</em>, <em>style='-'</em>, <em>marker='o'</em>, <em>color='k'</em>, <em>width=2</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/mpl.html#draw_layers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.mpl.draw_layers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw series of horizontal layers by clicking with the mouse.</p>
+<p>The y-axis is assumed to be depth, the x-axis is the physical property of
+each layer.</p>
+<p>INSTRUCTIONS:</p>
+<ul class="simple">
+<li>Click to make a new layer;</li>
+<li>Press &#8216;e&#8217; to erase the last layer;</li>
+<li>Close the figure window to finish;</li>
+</ul>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>area <span class="classifier-delimiter">:</span> <span class="classifier">list = [x1, x2, y1, y2]</span></dt>
+<dd><p class="first last">Borders of the area containing the polygon</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>axes <span class="classifier-delimiter">:</span> <span class="classifier">matplotlib Axes</span></dt>
+<dd><p class="first">The figure to use for drawing the polygon.
+To get an Axes instace, just do:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span>
+<span class="n">axes</span> <span class="o">=</span> <span class="n">pyplot</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="last">You can plot things to <tt class="docutils literal"><span class="pre">axes</span></tt> before calling this function so that
+they&#8217;ll appear on the background.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>style <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Line style (as in matplotlib.pyplot.plot)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>marker <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Style of the point markers (as in matplotlib.pyplot.plot)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Line color (as in matplotlib.pyplot.plot)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>width <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The line width (as in matplotlib.pyplot.plot)</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><p class="first">layers : list = [thickness, values]</p>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt>thickness <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The thickness of each layer, in order of increasing depth</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>values <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The physical property value of each layer, in the same order</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.mpl.draw_polygon">
+<tt class="descclassname">fatiando.vis.mpl.</tt><tt class="descname">draw_polygon</tt><big>(</big><em>area</em>, <em>axes</em>, <em>style='-'</em>, <em>marker='o'</em>, <em>color='k'</em>, <em>width=2</em>, <em>alpha=0.5</em>, <em>xy2ne=False</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/mpl.html#draw_polygon"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.mpl.draw_polygon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a polygon by clicking with the mouse.</p>
+<p>INSTRUCTIONS:</p>
+<ul class="simple">
+<li>Left click to pick the edges of the polygon;</li>
+<li>Draw edges CLOCKWISE;</li>
+<li>Press &#8216;e&#8217; to erase the last edge;</li>
+<li>Right click to close the polygon;</li>
+<li>Close the figure window to finish;</li>
+</ul>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>area <span class="classifier-delimiter">:</span> <span class="classifier">list = [x1, x2, y1, y2]</span></dt>
+<dd><p class="first last">Borders of the area containing the polygon</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>axes <span class="classifier-delimiter">:</span> <span class="classifier">matplotlib Axes</span></dt>
+<dd><p class="first">The figure to use for drawing the polygon.
+To get an Axes instace, just do:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span>
+<span class="n">axes</span> <span class="o">=</span> <span class="n">pyplot</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="last">You can plot things to <tt class="docutils literal"><span class="pre">axes</span></tt> before calling this function so that
+they&#8217;ll appear on the background.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>style <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Line style (as in matplotlib.pyplot.plot)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>marker <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Style of the point markers (as in matplotlib.pyplot.plot)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Line color (as in matplotlib.pyplot.plot)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>width <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The line width (as in matplotlib.pyplot.plot)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>alpha <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Transparency of the fill of the polygon. 0 for transparent, 1 for opaque
+(fills the polygon once done drawing)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>xy2ne <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">If True, will exchange the x and y axis so that x points north.
+Use this when drawing on a map viewed from above. If the y-axis of the
+plot is supposed to be z (depth), then use <tt class="docutils literal"><span class="pre">xy2ne=False</span></tt>.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>edges <span class="classifier-delimiter">:</span> <span class="classifier">list of lists</span></dt>
+<dd><p class="first last">List of <tt class="docutils literal"><span class="pre">[x,</span> <span class="pre">y]</span></tt> pairs with the edges of the polygon</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.mpl.layers">
+<tt class="descclassname">fatiando.vis.mpl.</tt><tt class="descname">layers</tt><big>(</big><em>thickness</em>, <em>values</em>, <em>style='-k'</em>, <em>z0=0.0</em>, <em>linewidth=1</em>, <em>label=None</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/mpl.html#layers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.mpl.layers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a series of layers and values associated to each layer.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>thickness <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The thickness of each layer in order of increasing depth</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>values <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd><p class="first last">The value associated with each layer in order of increasing
+depth</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>style <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">String with the color and line style (as in matplotlib.pyplot.plot)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>z0 <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The depth of the top of the first layer</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>linewidth <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Line width</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>label <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">label associated with the square.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>axes <span class="classifier-delimiter">:</span> <span class="classifier"><tt class="docutils literal"><span class="pre">matplitlib.axes</span></tt></span></dt>
+<dd><p class="first last">The axes element of the plot</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.mpl.m2km">
+<tt class="descclassname">fatiando.vis.mpl.</tt><tt class="descname">m2km</tt><big>(</big><em>axis=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/mpl.html#m2km"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.mpl.m2km" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the x and y tick labels from meters to kilometers.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>axis <span class="classifier-delimiter">:</span> <span class="classifier">matplotlib axis instance</span></dt>
+<dd><p class="first last">The plot.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition tip">
+<p class="first admonition-title">Tip</p>
+<p class="last">Use <tt class="docutils literal"><span class="pre">fatiando.vis.gca()</span></tt> to get the current axis. Or the value
+returned by <tt class="docutils literal"><span class="pre">fatiando.vis.subplot</span></tt> or <tt class="docutils literal"><span class="pre">matplotlib.pyplot.subplot</span></tt>.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.mpl.paths">
+<tt class="descclassname">fatiando.vis.mpl.</tt><tt class="descname">paths</tt><big>(</big><em>pts1</em>, <em>pts2</em>, <em>style='-k'</em>, <em>linewidth=1</em>, <em>label=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/mpl.html#paths"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.mpl.paths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot paths between the two sets of points.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>pts1 <span class="classifier-delimiter">:</span> <span class="classifier">list of lists</span></dt>
+<dd><p class="first last">List of (x, y) pairs with the coordinates of the points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>pts2 <span class="classifier-delimiter">:</span> <span class="classifier">list of lists</span></dt>
+<dd><p class="first last">List of (x, y) pairs with the coordinates of the points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>style <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">String with the color and line style (as in matplotlib.pyplot.plot)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>linewidth <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The width of the lines representing the paths</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>label <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">If not None, then the string that will show in the legend</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.mpl.pcolor">
+<tt class="descclassname">fatiando.vis.mpl.</tt><tt class="descname">pcolor</tt><big>(</big><em>x</em>, <em>y</em>, <em>v</em>, <em>shape</em>, <em>interp=False</em>, <em>cmap=&lt;matplotlib.colors.LinearSegmentedColormap object at 0x2adf8b4f3750&gt;</em>, <em>vmin=None</em>, <em>vmax=None</em>, <em>basemap=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/mpl.html#pcolor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.mpl.pcolor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a pseudo-color plot of the data.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>x, y <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">Arrays with the x and y coordinates of the grid points. If the data is
+on a regular grid, then assume x varies first (ie, inner loop), then y.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>v <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The scalar value assigned to the grid points.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>shape <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (ny, nx)</span></dt>
+<dd><p class="first last">Shape of the regular grid.
+If interpolation is not False, then will use <em>shape</em> to grid the data.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>interp <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">Wether or not to interpolate before trying to plot. If data is not on
+regular grid, set to True!</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>cmap <span class="classifier-delimiter">:</span> <span class="classifier">colormap</span></dt>
+<dd><p class="first last">Color map to be used. (see pyplot.cm module)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>vmin, vmax</dt>
+<dd><p class="first last">Saturation values of the colorbar.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>basemap <span class="classifier-delimiter">:</span> <span class="classifier">mpl_toolkits.basemap.Basemap</span></dt>
+<dd><p class="first last">If not None, will use this basemap for plotting with a map projection
+(see <a class="reference internal" href="#fatiando.vis.mpl.basemap" title="fatiando.vis.mpl.basemap"><tt class="xref py py-func docutils literal"><span class="pre">basemap</span></tt></a> for creating basemaps)</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>axes <span class="classifier-delimiter">:</span> <span class="classifier"><tt class="docutils literal"><span class="pre">matplitlib.axes</span></tt></span></dt>
+<dd><p class="first last">The axes element of the plot</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.mpl.pick_points">
+<tt class="descclassname">fatiando.vis.mpl.</tt><tt class="descname">pick_points</tt><big>(</big><em>area</em>, <em>axes</em>, <em>marker='o'</em>, <em>color='k'</em>, <em>size=8</em>, <em>xy2ne=False</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/mpl.html#pick_points"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.mpl.pick_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the coordinates of points by clicking with the mouse.</p>
+<p>INSTRUCTIONS:</p>
+<ul class="simple">
+<li>Left click to pick the points;</li>
+<li>Press &#8216;e&#8217; to erase the last point picked;</li>
+<li>Close the figure window to finish;</li>
+</ul>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>area <span class="classifier-delimiter">:</span> <span class="classifier">list = [x1, x2, y1, y2]</span></dt>
+<dd><p class="first last">Borders of the area containing the points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>axes <span class="classifier-delimiter">:</span> <span class="classifier">matplotlib Axes</span></dt>
+<dd><p class="first">The figure to use for drawing the polygon.
+To get an Axes instace, just do:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span>
+<span class="n">axes</span> <span class="o">=</span> <span class="n">pyplot</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="last">You can plot things to <tt class="docutils literal"><span class="pre">axes</span></tt> before calling this function so that
+they&#8217;ll appear on the background.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>marker <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Style of the point markers (as in matplotlib.pyplot.plot)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Line color (as in matplotlib.pyplot.plot)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>size <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Marker size (as in matplotlib.pyplot.plot)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>xy2ne <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">If True, will exchange the x and y axis so that x points north.
+Use this when drawing on a map viewed from above. If the y-axis of the
+plot is supposed to be z (depth), then use <tt class="docutils literal"><span class="pre">xy2ne=False</span></tt>.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>points <span class="classifier-delimiter">:</span> <span class="classifier">list of lists</span></dt>
+<dd><p class="first last">List of <tt class="docutils literal"><span class="pre">[x,</span> <span class="pre">y]</span></tt> coordinates of the points</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.mpl.points">
+<tt class="descclassname">fatiando.vis.mpl.</tt><tt class="descname">points</tt><big>(</big><em>pts</em>, <em>style='.k'</em>, <em>size=10</em>, <em>label=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/mpl.html#points"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.mpl.points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a list of points.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>pts <span class="classifier-delimiter">:</span> <span class="classifier">list of lists</span></dt>
+<dd><p class="first last">List of [x, y] pairs with the coordinates of the points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>style <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">String with the color and line style (as in matplotlib.pyplot.plot)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>size <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Size of the plotted points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>label <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">If not None, then the string that will show in the legend</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>axes <span class="classifier-delimiter">:</span> <span class="classifier"><tt class="docutils literal"><span class="pre">matplitlib.axes</span></tt></span></dt>
+<dd><p class="first last">The axes element of the plot</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.mpl.polygon">
+<tt class="descclassname">fatiando.vis.mpl.</tt><tt class="descname">polygon</tt><big>(</big><em>polygon</em>, <em>style='-k'</em>, <em>linewidth=1</em>, <em>fill=None</em>, <em>alpha=1.0</em>, <em>label=None</em>, <em>xy2ne=False</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/mpl.html#polygon"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.mpl.polygon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a polygon.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>polygon <span class="classifier-delimiter">:</span> <span class="classifier"><a class="reference internal" href="mesher.html#fatiando.mesher.Polygon" title="fatiando.mesher.Polygon"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.Polygon</span></tt></a></span></dt>
+<dd><p class="first last">The polygon</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>style <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Color and line style string (as in matplotlib.pyplot.plot)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>linewidth <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Line width</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>fill <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">A color string used to fill the polygon. If None, the polygon is not
+filled</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>alpha <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Transparency of the fill (1 &gt;= alpha &gt;= 0). 0 is transparent and 1 is
+opaque</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>label <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">String with the label identifying the polygon in the legend</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>xy2ne <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">If True, will exchange the x and y axis so that the x coordinates of the
+polygon are north. Use this when drawing on a map viewed from above. If
+the y-axis of the plot is supposed to be z (depth), then use
+<tt class="docutils literal"><span class="pre">xy2ne=False</span></tt>.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>lines <span class="classifier-delimiter">:</span> <span class="classifier">matplotlib Line object</span></dt>
+<dd><p class="first last">Line corresponding to the polygon plotted</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.mpl.set_area">
+<tt class="descclassname">fatiando.vis.mpl.</tt><tt class="descname">set_area</tt><big>(</big><em>area</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/mpl.html#set_area"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.mpl.set_area" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the area of a Matplolib plot using xlim and ylim.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>area <span class="classifier-delimiter">:</span> <span class="classifier">list = [x1, x2, y1, y2]</span></dt>
+<dd><p class="first last">Coordinates of the top right and bottom left corners of the area</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.mpl.square">
+<tt class="descclassname">fatiando.vis.mpl.</tt><tt class="descname">square</tt><big>(</big><em>area</em>, <em>style='-k'</em>, <em>linewidth=1</em>, <em>fill=None</em>, <em>alpha=1.0</em>, <em>label=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/mpl.html#square"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.mpl.square" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a square.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>area <span class="classifier-delimiter">:</span> <span class="classifier">list = [x1, x2, y1, y2]</span></dt>
+<dd><p class="first last">Borders of the square</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>style <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">String with the color and line style (as in matplotlib.pyplot.plot)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>linewidth <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Line width</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>fill <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">A color string used to fill the square. If None, the square is not
+filled</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>alpha <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Transparency of the fill (1 &gt;= alpha &gt;= 0). 0 is transparent and 1 is
+opaque</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>label <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">label associated with the square.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>axes <span class="classifier-delimiter">:</span> <span class="classifier"><tt class="docutils literal"><span class="pre">matplitlib.axes</span></tt></span></dt>
+<dd><p class="first last">The axes element of the plot</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.vis.mpl.squaremesh">
+<tt class="descclassname">fatiando.vis.mpl.</tt><tt class="descname">squaremesh</tt><big>(</big><em>mesh</em>, <em>prop</em>, <em>cmap=&lt;matplotlib.colors.LinearSegmentedColormap object at 0x2adf8b4f3750&gt;</em>, <em>vmin=None</em>, <em>vmax=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/vis/mpl.html#squaremesh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.vis.mpl.squaremesh" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a pseudo-color plot of a mesh of squares</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>mesh <span class="classifier-delimiter">:</span> <span class="classifier"><a class="reference internal" href="mesher.html#fatiando.mesher.SquareMesh" title="fatiando.mesher.SquareMesh"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.SquareMesh</span></tt></a> or compatible</span></dt>
+<dd><p class="first last">The mesh (a compatible mesh must implement the methods <tt class="docutils literal"><span class="pre">get_xs</span></tt> and
+<tt class="docutils literal"><span class="pre">get_ys</span></tt>)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>prop <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">The physical property of the squares to use as the color scale.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>cmap <span class="classifier-delimiter">:</span> <span class="classifier">colormap</span></dt>
+<dd><p class="first last">Color map to be used. (see pyplot.cm module)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>vmin, vmax <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Saturation values of the colorbar.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>axes <span class="classifier-delimiter">:</span> <span class="classifier"><tt class="docutils literal"><span class="pre">matplitlib.axes</span></tt></span></dt>
+<dd><p class="first last">The axes element of the plot</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="vis.html"
+                        title="previous chapter">Visualization (<tt class="docutils literal"><span class="pre">fatiando.vis</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="vis.myv.html"
+                        title="next chapter">Plot 3D objects in Mayavi2 (<tt class="docutils literal"><span class="pre">fatiando.vis.myv</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/vis.mpl.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="vis.myv.html" title="Plot 3D objects in Mayavi2 (fatiando.vis.myv)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="vis.html" title="Visualization (fatiando.vis)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="vis.html" >Visualization (<tt class="docutils literal"><span class="pre">fatiando.vis</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

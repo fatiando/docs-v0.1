@@ -1,0 +1,12 @@
+.. _cookbook_grid_scatter:
+
+Gridding: Generate and plot irregular grids (scatter)
+======================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/grid_scatter.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/grid_scatter.py
+    :language: python
+    :linenos:

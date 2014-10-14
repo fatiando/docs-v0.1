@@ -1,0 +1,491 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Forward modeling with 3D polygonal prisms (fatiando.gravmag.polyprism) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Gravity and magnetics (fatiando.gravmag)" href="gravmag.html" />
+    <link rel="next" title="Forward modeling with spheres (fatiando.gravmag.sphere)" href="gravmag.sphere.html" />
+    <link rel="prev" title="Forward modeling with 3D right rectangular prisms (fatiando.gravmag.prism)" href="gravmag.prism.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag.sphere.html" title="Forward modeling with spheres (fatiando.gravmag.sphere)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gravmag.prism.html" title="Forward modeling with 3D right rectangular prisms (fatiando.gravmag.prism)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="gravmag.html" accesskey="U">Gravity and magnetics (<tt class="docutils literal"><span class="pre">fatiando.gravmag</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.gravmag.polyprism">
+<span id="forward-modeling-with-3d-polygonal-prisms-fatiando-gravmag-polyprism"></span><span id="fatiando-gravmag-polyprism"></span><h1>Forward modeling with 3D polygonal prisms (<tt class="docutils literal"><span class="pre">fatiando.gravmag.polyprism</span></tt>)<a class="headerlink" href="#module-fatiando.gravmag.polyprism" title="Permalink to this headline">¶</a></h1>
+<p>Calculate the potential fields of the 3D prism with polygonal crossection using
+the formula of Plouff (1976).</p>
+<p><strong>Gravity</strong></p>
+<p>First and second derivatives of the gravitational potential:</p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.gravmag.polyprism.gz" title="fatiando.gravmag.polyprism.gz"><tt class="xref py py-func docutils literal"><span class="pre">gz</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.gravmag.polyprism.gxx" title="fatiando.gravmag.polyprism.gxx"><tt class="xref py py-func docutils literal"><span class="pre">gxx</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.gravmag.polyprism.gxy" title="fatiando.gravmag.polyprism.gxy"><tt class="xref py py-func docutils literal"><span class="pre">gxy</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.gravmag.polyprism.gxz" title="fatiando.gravmag.polyprism.gxz"><tt class="xref py py-func docutils literal"><span class="pre">gxz</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.gravmag.polyprism.gyy" title="fatiando.gravmag.polyprism.gyy"><tt class="xref py py-func docutils literal"><span class="pre">gyy</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.gravmag.polyprism.gyz" title="fatiando.gravmag.polyprism.gyz"><tt class="xref py py-func docutils literal"><span class="pre">gyz</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.gravmag.polyprism.gzz" title="fatiando.gravmag.polyprism.gzz"><tt class="xref py py-func docutils literal"><span class="pre">gzz</span></tt></a></li>
+</ul>
+<p><strong>Magnetic</strong></p>
+<p>The Total Field magnetic anomaly:</p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.gravmag.polyprism.tf" title="fatiando.gravmag.polyprism.tf"><tt class="xref py py-func docutils literal"><span class="pre">tf</span></tt></a></li>
+</ul>
+<p><strong>References</strong></p>
+<p>Plouff, D. , 1976, Gravity and magnetic fields of polygonal prisms and
+applications to magnetic terrain corrections, Geophysics, 41(4), 727-741.</p>
+<hr class="docutils" />
+<dl class="function">
+<dt id="fatiando.gravmag.polyprism.gxx">
+<tt class="descclassname">fatiando.gravmag.polyprism.</tt><tt class="descname">gxx</tt><big>(</big><em>xp</em>, <em>yp</em>, <em>zp</em>, <em>prisms</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/polyprism.html#gxx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.polyprism.gxx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the <span class="math">\(g_{xx}\)</span> gravity gradient tensor component.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The coordinate system of the input parameters is to be x -&gt; North,
+y -&gt; East and z -&gt; Down.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">All input values in SI units and output in Eotvos!</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>xp, yp, zp <span class="classifier-delimiter">:</span> <span class="classifier">arrays</span></dt>
+<dd><p class="first last">The x, y, and z coordinates of the computation points.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>prisms <span class="classifier-delimiter">:</span> <span class="classifier">list of <a class="reference internal" href="mesher.html#fatiando.mesher.PolygonalPrism" title="fatiando.mesher.PolygonalPrism"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.PolygonalPrism</span></tt></a></span></dt>
+<dd><p class="first last">The model used to calculate the field.
+Prisms must have the physical property <tt class="docutils literal"><span class="pre">'density'</span></tt> will be
+ignored.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>res <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The effect calculated on the computation points.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.polyprism.gxy">
+<tt class="descclassname">fatiando.gravmag.polyprism.</tt><tt class="descname">gxy</tt><big>(</big><em>xp</em>, <em>yp</em>, <em>zp</em>, <em>prisms</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/polyprism.html#gxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.polyprism.gxy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the <span class="math">\(g_{xy}\)</span> gravity gradient tensor component.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The coordinate system of the input parameters is to be x -&gt; North,
+y -&gt; East and z -&gt; Down.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">All input values in SI units and output in Eotvos!</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>xp, yp, zp <span class="classifier-delimiter">:</span> <span class="classifier">arrays</span></dt>
+<dd><p class="first last">The x, y, and z coordinates of the computation points.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>prisms <span class="classifier-delimiter">:</span> <span class="classifier">list of <a class="reference internal" href="mesher.html#fatiando.mesher.PolygonalPrism" title="fatiando.mesher.PolygonalPrism"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.PolygonalPrism</span></tt></a></span></dt>
+<dd><p class="first last">The model used to calculate the field.
+Prisms must have the physical property <tt class="docutils literal"><span class="pre">'density'</span></tt> will be
+ignored.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>res <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The effect calculated on the computation points.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.polyprism.gxz">
+<tt class="descclassname">fatiando.gravmag.polyprism.</tt><tt class="descname">gxz</tt><big>(</big><em>xp</em>, <em>yp</em>, <em>zp</em>, <em>prisms</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/polyprism.html#gxz"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.polyprism.gxz" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the <span class="math">\(g_{xz}\)</span> gravity gradient tensor component.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The coordinate system of the input parameters is to be x -&gt; North,
+y -&gt; East and z -&gt; Down.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">All input values in SI units and output in Eotvos!</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>xp, yp, zp <span class="classifier-delimiter">:</span> <span class="classifier">arrays</span></dt>
+<dd><p class="first last">The x, y, and z coordinates of the computation points.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>prisms <span class="classifier-delimiter">:</span> <span class="classifier">list of <a class="reference internal" href="mesher.html#fatiando.mesher.PolygonalPrism" title="fatiando.mesher.PolygonalPrism"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.PolygonalPrism</span></tt></a></span></dt>
+<dd><p class="first last">The model used to calculate the field.
+Prisms must have the physical property <tt class="docutils literal"><span class="pre">'density'</span></tt> will be
+ignored.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>res <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The effect calculated on the computation points.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.polyprism.gyy">
+<tt class="descclassname">fatiando.gravmag.polyprism.</tt><tt class="descname">gyy</tt><big>(</big><em>xp</em>, <em>yp</em>, <em>zp</em>, <em>prisms</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/polyprism.html#gyy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.polyprism.gyy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the <span class="math">\(g_{yy}\)</span> gravity gradient tensor component.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The coordinate system of the input parameters is to be x -&gt; North,
+y -&gt; East and z -&gt; Down.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">All input values in SI units and output in Eotvos!</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>xp, yp, zp <span class="classifier-delimiter">:</span> <span class="classifier">arrays</span></dt>
+<dd><p class="first last">The x, y, and z coordinates of the computation points.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>prisms <span class="classifier-delimiter">:</span> <span class="classifier">list of <a class="reference internal" href="mesher.html#fatiando.mesher.PolygonalPrism" title="fatiando.mesher.PolygonalPrism"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.PolygonalPrism</span></tt></a></span></dt>
+<dd><p class="first last">The model used to calculate the field.
+Prisms must have the physical property <tt class="docutils literal"><span class="pre">'density'</span></tt> will be
+ignored.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>res <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The effect calculated on the computation points.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.polyprism.gyz">
+<tt class="descclassname">fatiando.gravmag.polyprism.</tt><tt class="descname">gyz</tt><big>(</big><em>xp</em>, <em>yp</em>, <em>zp</em>, <em>prisms</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/polyprism.html#gyz"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.polyprism.gyz" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the <span class="math">\(g_{yz}\)</span> gravity gradient tensor component.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The coordinate system of the input parameters is to be x -&gt; North,
+y -&gt; East and z -&gt; Down.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">All input values in SI units and output in Eotvos!</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>xp, yp, zp <span class="classifier-delimiter">:</span> <span class="classifier">arrays</span></dt>
+<dd><p class="first last">The x, y, and z coordinates of the computation points.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>prisms <span class="classifier-delimiter">:</span> <span class="classifier">list of <a class="reference internal" href="mesher.html#fatiando.mesher.PolygonalPrism" title="fatiando.mesher.PolygonalPrism"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.PolygonalPrism</span></tt></a></span></dt>
+<dd><p class="first last">The model used to calculate the field.
+Prisms must have the physical property <tt class="docutils literal"><span class="pre">'density'</span></tt> will be
+ignored.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>res <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The effect calculated on the computation points.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.polyprism.gz">
+<tt class="descclassname">fatiando.gravmag.polyprism.</tt><tt class="descname">gz</tt><big>(</big><em>xp</em>, <em>yp</em>, <em>zp</em>, <em>prisms</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/polyprism.html#gz"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.polyprism.gz" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the <span class="math">\(g_{z}\)</span> gravity acceleration component.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The coordinate system of the input parameters is to be x -&gt; North,
+y -&gt; East and z -&gt; Down.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">All input values in SI units and output in mGal!</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>xp, yp, zp <span class="classifier-delimiter">:</span> <span class="classifier">arrays</span></dt>
+<dd><p class="first last">The x, y, and z coordinates of the computation points.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>prisms <span class="classifier-delimiter">:</span> <span class="classifier">list of <a class="reference internal" href="mesher.html#fatiando.mesher.PolygonalPrism" title="fatiando.mesher.PolygonalPrism"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.PolygonalPrism</span></tt></a></span></dt>
+<dd><p class="first last">The model used to calculate the field.
+Prisms must have the physical property <tt class="docutils literal"><span class="pre">'density'</span></tt> will be
+ignored.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>res <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The effect calculated on the computation points.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.polyprism.gzz">
+<tt class="descclassname">fatiando.gravmag.polyprism.</tt><tt class="descname">gzz</tt><big>(</big><em>xp</em>, <em>yp</em>, <em>zp</em>, <em>prisms</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/polyprism.html#gzz"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.polyprism.gzz" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the <span class="math">\(g_{zz}\)</span> gravity gradient tensor component.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The coordinate system of the input parameters is to be x -&gt; North,
+y -&gt; East and z -&gt; Down.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">All input values in SI units and output in Eotvos!</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>xp, yp, zp <span class="classifier-delimiter">:</span> <span class="classifier">arrays</span></dt>
+<dd><p class="first last">The x, y, and z coordinates of the computation points.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>prisms <span class="classifier-delimiter">:</span> <span class="classifier">list of <a class="reference internal" href="mesher.html#fatiando.mesher.PolygonalPrism" title="fatiando.mesher.PolygonalPrism"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.PolygonalPrism</span></tt></a></span></dt>
+<dd><p class="first last">The model used to calculate the field.
+Prisms must have the physical property <tt class="docutils literal"><span class="pre">'density'</span></tt> will be
+ignored.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>res <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The effect calculated on the computation points.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gravmag.polyprism.tf">
+<tt class="descclassname">fatiando.gravmag.polyprism.</tt><tt class="descname">tf</tt><big>(</big><em>xp</em>, <em>yp</em>, <em>zp</em>, <em>prisms</em>, <em>inc</em>, <em>dec</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gravmag/polyprism.html#tf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gravmag.polyprism.tf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the total-field anomaly of polygonal prisms.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The coordinate system of the input parameters is to be x -&gt; North,
+y -&gt; East and z -&gt; Down.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Input units are SI. Output is in nT</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>xp, yp, zp <span class="classifier-delimiter">:</span> <span class="classifier">arrays</span></dt>
+<dd><p class="first last">Arrays with the x, y, and z coordinates of the computation points.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>prisms <span class="classifier-delimiter">:</span> <span class="classifier">list of <a class="reference internal" href="mesher.html#fatiando.mesher.PolygonalPrism" title="fatiando.mesher.PolygonalPrism"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.PolygonalPrism</span></tt></a></span></dt>
+<dd><p class="first last">The model used to calculate the total field anomaly.
+Prisms must have the physical property <tt class="docutils literal"><span class="pre">'magnetization'</span></tt> will be
+ignored. If the physical properties <tt class="docutils literal"><span class="pre">'inclination'</span></tt> and
+<tt class="docutils literal"><span class="pre">'declination'</span></tt> are not present, will use the values of <em>inc</em> and
+<em>dec</em> instead (regional field).</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>inc <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The inclination of the regional field (in degrees)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>dec <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">The declination of the regional field (in degrees)</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>res <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The field calculated on xp, yp, zp</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gravmag.prism.html"
+                        title="previous chapter">Forward modeling with 3D right rectangular prisms (<tt class="docutils literal"><span class="pre">fatiando.gravmag.prism</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gravmag.sphere.html"
+                        title="next chapter">Forward modeling with spheres (<tt class="docutils literal"><span class="pre">fatiando.gravmag.sphere</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/gravmag.polyprism.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gravmag.sphere.html" title="Forward modeling with spheres (fatiando.gravmag.sphere)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gravmag.prism.html" title="Forward modeling with 3D right rectangular prisms (fatiando.gravmag.prism)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="gravmag.html" >Gravity and magnetics (<tt class="docutils literal"><span class="pre">fatiando.gravmag</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

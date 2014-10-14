@@ -1,0 +1,12 @@
+.. _cookbook_gravmag_imaging_compare:
+
+GravMag: Compare the results of different 3D potential field imaging methods (migration, generalized inverse, and sandwich model)
+==================================================================================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/gravmag_imaging_compare.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/gravmag_imaging_compare.py
+    :language: python
+    :linenos:

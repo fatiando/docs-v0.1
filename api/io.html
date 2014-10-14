@@ -1,0 +1,195 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Input/Output (fatiando.io) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="API Reference: The fatiando package" href="fatiando.html" />
+    <link rel="next" title="Graphical user interfaces (fatiando.gui)" href="gui.html" />
+    <link rel="prev" title="Plot 3D objects in Mayavi2 (fatiando.vis.myv)" href="vis.myv.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gui.html" title="Graphical user interfaces (fatiando.gui)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="vis.myv.html" title="Plot 3D objects in Mayavi2 (fatiando.vis.myv)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" accesskey="U">API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.io">
+<span id="input-output-fatiando-io"></span><span id="fatiando-io"></span><h1>Input/Output (<tt class="docutils literal"><span class="pre">fatiando.io</span></tt>)<a class="headerlink" href="#module-fatiando.io" title="Permalink to this headline">¶</a></h1>
+<p>Input/Output utilities for grids, models, etc</p>
+<p><strong>CRUST2.0</strong></p>
+<p>Load and convert the <a class="reference external" href="http://igppweb.ucsd.edu/~gabi/rem.html">CRUST2.0 global crustal model</a> (Bassin et al., 2000).</p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.io.fetch_crust2" title="fatiando.io.fetch_crust2"><tt class="xref py py-func docutils literal"><span class="pre">fetch_crust2</span></tt></a>: Download the .tar.gz archive with the model
+from the website</li>
+<li><a class="reference internal" href="#fatiando.io.crust2_to_tesseroids" title="fatiando.io.crust2_to_tesseroids"><tt class="xref py py-func docutils literal"><span class="pre">crust2_to_tesseroids</span></tt></a>: Convert the CRUST2.0 model to 
+tesseroids</li>
+</ul>
+<p><strong>References</strong></p>
+<p>Bassin, C., Laske, G. and Masters, G., The Current Limits of Resolution for 
+Surface Wave Tomography in North America, EOS Trans AGU, 81, F897, 2000.</p>
+<hr class="docutils" />
+<dl class="function">
+<dt id="fatiando.io.crust2_to_tesseroids">
+<tt class="descclassname">fatiando.io.</tt><tt class="descname">crust2_to_tesseroids</tt><big>(</big><em>fname</em><big>)</big><a class="reference internal" href="../_modules/fatiando/io.html#crust2_to_tesseroids"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.io.crust2_to_tesseroids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the CRUST2.0 model to tesseroids.</p>
+<p>Opens the .tar.gz archive and converts the model to 
+<a class="reference internal" href="mesher.html#fatiando.mesher.Tesseroid" title="fatiando.mesher.Tesseroid"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.Tesseroid</span></tt></a>. 
+Each tesseroid will have its <tt class="docutils literal"><span class="pre">props</span></tt> set to the apropriate Vp, Vs and 
+density.</p>
+<p>The CRUST2.0 model includes 7 layers: ice, water, soft sediments, hard
+sediments, upper crust, middle curst and lower crust. It also includes the
+mantle below the Moho. The mantle portion is not included in this 
+conversion because there is no way to place a bottom on it.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>fname <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Name of the model .tar.gz archive (see 
+<a class="reference internal" href="#fatiando.io.fetch_crust2" title="fatiando.io.fetch_crust2"><tt class="xref py py-func docutils literal"><span class="pre">fetch_crust2</span></tt></a>)</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>model <span class="classifier-delimiter">:</span> <span class="classifier">list of <a class="reference internal" href="mesher.html#fatiando.mesher.Tesseroid" title="fatiando.mesher.Tesseroid"><tt class="xref py py-class docutils literal"><span class="pre">fatiando.mesher.Tesseroid</span></tt></a></span></dt>
+<dd><p class="first last">The converted model</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.io.fetch_crust2">
+<tt class="descclassname">fatiando.io.</tt><tt class="descname">fetch_crust2</tt><big>(</big><em>fname='crust2.tar.gz'</em><big>)</big><a class="reference internal" href="../_modules/fatiando/io.html#fetch_crust2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.io.fetch_crust2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download the CRUST2.0 model from <a class="reference external" href="http://igppweb.ucsd.edu/~gabi/crust2.html">http://igppweb.ucsd.edu/~gabi/crust2.html</a></p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>fname <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">The name that the archive file will be saved when downloaded</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>fname <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">The downloaded file name</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="vis.myv.html"
+                        title="previous chapter">Plot 3D objects in Mayavi2 (<tt class="docutils literal"><span class="pre">fatiando.vis.myv</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gui.html"
+                        title="next chapter">Graphical user interfaces (<tt class="docutils literal"><span class="pre">fatiando.gui</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/io.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gui.html" title="Graphical user interfaces (fatiando.gui)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="vis.myv.html" title="Plot 3D objects in Mayavi2 (fatiando.vis.myv)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

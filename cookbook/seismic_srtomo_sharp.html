@@ -1,0 +1,270 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Seismic: 2D straight-ray tomography using sharpness (total variation) regularization &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Cookbook" href="../cookbook.html" />
+    <link rel="next" title="Seismic: 2D straight-ray tomography using smoothness regularization" href="seismic_srtomo_smooth.html" />
+    <link rel="prev" title="Seismic: 2D straight-ray tomography using damping regularization" href="seismic_srtomo_damped.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="seismic_srtomo_smooth.html" title="Seismic: 2D straight-ray tomography using smoothness regularization"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="seismic_srtomo_damped.html" title="Seismic: 2D straight-ray tomography using damping regularization"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../cookbook.html" accesskey="U">Cookbook</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="seismic-2d-straight-ray-tomography-using-sharpness-total-variation-regularization">
+<span id="cookbook-seismic-srtomo-sharp"></span><h1>Seismic: 2D straight-ray tomography using sharpness (total variation) regularization<a class="headerlink" href="#seismic-2d-straight-ray-tomography-using-sharpness-total-variation-regularization" title="Permalink to this headline">¶</a></h1>
+[<a href="../_static/cookbook/seismic_srtomo_sharp.py">source code</a>]<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72</pre></div></td><td class="code"><div class="highlight"><pre><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Seismic: 2D straight-ray tomography using sharpness (total variation)</span>
+<span class="sd">regularization</span>
+
+<span class="sd">Uses synthetic data and a model generated from an image file.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">urllib</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">path</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">logger</span><span class="p">,</span> <span class="n">mesher</span><span class="p">,</span> <span class="n">utils</span><span class="p">,</span> <span class="n">seismic</span><span class="p">,</span> <span class="n">vis</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">logger</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">header</span><span class="p">())</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">__doc__</span><span class="p">)</span>
+
+<span class="n">area</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">100000</span><span class="p">)</span>
+<span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">mesher</span><span class="o">.</span><span class="n">SquareMesh</span><span class="p">(</span><span class="n">area</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span>
+<span class="c"># Fetch the image from the online docs</span>
+<span class="n">urllib</span><span class="o">.</span><span class="n">urlretrieve</span><span class="p">(</span>
+    <span class="s">&#39;http://fatiando.readthedocs.org/en/latest/_static/logo.png&#39;</span><span class="p">,</span> <span class="s">&#39;logo.png&#39;</span><span class="p">)</span>
+<span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">=</span> <span class="mi">4000</span><span class="p">,</span> <span class="mi">10000</span>
+<span class="n">model</span><span class="o">.</span><span class="n">img2prop</span><span class="p">(</span><span class="s">&#39;logo.png&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="p">,</span> <span class="s">&#39;vp&#39;</span><span class="p">)</span>
+
+<span class="c"># Make some travel time data and add noise</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Generating synthetic travel-time data&quot;</span><span class="p">)</span>
+<span class="n">src_loc</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">random_points</span><span class="p">(</span><span class="n">area</span><span class="p">,</span> <span class="mi">80</span><span class="p">)</span>
+<span class="n">rec_loc</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">circular_points</span><span class="p">(</span><span class="n">area</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">random</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">srcs</span><span class="p">,</span> <span class="n">recs</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">connect_points</span><span class="p">(</span><span class="n">src_loc</span><span class="p">,</span> <span class="n">rec_loc</span><span class="p">)</span>
+<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">tts</span> <span class="o">=</span> <span class="n">seismic</span><span class="o">.</span><span class="n">ttime2d</span><span class="o">.</span><span class="n">straight</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s">&#39;vp&#39;</span><span class="p">,</span> <span class="n">srcs</span><span class="p">,</span> <span class="n">recs</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  time: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">sec2hms</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)))</span>
+<span class="n">tts</span><span class="p">,</span> <span class="n">error</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">contaminate</span><span class="p">(</span><span class="n">tts</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">,</span> <span class="n">percent</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">return_stddev</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="c"># Make the mesh</span>
+<span class="n">mesh</span> <span class="o">=</span> <span class="n">mesher</span><span class="o">.</span><span class="n">SquareMesh</span><span class="p">(</span><span class="n">area</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span>
+<span class="c"># and run the inversion</span>
+<span class="n">estimate</span><span class="p">,</span> <span class="n">residuals</span> <span class="o">=</span> <span class="n">seismic</span><span class="o">.</span><span class="n">srtomo</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">tts</span><span class="p">,</span> <span class="n">srcs</span><span class="p">,</span> <span class="n">recs</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">sharp</span><span class="o">=</span><span class="mi">5</span><span class="o">*</span><span class="mi">10</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span>
+<span class="c"># Convert the slowness estimate to velocities and add it the mesh</span>
+<span class="n">mesh</span><span class="o">.</span><span class="n">addprop</span><span class="p">(</span><span class="s">&#39;vp&#39;</span><span class="p">,</span> <span class="n">seismic</span><span class="o">.</span><span class="n">srtomo</span><span class="o">.</span><span class="n">slowness2vel</span><span class="p">(</span><span class="n">estimate</span><span class="p">))</span>
+
+<span class="c"># Calculate and print the standard deviation of the residuals</span>
+<span class="c"># it should be close to the data error if the inversion was able to fit the data</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Assumed error: </span><span class="si">%f</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">error</span><span class="p">))</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Standard deviation of residuals: </span><span class="si">%f</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">residuals</span><span class="p">)))</span>
+
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s">&#39;scaled&#39;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;Vp synthetic model of the Earth&#39;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">squaremesh</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">prop</span><span class="o">=</span><span class="s">&#39;vp&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span>
+    <span class="n">cmap</span><span class="o">=</span><span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">seismic</span><span class="p">)</span>
+<span class="n">cb</span> <span class="o">=</span> <span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+<span class="n">cb</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s">&#39;Velocity&#39;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">src_loc</span><span class="p">,</span> <span class="s">&#39;*y&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&quot;Sources&quot;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">rec_loc</span><span class="p">,</span> <span class="s">&#39;^r&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&quot;Receivers&quot;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s">&#39;lower left&#39;</span><span class="p">,</span> <span class="n">shadow</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">numpoints</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">prop</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;size&#39;</span><span class="p">:</span><span class="mi">10</span><span class="p">})</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">m2km</span><span class="p">()</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s">&#39;scaled&#39;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;Tomography result (sharp)&#39;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">squaremesh</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">prop</span><span class="o">=</span><span class="s">&#39;vp&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span>
+    <span class="n">cmap</span><span class="o">=</span><span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">seismic</span><span class="p">)</span>
+<span class="n">cb</span> <span class="o">=</span> <span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+<span class="n">cb</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s">&#39;Velocity&#39;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">m2km</span><span class="p">()</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;Residuals (data with </span><span class="si">%.4f</span><span class="s"> s error)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">error</span><span class="p">))</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">residuals</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;gray&#39;</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&quot;seconds&quot;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="seismic_srtomo_damped.html"
+                        title="previous chapter">Seismic: 2D straight-ray tomography using damping regularization</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="seismic_srtomo_smooth.html"
+                        title="next chapter">Seismic: 2D straight-ray tomography using smoothness regularization</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/cookbook/seismic_srtomo_sharp.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="seismic_srtomo_smooth.html" title="Seismic: 2D straight-ray tomography using smoothness regularization"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="seismic_srtomo_damped.html" title="Seismic: 2D straight-ray tomography using damping regularization"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../cookbook.html" >Cookbook</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

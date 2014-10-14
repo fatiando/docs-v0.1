@@ -1,0 +1,217 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>2D seismic ray travel-time modeling (fatiando.seismic.ttime2d) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Seismics and seismology (fatiando.seismic)" href="seismic.html" />
+    <link rel="next" title="2D epicenter determination (fatiando.seismic.epic2d)" href="seismic.epic2d.html" />
+    <link rel="prev" title="Seismics and seismology (fatiando.seismic)" href="seismic.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="seismic.epic2d.html" title="2D epicenter determination (fatiando.seismic.epic2d)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="seismic.html" title="Seismics and seismology (fatiando.seismic)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="seismic.html" accesskey="U">Seismics and seismology (<tt class="docutils literal"><span class="pre">fatiando.seismic</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.seismic.ttime2d">
+<span id="d-seismic-ray-travel-time-modeling-fatiando-seismic-ttime2d"></span><span id="fatiando-seismic-ttime"></span><h1>2D seismic ray travel-time modeling (<tt class="docutils literal"><span class="pre">fatiando.seismic.ttime2d</span></tt>)<a class="headerlink" href="#module-fatiando.seismic.ttime2d" title="Permalink to this headline">¶</a></h1>
+<p>Calculate travel-times of seismic waves in 2D.</p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.seismic.ttime2d.straight" title="fatiando.seismic.ttime2d.straight"><tt class="xref py py-func docutils literal"><span class="pre">straight</span></tt></a>: Calculate the travel-time of a
+straight ray through a mesh of square cells</li>
+</ul>
+<hr class="docutils" />
+<dl class="function">
+<dt id="fatiando.seismic.ttime2d.straight">
+<tt class="descclassname">fatiando.seismic.ttime2d.</tt><tt class="descname">straight</tt><big>(</big><em>cells</em>, <em>prop</em>, <em>srcs</em>, <em>recs</em>, <em>velocity=None</em>, <em>par=False</em><big>)</big><a class="reference internal" href="../_modules/fatiando/seismic/ttime2d.html#straight"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.seismic.ttime2d.straight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the travel times inside a mesh of square cells between source and
+receiver pairs assuming the rays are straight lines (no refraction or
+reflection).</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Don&#8217;t care about the units as long they are compatible.</p>
+</div>
+<p>For a homogeneous model, <em>cells</em> can be a list with only one big cell.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>cells <span class="classifier-delimiter">:</span> <span class="classifier">list of <a class="reference internal" href="mesher.html#fatiando.mesher.Square" title="fatiando.mesher.Square"><tt class="xref py py-func docutils literal"><span class="pre">fatiando.mesher.Square</span></tt></a></span></dt>
+<dd><p class="first last">The velocity model to use to trace the straight rays. Cells must have
+the physical property given in parameter <em>prop</em>. This will be used
+as the velocity of each cell. (<em>cells</em> can also be a
+<a class="reference internal" href="mesher.html#fatiando.mesher.SquareMesh" title="fatiando.mesher.SquareMesh"><tt class="xref py py-class docutils literal"><span class="pre">SquareMesh</span></tt></a>)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>prop <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Which physical property of the cells to use as velocity.
+Normaly one would choose <tt class="docutils literal"><span class="pre">'vp'</span></tt> or <tt class="docutils literal"><span class="pre">'vs'</span></tt></p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>srcs <span class="classifier-delimiter">:</span> <span class="classifier">list fo lists</span></dt>
+<dd><p class="first last">List with [x, y] coordinate pairs of the wave sources.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>recs <span class="classifier-delimiter">:</span> <span class="classifier">list fo lists</span></dt>
+<dd><p class="first last">List with [x, y] coordinate pairs of the receivers sources</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>velocity <span class="classifier-delimiter">:</span> <span class="classifier">float or None</span></dt>
+<dd><p class="first last">If not None, will use this value instead of the prop of cells as the
+velocity. Useful when building sensitivity matrices (use velocity = 1).</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>par <span class="classifier-delimiter">:</span> <span class="classifier">True or False</span></dt>
+<dd><p class="first last">If True, will run the calculations in parallel using all the cores
+available. Not recommended for Jacobian matrix building!</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p><em>srcs</em> and <em>recs</em> are lists of source-receiver pairs. Each source in <em>srcs</em>
+is associated with the corresponding receiver in <em>recs</em> for a given travel
+time.</p>
+<p>For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># One source was recorded at 3 receivers.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># The medium is homogeneous and can be</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># represented by a single Square</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">fatiando.mesher</span> <span class="kn">import</span> <span class="n">Square</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cells</span> <span class="o">=</span> <span class="p">[</span><span class="n">Square</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="p">{</span><span class="s">&#39;vp&#39;</span><span class="p">:</span><span class="mi">2</span><span class="p">})]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">src</span> <span class="o">=</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">srcs</span> <span class="o">=</span> <span class="p">[</span><span class="n">src</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">src</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">recs</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">straight</span><span class="p">(</span><span class="n">cells</span><span class="p">,</span> <span class="s">&#39;vp&#39;</span><span class="p">,</span> <span class="n">srcs</span><span class="p">,</span> <span class="n">recs</span><span class="p">)</span>
+<span class="go">[ 2.5  5.   2.5]</span>
+</pre></div>
+</div>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>times <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd><p class="first last">The total times each ray took to get from a source to a receiver (in
+compatible units with <em>prop</em>)</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="seismic.html"
+                        title="previous chapter">Seismics and seismology (<tt class="docutils literal"><span class="pre">fatiando.seismic</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="seismic.epic2d.html"
+                        title="next chapter">2D epicenter determination (<tt class="docutils literal"><span class="pre">fatiando.seismic.epic2d</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/seismic.ttime2d.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="seismic.epic2d.html" title="2D epicenter determination (fatiando.seismic.epic2d)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="seismic.html" title="Seismics and seismology (fatiando.seismic)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li>
+          <li><a href="seismic.html" >Seismics and seismology (<tt class="docutils literal"><span class="pre">fatiando.seismic</span></tt>)</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

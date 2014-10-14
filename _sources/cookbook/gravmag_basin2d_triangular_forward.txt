@@ -1,0 +1,12 @@
+.. _cookbook_gravmag_basin2d_triangular_forward:
+
+GravMag: Interactive 2D forward gravity modeling of a triangular basin
+=======================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/gravmag_basin2d_triangular_forward.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/gravmag_basin2d_triangular_forward.py
+    :language: python
+    :linenos:

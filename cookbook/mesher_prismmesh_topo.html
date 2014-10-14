@@ -1,0 +1,188 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Meshing: Make and plot a 3D prism mesh with topography &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Cookbook" href="../cookbook.html" />
+    <link rel="next" title="Meshing: Make a 3D prism mesh with depth-varying density" href="mesher_prismmesh_vardens.html" />
+    <link rel="prev" title="Meshing: Filter prisms from a 3D prism mesh based on their physical properties" href="mesher_prismmesh_filter.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mesher_prismmesh_vardens.html" title="Meshing: Make a 3D prism mesh with depth-varying density"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="mesher_prismmesh_filter.html" title="Meshing: Filter prisms from a 3D prism mesh based on their physical properties"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../cookbook.html" accesskey="U">Cookbook</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="meshing-make-and-plot-a-3d-prism-mesh-with-topography">
+<span id="cookbook-mesher-prismmesh-topo"></span><h1>Meshing: Make and plot a 3D prism mesh with topography<a class="headerlink" href="#meshing-make-and-plot-a-3d-prism-mesh-with-topography" title="Permalink to this headline">¶</a></h1>
+[<a href="../_static/cookbook/mesher_prismmesh_topo.py">source code</a>]<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31</pre></div></td><td class="code"><div class="highlight"><pre><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Meshing: Make and plot a 3D prism mesh with topography</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">logger</span><span class="p">,</span> <span class="n">gridder</span><span class="p">,</span> <span class="n">utils</span><span class="p">,</span> <span class="n">mesher</span>
+<span class="kn">from</span> <span class="nn">fatiando.vis</span> <span class="kn">import</span> <span class="n">myv</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">logger</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">header</span><span class="p">())</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">__doc__</span><span class="p">)</span>
+
+<span class="n">x1</span><span class="p">,</span> <span class="n">x2</span> <span class="o">=</span> <span class="o">-</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span>
+<span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="o">-</span><span class="mi">200</span><span class="p">,</span> <span class="mi">200</span>
+<span class="n">bounds</span> <span class="o">=</span> <span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="o">-</span><span class="mi">200</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Generating synthetic topography&quot;</span><span class="p">)</span>
+<span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">gridder</span><span class="o">.</span><span class="n">regular</span><span class="p">((</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span><span class="p">),</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">))</span>
+<span class="n">height</span> <span class="o">=</span> <span class="p">(</span><span class="mi">100</span> <span class="o">+</span>
+          <span class="o">-</span><span class="mi">50</span><span class="o">*</span><span class="n">utils</span><span class="o">.</span><span class="n">gaussian2d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="n">x0</span><span class="o">=-</span><span class="mi">50</span><span class="p">,</span> <span class="n">y0</span><span class="o">=-</span><span class="mi">100</span><span class="p">,</span> <span class="n">angle</span><span class="o">=-</span><span class="mi">60</span><span class="p">)</span> <span class="o">+</span>
+          <span class="mi">100</span><span class="o">*</span><span class="n">utils</span><span class="o">.</span><span class="n">gaussian2d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="mi">80</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="mi">170</span><span class="p">))</span>
+
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Generating the prism mesh&quot;</span><span class="p">)</span>
+<span class="n">mesh</span> <span class="o">=</span> <span class="n">mesher</span><span class="o">.</span><span class="n">PrismMesh</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">40</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
+<span class="n">mesh</span><span class="o">.</span><span class="n">carvetopo</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
+
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Plotting&quot;</span><span class="p">)</span>
+<span class="n">myv</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">myv</span><span class="o">.</span><span class="n">prisms</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
+<span class="n">myv</span><span class="o">.</span><span class="n">axes</span><span class="p">(</span><span class="n">myv</span><span class="o">.</span><span class="n">outline</span><span class="p">(</span><span class="n">bounds</span><span class="p">),</span> <span class="n">fmt</span><span class="o">=</span><span class="s">&#39;</span><span class="si">%.0f</span><span class="s">&#39;</span><span class="p">)</span>
+<span class="n">myv</span><span class="o">.</span><span class="n">wall_north</span><span class="p">(</span><span class="n">bounds</span><span class="p">)</span>
+<span class="n">myv</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="mesher_prismmesh_filter.html"
+                        title="previous chapter">Meshing: Filter prisms from a 3D prism mesh based on their physical properties</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="mesher_prismmesh_vardens.html"
+                        title="next chapter">Meshing: Make a 3D prism mesh with depth-varying density</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/cookbook/mesher_prismmesh_topo.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mesher_prismmesh_vardens.html" title="Meshing: Make a 3D prism mesh with depth-varying density"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="mesher_prismmesh_filter.html" title="Meshing: Filter prisms from a 3D prism mesh based on their physical properties"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../cookbook.html" >Cookbook</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

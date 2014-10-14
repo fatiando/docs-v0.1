@@ -1,0 +1,174 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Fatiando a Terra: Geophysical modeling and inversion &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="#" />
+    <link rel="next" title="Contributors" href="contributors.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="contributors.html" title="Contributors"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">Fatiando a Terra v0.1</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="fatiando-a-terra-geophysical-modeling-and-inversion">
+<h1>Fatiando a Terra: Geophysical modeling and inversion<a class="headerlink" href="#fatiando-a-terra-geophysical-modeling-and-inversion" title="Permalink to this headline">¶</a></h1>
+<div class="topic">
+<p class="topic-title first">An open source toolkit for geophysical modeling and inversion</p>
+<p>Fatiando provides an easy and flexible way to perform common tasks like:
+generating synthetic data, forward modeling, inversion, 3D visualization,
+and more! All from inside the powerful <a class="reference external" href="http://www.python.org">Python</a> language.</p>
+</div>
+<p>For more information visit <a class="reference external" href="http://www.fatiando.org">the official site</a>.</p>
+<p>The <strong>source code</strong> of Fatiando is hosted on <a class="reference external" href="https://github.com/leouieda/fatiando">GitHub</a>.</p>
+<p><strong>License</strong>: Fatiando is licensed under the <strong>BSD license</strong>.
+This means that it can be reused and remixed
+with few restrictions.
+See the <a class="reference internal" href="license.html#license"><em>license text</em></a> for more information.</p>
+<p>The best <strong>place to start</strong> learning
+about Fatiando is the <a class="reference internal" href="cookbook.html#cookbook"><em>Cookbook</em></a>!
+There, you&#8217;ll find many sample scripts
+with common tasks
+that can help you get started.</p>
+<p>As an <strong>example</strong>, this is how easy it is to create synthetic noise-corrupted
+gravity data on random points from a 3D prism model:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">fatiando.mesher</span> <span class="kn">import</span> <span class="n">Prism</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">fatiando.vis</span> <span class="kn">import</span> <span class="n">mpl</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">gridder</span><span class="p">,</span> <span class="n">utils</span><span class="p">,</span> <span class="n">gravmag</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Create the prism model</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">prisms</span> <span class="o">=</span> <span class="p">[</span>
+<span class="gp">... </span>    <span class="n">Prism</span><span class="p">(</span><span class="o">-</span><span class="mi">4000</span><span class="p">,</span> <span class="o">-</span><span class="mi">3000</span><span class="p">,</span> <span class="o">-</span><span class="mi">4000</span><span class="p">,</span> <span class="o">-</span><span class="mi">3000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2000</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">}),</span>
+<span class="gp">... </span>    <span class="n">Prism</span><span class="p">(</span><span class="o">-</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="o">-</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2000</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="o">-</span><span class="mi">1000</span><span class="p">}),</span>
+<span class="gp">... </span>    <span class="n">Prism</span><span class="p">(</span><span class="mi">2000</span><span class="p">,</span> <span class="mi">4000</span><span class="p">,</span> <span class="mi">3000</span><span class="p">,</span> <span class="mi">4000</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2000</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;density&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">})]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Generate 500 random observation points at 100m height</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span> <span class="o">=</span> <span class="n">gridder</span><span class="o">.</span><span class="n">scatter</span><span class="p">((</span><span class="o">-</span><span class="mi">5000</span><span class="p">,</span> <span class="mi">5000</span><span class="p">,</span> <span class="o">-</span><span class="mi">5000</span><span class="p">,</span> <span class="mi">5000</span><span class="p">),</span> <span class="mi">500</span><span class="p">,</span> <span class="n">z</span><span class="o">=-</span><span class="mi">100</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Calculate their gravitational effect and contaminate it with 0.1 mGal</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># gaussian noise</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gz</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">contaminate</span><span class="p">(</span><span class="n">gravmag</span><span class="o">.</span><span class="n">prism</span><span class="o">.</span><span class="n">gz</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">prisms</span><span class="p">),</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Plot the result</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mpl</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="n">gz</span><span class="p">,</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="mi">12</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cb</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cb</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s">&#39;mGal&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mpl</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span> <span class="s">&#39;.k&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mpl</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>which results in something like this:</p>
+<a class="reference internal image-reference" href="_images/sample.png"><img alt="_images/sample.png" class="align-center" src="_images/sample.png" style="width: 300px;" /></a>
+<p>For those of you not so interested in potential fields,
+there is a new module <a class="reference internal" href="api/seismic.wavefd.html#fatiando-seismic-wavefd"><em>fatiando.seismic.wavefd</em></a>
+for <strong>2D finite difference simulations
+of seismic waves</strong>!</p>
+<iframe width="560" height="315"
+ src="https://www.youtube.com/embed/Mvd8FANLqy4"
+ frameborder="0" allowfullscreen></iframe>
+
+<iframe width="420" height="315"
+ src="https://www.youtube.com/embed/YjhSvEpbzps"
+ frameborder="0" allowfullscreen></iframe><h1>Contents:</h1><div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributors.html">Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installing Fatiando</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/fatiando.html">API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cookbook.html">Cookbook</a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="contributors.html"
+                        title="next chapter">Contributors</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="contributors.html" title="Contributors"
+             >next</a> |</li>
+        <li><a href="#">Fatiando a Terra v0.1</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

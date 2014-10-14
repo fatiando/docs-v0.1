@@ -1,0 +1,320 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Logging (fatiando.logger) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="API Reference: The fatiando package" href="fatiando.html" />
+    <link rel="next" title="Physical constants and unit conversions (fatiando.constants)" href="constants.html" />
+    <link rel="prev" title="Miscellaneous Utilities (fatiando.utils)" href="utils.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="constants.html" title="Physical constants and unit conversions (fatiando.constants)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="utils.html" title="Miscellaneous Utilities (fatiando.utils)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" accesskey="U">API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.logger">
+<span id="logging-fatiando-logger"></span><span id="fatiando-logger"></span><h1>Logging (<tt class="docutils literal"><span class="pre">fatiando.logger</span></tt>)<a class="headerlink" href="#module-fatiando.logger" title="Permalink to this headline">¶</a></h1>
+<p>Logging utilities for fatiando.</p>
+<p>This module is basically a wrapper around Pythons <cite>logging</cite> module.</p>
+<p><strong>Functions</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.logger.get" title="fatiando.logger.get"><tt class="xref py py-func docutils literal"><span class="pre">get</span></tt></a>: Create a logger and enable logging using the
+default settings</li>
+<li><a class="reference internal" href="#fatiando.logger.tofile" title="fatiando.logger.tofile"><tt class="xref py py-func docutils literal"><span class="pre">tofile</span></tt></a>: Enable logging to a file</li>
+<li><a class="reference internal" href="#fatiando.logger.header" title="fatiando.logger.header"><tt class="xref py py-func docutils literal"><span class="pre">header</span></tt></a>: Generate a header message string with the
+current version, changeset information and date</li>
+<li><a class="reference internal" href="#fatiando.logger.dummy" title="fatiando.logger.dummy"><tt class="xref py py-func docutils literal"><span class="pre">dummy</span></tt></a>: Get a logger without any handlers (for use in
+modules)</li>
+</ul>
+<p><strong>Usage</strong></p>
+<p>In a module, use a logger without any handlers so that it only logs if a script
+wants to log:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># in fatiando.package.module.py</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">fatiando.logger</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">myfunc</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="n">log</span> <span class="o">=</span> <span class="n">fatiando</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">dummy</span><span class="p">(</span><span class="s">&#39;fatiando.package.module.myfunc&#39;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Only logs if a script calls fatiando.logger.get&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Then it can be used in a script:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">myfunc</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Nothing happens</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Get a logger to stdout</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">log</span> <span class="o">=</span> <span class="n">fatiando</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">stream</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">myfunc</span><span class="p">()</span>
+<span class="go">Only logs if a script calls fatiando.logger.get</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;This is an info msg printed to stdout from the script&quot;</span><span class="p">)</span>
+<span class="go">This is an info msg printed to stdout from the script</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;This is a debug msg NOT printed&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Uncomment below to log to a file as well!</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># log = fatiando.logger.tofile(log, &#39;mylogfile.log&#39;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Warning printed to both stdout and log file&#39;</span><span class="p">)</span>
+<span class="go">Warning printed to both stdout and log file</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;and this is an Error message.&#39;</span><span class="p">)</span>
+<span class="go">and this is an Error message.</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Importing this module assigns a <cite>logging.NullHandler</cite> to the base
+logger of <cite>fatiando</cite>, whose name is <tt class="docutils literal"><span class="pre">'fatiando'</span></tt>. This way, log messages
+are only printed if a script calls <a class="reference internal" href="#fatiando.logger.get" title="fatiando.logger.get"><tt class="xref py py-func docutils literal"><span class="pre">fatiando.logger.get</span></tt></a> or assigns a
+Handler to it.</p>
+</div>
+<hr class="docutils" />
+<dl class="function">
+<dt id="fatiando.logger.dummy">
+<tt class="descclassname">fatiando.logger.</tt><tt class="descname">dummy</tt><big>(</big><em>name='fatiando'</em><big>)</big><a class="reference internal" href="../_modules/fatiando/logger.html#dummy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.logger.dummy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a logger without any handlers.</p>
+<p>For use inside modules.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>name <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Name of the logger. Use the module name as <em>name</em> (including the full
+package hierarchy)</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>log <span class="classifier-delimiter">:</span> <span class="classifier"><cite>logging.Logger</cite></span></dt>
+<dd><p class="first last">A logger without any handlers so that it only prints when
+<a class="reference internal" href="#fatiando.logger.get" title="fatiando.logger.get"><tt class="xref py py-func docutils literal"><span class="pre">fatiando.logger.get</span></tt></a> or <a class="reference internal" href="#fatiando.logger.tofile" title="fatiando.logger.tofile"><tt class="xref py py-func docutils literal"><span class="pre">fatiando.logger.tofile</span></tt></a> are called</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># in fatiando.mymod.py</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">fatiando.logger</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">myfunc</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="n">log</span> <span class="o">=</span> <span class="n">fatiando</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">dummy</span><span class="p">(</span><span class="s">&#39;fatiando.mymod.myfunc&#39;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Not logged unless a script wants it to&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">myfunc</span><span class="p">()</span>
+<span class="go">&gt;&gt;&gt;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.logger.get">
+<tt class="descclassname">fatiando.logger.</tt><tt class="descname">get</tt><big>(</big><em>level=20</em>, <em>stream=&lt;open file '&lt;stderr&gt;'</em>, <em>mode 'w' at 0x2adf7b5f81e0&gt;</em><big>)</big><a class="reference internal" href="../_modules/fatiando/logger.html#get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.logger.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a logger using the default settings for Fatiando.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>level <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Default to <cite>logging.INFO</cite>. See <cite>logging</cite> module</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>stream <span class="classifier-delimiter">:</span> <span class="classifier">file</span></dt>
+<dd><p class="first last">A stream to log to. Default to <cite>sys.stderr</cite></p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>log <span class="classifier-delimiter">:</span> <span class="classifier"><cite>logging.Logger</cite></span></dt>
+<dd><p class="first last">A logger with the level and name set</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.logger.header">
+<tt class="descclassname">fatiando.logger.</tt><tt class="descname">header</tt><big>(</big><em>comment=''</em><big>)</big><a class="reference internal" href="../_modules/fatiando/logger.html#header"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.logger.header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a header message with the current version, changeset information
+and date.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>comment <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Character inserted at the beginning of each line. Use this to make a
+message that can be inserted in source code files as comments.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>msg <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">The header message</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.logger.tofile">
+<tt class="descclassname">fatiando.logger.</tt><tt class="descname">tofile</tt><big>(</big><em>logger</em>, <em>fname</em>, <em>level=10</em><big>)</big><a class="reference internal" href="../_modules/fatiando/logger.html#tofile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.logger.tofile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable logging to a file.</p>
+<p>Will enable file logging to the given <em>logger</em>.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>logger <span class="classifier-delimiter">:</span> <span class="classifier"><cite>logging.Logger</cite></span></dt>
+<dd><p class="first last">A logger, as returned by <a class="reference internal" href="#fatiando.logger.get" title="fatiando.logger.get"><tt class="xref py py-func docutils literal"><span class="pre">fatiando.logger.get</span></tt></a></p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>fname <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">Log file name</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>level <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">The logging level. Default to <cite>logging.DEBUG</cite>. See <cite>logging</cite> module</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>log <span class="classifier-delimiter">:</span> <span class="classifier"><cite>logging.Logger</cite></span></dt>
+<dd><p class="first last"><em>logger</em> with added FileHandler</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Need to mock the FileHandler so that it works with StringIO</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">StringIO</span> <span class="kn">import</span> <span class="n">StringIO</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">f</span> <span class="o">=</span> <span class="n">StringIO</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">f</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># Now for the actual logger example!</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">fatiando.logger</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">log</span> <span class="o">=</span> <span class="n">fatiando</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">tofile</span><span class="p">(</span><span class="n">fatiando</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">stream</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">),</span> <span class="n">f</span><span class="p">,</span>
+<span class="gp">... </span>                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;logged to file but not stdout!&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">f</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+<span class="go">DEBUG:fatiando: logged to file but not stdout!</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="utils.html"
+                        title="previous chapter">Miscellaneous Utilities (<tt class="docutils literal"><span class="pre">fatiando.utils</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="constants.html"
+                        title="next chapter">Physical constants and unit conversions (<tt class="docutils literal"><span class="pre">fatiando.constants</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/logger.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="constants.html" title="Physical constants and unit conversions (fatiando.constants)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="utils.html" title="Miscellaneous Utilities (fatiando.utils)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

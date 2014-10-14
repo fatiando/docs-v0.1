@@ -1,0 +1,174 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Vis: Plot a map using the Orthographic map projection and filled contours &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Cookbook" href="../cookbook.html" />
+    <link rel="next" title="Vis: Plot a map using the Mercator map projection and pseudo-color" href="vis_mpl_basemap2.html" />
+    <link rel="prev" title="Seismic: 2D finite difference simulation of elastic P and SV wave propagation in a medium with a discontinuity (i.e., Moho), generating Rayleigh waves" href="seismic_wavefd_rayleigh_wave.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="vis_mpl_basemap2.html" title="Vis: Plot a map using the Mercator map projection and pseudo-color"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="seismic_wavefd_rayleigh_wave.html" title="Seismic: 2D finite difference simulation of elastic P and SV wave propagation in a medium with a discontinuity (i.e., Moho), generating Rayleigh waves"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../cookbook.html" accesskey="U">Cookbook</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="vis-plot-a-map-using-the-orthographic-map-projection-and-filled-contours">
+<span id="cookbook-vis-mpl-basemap"></span><h1>Vis: Plot a map using the Orthographic map projection and filled contours<a class="headerlink" href="#vis-plot-a-map-using-the-orthographic-map-projection-and-filled-contours" title="Permalink to this headline">¶</a></h1>
+[<a href="../_static/cookbook/vis_mpl_basemap.py">source code</a>]<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24</pre></div></td><td class="code"><div class="highlight"><pre><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Vis: Plot a map using the Orthographic map projection and filled contours</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">logger</span><span class="p">,</span> <span class="n">gridder</span><span class="p">,</span> <span class="n">utils</span><span class="p">,</span> <span class="n">vis</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">logger</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">header</span><span class="p">())</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">__doc__</span><span class="p">)</span>
+
+<span class="c"># Generate some data to plot</span>
+<span class="n">area</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">40</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="o">-</span><span class="mi">50</span><span class="p">)</span>
+<span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="n">gridder</span><span class="o">.</span><span class="n">regular</span><span class="p">(</span><span class="n">area</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">gaussian2d</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="o">-</span><span class="mi">20</span><span class="p">,</span> <span class="o">-</span><span class="mi">20</span><span class="p">,</span> <span class="n">angle</span><span class="o">=-</span><span class="mi">45</span><span class="p">)</span>
+
+<span class="c"># Now get a basemap to plot with some projection</span>
+<span class="n">bm</span> <span class="o">=</span> <span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">basemap</span><span class="p">(</span><span class="n">area</span><span class="p">,</span> <span class="s">&#39;ortho&#39;</span><span class="p">)</span>
+
+<span class="c"># And now plot everything passing the basemap to the plotting functions</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">bm</span><span class="o">.</span><span class="n">bluemarble</span><span class="p">()</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="n">basemap</span><span class="o">=</span><span class="n">bm</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="seismic_wavefd_rayleigh_wave.html"
+                        title="previous chapter">Seismic: 2D finite difference simulation of elastic P and SV wave propagation in a medium with a discontinuity (i.e., Moho), generating Rayleigh waves</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="vis_mpl_basemap2.html"
+                        title="next chapter">Vis: Plot a map using the Mercator map projection and pseudo-color</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/cookbook/vis_mpl_basemap.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="vis_mpl_basemap2.html" title="Vis: Plot a map using the Mercator map projection and pseudo-color"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="seismic_wavefd_rayleigh_wave.html" title="Seismic: 2D finite difference simulation of elastic P and SV wave propagation in a medium with a discontinuity (i.e., Moho), generating Rayleigh waves"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../cookbook.html" >Cookbook</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

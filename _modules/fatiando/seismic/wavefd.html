@@ -1,0 +1,661 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fatiando.seismic.wavefd &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for fatiando.seismic.wavefd</h1><div class="highlight"><pre>
+<span class="sd">r&quot;&quot;&quot;</span>
+<span class="sd">Finite difference solution of the 2D wave equation for isotropic media.</span>
+
+<span class="sd">.. warning::</span>
+
+<span class="sd">    Due to the high computational demmand of these simulations,</span>
+<span class="sd">    the pure Python time stepping functions are **very** slow!</span>
+<span class="sd">    I strongly recommend using the optimized Cython time stepping module.</span>
+
+<span class="sd">Simulates both elastic and acoustic waves:</span>
+
+<span class="sd">* :func:`~fatiando.seismic.wavefd.elastic_psv`: Simulates the coupled P and SV</span>
+<span class="sd">  elastic waves</span>
+<span class="sd">* :func:`~fatiando.seismic.wavefd.elastic_sh`: Simulates SH elastic waves</span>
+
+<span class="sd">**Sources**</span>
+
+<span class="sd">* :class:`~fatiando.seismic.wavefd.MexHatSource`: Mexican hat wavelet source</span>
+<span class="sd">* :class:`~fatiando.seismic.wavefd.SinSqrSource`: Sine squared source</span>
+
+<span class="sd">**Auxiliary function**</span>
+
+<span class="sd">* :func:`~fatiando.seismic.wavefd.lame`: Calculate the Lame constants from P and</span>
+<span class="sd">  S wave velocities and density</span>
+
+<span class="sd">**Theory**</span>
+
+<span class="sd">We start with the wave equation for elastic isotropic media</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">    (\lambda + \mu)\nabla(\nabla\cdot\mathbf{u})</span>
+<span class="sd">    +</span>
+<span class="sd">    \mu\nabla^2\mathbf{u}</span>
+<span class="sd">    - \rho \partial_t^2 \mathbf{u} = - \mathbf{f}</span>
+
+<span class="sd">where :math:`\mathbf{u} = (u_x, u_y, y_z)` is the particle movement vector,</span>
+<span class="sd">:math:`\rho` is the density,</span>
+<span class="sd">:math:`\lambda` and :math:`\mu` are the Lame constants,</span>
+<span class="sd">and :math:`\mathbf{f}` is the source vector.</span>
+
+<span class="sd">In the 2D approximation, we assume all derivatives in the y direction</span>
+<span class="sd">are zero and consider only x and z coordinates</span>
+<span class="sd">(though :math:`u_y` remains).</span>
+<span class="sd">The three equations in the vector equation above can be separated into</span>
+<span class="sd">two groups:</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">    \mu\left(\partial_x^2 u_y + \partial_z^2 u_y\right)</span>
+<span class="sd">    - \rho \partial_t^2 u_y = -f_y</span>
+
+<span class="sd">and</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">    (\lambda + 2\mu)\partial_x^2 u_x + \mu\partial_z^2 u_x</span>
+<span class="sd">    + (\lambda + \mu)\partial_x\partial_z u_z</span>
+<span class="sd">    - \rho \partial_t^2 u_x = -f_x</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">    (\lambda + 2\mu)\partial_z^2 u_z + \mu\partial_x^2 u_z</span>
+<span class="sd">    + (\lambda + \mu)\partial_x\partial_z u_x</span>
+<span class="sd">    - \rho \partial_t^2 u_z = -f_z</span>
+
+<span class="sd">The first equation depends only on :math:`u_y` and represents SH waves.</span>
+<span class="sd">The other two depend on :math:`u_x` and :math:`u_z` and are coupled.</span>
+<span class="sd">They represent P and SV waves.</span>
+
+<span class="sd">I&#39;ll use an explicit finite difference solution for these equations.</span>
+<span class="sd">I&#39;ll use a second order approximation for the time derivative</span>
+<span class="sd">and a fourth order approximation for the spacial derivatives.</span>
+
+<span class="sd">The finite difference solution for SH waves is:</span>
+
+<span class="sd">.. math::</span>
+<span class="sd">   :nowrap:</span>
+
+<span class="sd">    \begin{align*}</span>
+<span class="sd">        u_y[i,j]_{t+1} =&amp; 2u_y[i,j]_{t} - u_y[i,j]_{t-1}</span>
+<span class="sd">        + \frac{\Delta t^2}{\rho[i,j]}</span>
+<span class="sd">        \Biggl[</span>
+<span class="sd">            f_y[i,j]_t</span>
+<span class="sd">        \\[0.3cm] &amp;</span>
+<span class="sd">            + \mu[i,j]</span>
+<span class="sd">                \left(</span>
+<span class="sd">                    \frac{-u_y[i,j+2]_{t} + 16u_y[i,j+1]_{t} -30u_y[i,j]_{t}</span>
+<span class="sd">                        + 16u_y[i,j-1]_{t} - u_y[i,j-2]_{t}}{</span>
+<span class="sd">                        12\Delta x^2}</span>
+<span class="sd">                \right)</span>
+<span class="sd">        \\[0.3cm] &amp;</span>
+<span class="sd">            + \mu[i,j]</span>
+<span class="sd">                \left(</span>
+<span class="sd">                    \frac{-u_y[i+2,j]_{t} + 16u_y[i+1,j]_{t} -30u_y[i,j]_{t}</span>
+<span class="sd">                        + 16u_y[i-1,j]_{t} - u_y[i-2,j]_{t}}{</span>
+<span class="sd">                        12\Delta z^2}</span>
+<span class="sd">                \right)</span>
+<span class="sd">        \Biggr]</span>
+<span class="sd">    \end{align*}</span>
+
+
+<span class="sd">where :math:`[i,j]_t` is the quantity at the grid node i,j at a</span>
+<span class="sd">time t. In this formulation, i denotes z coordinates and j x coordinates.</span>
+
+<span class="sd">The solution for P and SV waves is:</span>
+
+<span class="sd">.. math::</span>
+<span class="sd">   :nowrap:</span>
+
+<span class="sd">    \begin{align*}</span>
+<span class="sd">    u_x[i,j]_{t+1} =&amp; 2u_x[i,j]_{t} - u_x[i,j]_{t-1}</span>
+<span class="sd">    \\&amp;</span>
+<span class="sd">    + \frac{\Delta t^2}{\rho[i,j]}</span>
+<span class="sd">    \left\lbrace</span>
+<span class="sd">        f_x[i,j]_{t} +</span>
+<span class="sd">        (\lambda[i,j] + 2\mu[i,j])</span>
+<span class="sd">        \left(</span>
+<span class="sd">            \frac{u_x[i,j+1]_{t} - 2u_x[i,j]_{t} + u_x[i,j-1]_{t}}{</span>
+<span class="sd">                \Delta x^2}</span>
+<span class="sd">        \right)</span>
+<span class="sd">    \right.</span>
+<span class="sd">    \\[0.3cm]&amp;</span>
+<span class="sd">        +</span>
+<span class="sd">        \mu[i,j]</span>
+<span class="sd">        \left(</span>
+<span class="sd">            \frac{u_x[i+1,j]_{t} - 2u_x[i,j]_{t} + u_x[i-1,j]_{t}}{</span>
+<span class="sd">                \Delta z^2}</span>
+<span class="sd">        \right)</span>
+<span class="sd">    \\[0.3cm]&amp;</span>
+<span class="sd">    \left.</span>
+<span class="sd">        +</span>
+<span class="sd">        (\lambda[i,j] + \mu[i,j])</span>
+<span class="sd">        \left(</span>
+<span class="sd">            \frac{u_z[i,j]_{t} - u_z[i-1,j]_{t} - u_z[i,j-1]_{t} +</span>
+<span class="sd">            u_z[i-1,j-1]_{t}</span>
+<span class="sd">            }{\Delta x\Delta z}</span>
+<span class="sd">        \right)</span>
+<span class="sd">    \right\rbrace</span>
+<span class="sd">    \end{align*}</span>
+
+<span class="sd">.. math::</span>
+<span class="sd">   :nowrap:</span>
+
+<span class="sd">    \begin{align*}</span>
+<span class="sd">    u_z[i,j]_{t+1} =&amp; 2u_z[i,j]_{t} - u_z[i,j]_{t-1}</span>
+<span class="sd">    \\&amp;</span>
+<span class="sd">    + \frac{\Delta t^2}{\rho[i,j]}</span>
+<span class="sd">    \left\lbrace</span>
+<span class="sd">        f_z[i,j]_{t} +</span>
+<span class="sd">        (\lambda[i,j] + 2\mu[i,j])</span>
+<span class="sd">        \left(</span>
+<span class="sd">            \frac{u_z[i+1,j]_{t} - 2u_z[i,j]_{t} + u_z[i-1,j]_{t}}{</span>
+<span class="sd">                \Delta z^2}</span>
+<span class="sd">        \right)</span>
+<span class="sd">    \right.</span>
+<span class="sd">    \\[0.3cm]&amp;</span>
+<span class="sd">        +</span>
+<span class="sd">        \mu[i,j]</span>
+<span class="sd">        \left(</span>
+<span class="sd">            \frac{u_z[i,j+1]_{t} - 2u_z[i,j]_{t} + u_z[i,j-1]_{t}}{</span>
+<span class="sd">                \Delta x^2}</span>
+<span class="sd">        \right)</span>
+<span class="sd">    \\[0.3cm]&amp;</span>
+<span class="sd">    \left.</span>
+<span class="sd">        +</span>
+<span class="sd">        (\lambda[i,j] + \mu[i,j])</span>
+<span class="sd">        \left(</span>
+<span class="sd">            \frac{u_x[i,j]_{t} - u_x[i-1,j]_{t} - u_x[i,j-1]_{t} +</span>
+<span class="sd">            u_x[i-1,j-1]_{t}</span>
+<span class="sd">            }{\Delta x\Delta z}</span>
+<span class="sd">        \right)</span>
+<span class="sd">    \right\rbrace</span>
+<span class="sd">    \end{align*}</span>
+
+
+<span class="sd">----</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c">#from multiprocessing import Pool, Array</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="kn">import</span> <span class="nn">fatiando.logger</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">fatiando</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">dummy</span><span class="p">(</span><span class="s">&#39;fatiando.seismic.wavefd&#39;</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">fatiando.seismic._wavefd</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">fatiando.seismic._cwavefd</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<div class="viewcode-block" id="MexHatSource"><a class="viewcode-back" href="../../../api/seismic.wavefd.html#fatiando.seismic.wavefd.MexHatSource">[docs]</a><span class="k">class</span> <span class="nc">MexHatSource</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">r&quot;&quot;&quot;</span>
+<span class="sd">    A wave source that vibrates as a mexicam hat (Ricker) wavelet.</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \psi(t) = A\frac{2}{\sqrt{3\sigma}\pi^{\frac{1}{4}}}</span>
+<span class="sd">        \left( 1 - \frac{t^2}{\sigma^2} \right)</span>
+<span class="sd">        \exp\left(\frac{-t^2}{2\sigma^2}\right)</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * i, j : int</span>
+<span class="sd">        The i,j coordinates of the source in the target finite difference grid.</span>
+<span class="sd">        i is the index for z, j for x</span>
+<span class="sd">    * amp : float</span>
+<span class="sd">        The amplitude of the source (:math:`A`)</span>
+<span class="sd">    * wlength : float</span>
+<span class="sd">        The &quot;wave length&quot; (:math:`\sigma`)</span>
+<span class="sd">    * delay : float</span>
+<span class="sd">        The delay before the source starts</span>
+
+<span class="sd">        .. note:: If you want the source to start with amplitude close to 0, use</span>
+<span class="sd">            ``delay = 3.5*wlength``.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">wlength</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">i</span> <span class="o">=</span> <span class="n">i</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">j</span> <span class="o">=</span> <span class="n">j</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">amp</span> <span class="o">=</span> <span class="n">amp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wlength</span> <span class="o">=</span> <span class="n">wlength</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delay</span> <span class="o">=</span> <span class="n">delay</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">delay</span>
+        <span class="n">psi</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">amp</span><span class="o">*</span>
+            <span class="p">(</span><span class="mf">2.</span><span class="o">/</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">3.</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">wlength</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="o">**</span><span class="mf">0.25</span><span class="p">)))</span><span class="o">*</span>
+            <span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="p">(</span><span class="n">t</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wlength</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span><span class="o">*</span>
+            <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">t</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">wlength</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="n">psi</span>
+
+<div class="viewcode-block" id="MexHatSource.coords"><a class="viewcode-back" href="../../../api/seismic.wavefd.html#fatiando.seismic.wavefd.MexHatSource.coords">[docs]</a>    <span class="k">def</span> <span class="nf">coords</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the i,j coordinates of the source in the finite difference grid.</span>
+
+<span class="sd">        Returns:</span>
+
+<span class="sd">        * (i,j) : tuple</span>
+<span class="sd">            The i,j coordinates</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">j</span><span class="p">)</span>
+</div></div>
+<div class="viewcode-block" id="SinSqrSource"><a class="viewcode-back" href="../../../api/seismic.wavefd.html#fatiando.seismic.wavefd.SinSqrSource">[docs]</a><span class="k">class</span> <span class="nc">SinSqrSource</span><span class="p">(</span><span class="n">MexHatSource</span><span class="p">):</span>
+    <span class="sd">r&quot;&quot;&quot;</span>
+<span class="sd">    A wave source that vibrates as a sine squared function.</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \psi(t) = A\sin\left(t\frac{2\pi}{T}\right)^2</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * i, j : int</span>
+<span class="sd">        The i,j coordinates of the source in the target finite difference grid.</span>
+<span class="sd">        i is the index for z, j for x</span>
+<span class="sd">    * amp : float</span>
+<span class="sd">        The amplitude of the source (:math:`A`)</span>
+<span class="sd">    * wlength : float</span>
+<span class="sd">        The wave length (:math:`T`)</span>
+<span class="sd">    * delay : float</span>
+<span class="sd">        The delay before the source starts</span>
+
+<span class="sd">        .. note:: If you want the source to start with amplitude close to 0, use</span>
+<span class="sd">            ``delay = 3.5*wlength``.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">wlength</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="n">MexHatSource</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">wlength</span><span class="p">,</span> <span class="n">delay</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">delay</span>
+        <span class="k">if</span> <span class="n">t</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">wlength</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="n">psi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">amp</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">t</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wlength</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span>
+        <span class="k">return</span> <span class="n">psi</span>
+</div>
+<div class="viewcode-block" id="lame"><a class="viewcode-back" href="../../../api/seismic.wavefd.html#fatiando.seismic.wavefd.lame">[docs]</a><span class="k">def</span> <span class="nf">lame</span><span class="p">(</span><span class="n">pvel</span><span class="p">,</span> <span class="n">svel</span><span class="p">,</span> <span class="n">dens</span><span class="p">):</span>
+    <span class="sd">r&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the Lame constants :math:`\lambda` and :math:`\mu` from the</span>
+<span class="sd">    P and S wave velocities (:math:`\alpha` and :math:`\beta`) and the density</span>
+<span class="sd">    (:math:`\rho`).</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \mu = \beta^2 \rho</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \lambda = \alpha^2 \rho - 2\mu</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * pvel : float or array</span>
+<span class="sd">        The P wave velocity</span>
+<span class="sd">    * svel : float or array</span>
+<span class="sd">        The S wave velocity</span>
+<span class="sd">    * dens : float or array</span>
+<span class="sd">        The density</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * [lambda, mu] : floats or arrays</span>
+<span class="sd">        The Lame constants</span>
+
+<span class="sd">    Examples::</span>
+
+<span class="sd">        &gt;&gt;&gt; print lame(2000, 1000, 2700)</span>
+<span class="sd">        (5400000000, 2700000000)</span>
+<span class="sd">        &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">        &gt;&gt;&gt; pv = np.array([2000, 3000])</span>
+<span class="sd">        &gt;&gt;&gt; sv = np.array([1000, 1700])</span>
+<span class="sd">        &gt;&gt;&gt; dens = np.array([2700, 3100])</span>
+<span class="sd">        &gt;&gt;&gt; lamb, mu = lame(pv, sv, dens)</span>
+<span class="sd">        &gt;&gt;&gt; print lamb</span>
+<span class="sd">        [5400000000 9982000000]</span>
+<span class="sd">        &gt;&gt;&gt; print mu</span>
+<span class="sd">        [2700000000 8959000000]</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mu</span> <span class="o">=</span> <span class="n">dens</span><span class="o">*</span><span class="n">svel</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">lamb</span> <span class="o">=</span> <span class="n">dens</span><span class="o">*</span><span class="n">pvel</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">mu</span>
+    <span class="k">return</span> <span class="n">lamb</span><span class="p">,</span> <span class="n">mu</span>
+</div>
+<span class="k">def</span> <span class="nf">_add_pad</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">pad</span><span class="p">,</span> <span class="n">shape</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Pad the array with the values of the borders</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">array_pad</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+    <span class="n">array_pad</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">,</span> <span class="n">pad</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">]</span> <span class="o">=</span> <span class="n">array</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">pad</span><span class="p">):</span>
+        <span class="n">array_pad</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">,</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">array</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">array_pad</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">,</span><span class="o">-</span><span class="p">(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">array</span><span class="p">[:,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">pad</span><span class="p">):</span>
+        <span class="n">array_pad</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="n">pad</span> <span class="o">-</span> <span class="n">k</span><span class="p">),:]</span> <span class="o">=</span> <span class="n">array_pad</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="n">pad</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),:]</span>
+    <span class="n">array_pad</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">array_pad</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span>
+    <span class="n">array_pad</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">array_pad</span><span class="p">[</span><span class="mi">2</span><span class="p">,:]</span>
+    <span class="k">return</span> <span class="n">array_pad</span>
+
+<span class="k">def</span> <span class="nf">_split_grid</span><span class="p">(</span><span class="n">split</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">nz</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Split the grid in split=(Sz, Sx) parts.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">jobsz</span><span class="p">,</span> <span class="n">jobsx</span> <span class="o">=</span> <span class="n">split</span>
+    <span class="n">nz_perjob</span> <span class="o">=</span> <span class="n">nz</span><span class="o">/</span><span class="n">jobsz</span>
+    <span class="n">nx_perjob</span> <span class="o">=</span> <span class="n">nx</span><span class="o">/</span><span class="n">jobsx</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">jobsz</span><span class="p">):</span>
+        <span class="n">z1</span> <span class="o">=</span> <span class="n">i</span><span class="o">*</span><span class="n">nz_perjob</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">jobsz</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">z2</span> <span class="o">=</span> <span class="n">nz</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">z2</span> <span class="o">=</span> <span class="n">z1</span> <span class="o">+</span> <span class="n">nz_perjob</span> <span class="o">+</span> <span class="mi">4</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">jobsx</span><span class="p">):</span>
+            <span class="n">x1</span> <span class="o">=</span> <span class="n">j</span><span class="o">*</span><span class="n">nx_perjob</span>
+            <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="n">jobsx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">x2</span> <span class="o">=</span> <span class="n">nx</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">x2</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">+</span> <span class="n">nx_perjob</span> <span class="o">+</span> <span class="mi">4</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">z1</span><span class="p">,</span> <span class="n">z2</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">parts</span>
+
+<div class="viewcode-block" id="elastic_sh"><a class="viewcode-back" href="../../../api/seismic.wavefd.html#fatiando.seismic.wavefd.elastic_sh">[docs]</a><span class="k">def</span> <span class="nf">elastic_sh</span><span class="p">(</span><span class="n">spacing</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">svel</span><span class="p">,</span> <span class="n">dens</span><span class="p">,</span> <span class="n">deltat</span><span class="p">,</span> <span class="n">iterations</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span>
+    <span class="n">padding</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">partition</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Simulate SH waves using an explicit finite differences scheme.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * spacing : (dz, dx)</span>
+<span class="sd">        The node spacing of the finite differences grid</span>
+<span class="sd">    * shape : (nz, nx)</span>
+<span class="sd">        The number of nodes in the grid in the z and x directions</span>
+<span class="sd">    * svel : 2D-array (shape = *shape*)</span>
+<span class="sd">        The S wave velocity at all the grid nodes</span>
+<span class="sd">    * dens : 2D-array (shape = *shape*)</span>
+<span class="sd">        The value of the density at all the grid nodes</span>
+<span class="sd">    * deltat : float</span>
+<span class="sd">        The time interval between iterations</span>
+<span class="sd">    * iterations : int</span>
+<span class="sd">        Number of time steps to take</span>
+<span class="sd">    * sources : list</span>
+<span class="sd">        A list of the sources of waves</span>
+<span class="sd">        (see :class:`~fatiando.seismic.wavefd.MexHatSource` for an example</span>
+<span class="sd">        source)</span>
+<span class="sd">    * padding : float</span>
+<span class="sd">        The decimal percentage of padding to use in the grid to avoid</span>
+<span class="sd">        reflections at the borders</span>
+<span class="sd">    * partition : tuple = (sz, sx)</span>
+<span class="sd">        How to split the grid for parallel computation. Number of parts in z and</span>
+<span class="sd">        x, respectively</span>
+
+<span class="sd">    Yields:</span>
+
+<span class="sd">    * uy : 2D-array</span>
+<span class="sd">        The particle movement in the y direction at each time step</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">nz</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="n">shape</span>
+    <span class="n">dz</span><span class="p">,</span> <span class="n">dx</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">spacing</span><span class="p">)</span>
+    <span class="c"># Add some nodes in x and z for padding to avoid reflections</span>
+    <span class="n">pad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">padding</span><span class="o">*</span><span class="nb">max</span><span class="p">(</span><span class="n">shape</span><span class="p">))</span>
+    <span class="n">decay</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="mi">20</span><span class="o">*</span><span class="n">pad</span><span class="p">)</span>
+    <span class="n">nx</span> <span class="o">+=</span> <span class="mi">2</span><span class="o">*</span><span class="n">pad</span>
+    <span class="n">nz</span> <span class="o">+=</span> <span class="n">pad</span> <span class="o">+</span> <span class="mi">2</span> <span class="c"># +2 is to remove the 2 nodes for the top boundary condition</span>
+    <span class="c"># Pad the velocity as well</span>
+    <span class="n">svel_pad</span> <span class="o">=</span> <span class="n">_add_pad</span><span class="p">(</span><span class="n">svel</span><span class="p">,</span> <span class="n">pad</span><span class="p">,</span> <span class="p">(</span><span class="n">nz</span><span class="p">,</span> <span class="n">nx</span><span class="p">))</span>
+    <span class="c"># Pack the particle position u at 3 different times in one 3d array</span>
+    <span class="c"># u[0] = u(t-1)</span>
+    <span class="c"># u[1] = u(t)</span>
+    <span class="c"># u[2] = u(t+1)</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="n">nz</span><span class="p">,</span> <span class="n">nx</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+    <span class="c"># Compute and yield the initial solutions</span>
+    <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">sources</span><span class="p">:</span>
+        <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">coords</span><span class="p">()</span>
+        <span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">+</span> <span class="n">pad</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="n">deltat</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">dens</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span><span class="o">*</span><span class="n">src</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">,</span> <span class="n">pad</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">]</span>
+    <span class="k">yield</span> <span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">,</span> <span class="n">pad</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">]</span>
+    <span class="c"># Start the process pool</span>
+    <span class="c">#jobs = partition[0]*partition[1]</span>
+    <span class="c">#if jobs &gt; 1:</span>
+        <span class="c">#parts = _split_grid(split, nx, nz)</span>
+        <span class="c">#shr_u = Array(&#39;d&#39;, u.ravel())</span>
+        <span class="c">#shr_svel_pad = Array(&#39;d&#39;, svel_pad.ravel())</span>
+        <span class="c">#u = numpy.frombuffer(shr_u.get_obj()).reshape((3, nz, nx))</span>
+        <span class="c">#svel_pad = numpy.frombuffer(shr_svel_pad.get_obj()).reshape((nz, nx))</span>
+        <span class="c">#def init(u_, svel_):</span>
+            <span class="c">#global u, svel_pad</span>
+            <span class="c">#u = u_</span>
+            <span class="c">#svel_pad = svel_</span>
+        <span class="c">#pool = Pool(jobs, initializer=init, initargs=(u, svel_pad))</span>
+    <span class="c"># Time steps</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">iterations</span><span class="p">):</span>
+        <span class="n">utp1</span><span class="p">,</span> <span class="n">ut</span><span class="p">,</span> <span class="n">utm1</span> <span class="o">=</span> <span class="p">(</span><span class="n">t</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="mi">3</span><span class="p">,</span> <span class="n">t</span><span class="o">%</span><span class="mi">3</span><span class="p">,</span> <span class="p">(</span><span class="n">t</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="mi">3</span>
+        <span class="n">_step_elastic_sh</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="n">utp1</span><span class="p">],</span> <span class="n">u</span><span class="p">[</span><span class="n">ut</span><span class="p">],</span> <span class="n">u</span><span class="p">[</span><span class="n">utm1</span><span class="p">],</span> <span class="mi">2</span><span class="p">,</span> <span class="n">nx</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">nz</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="n">deltat</span><span class="p">,</span> <span class="n">dx</span><span class="p">,</span> <span class="n">dz</span><span class="p">,</span> <span class="n">svel_pad</span><span class="p">)</span>
+        <span class="c"># Damp the regions in the padding to make waves go to infinity</span>
+        <span class="n">_apply_damping</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="n">utp1</span><span class="p">],</span> <span class="n">nx</span><span class="p">,</span> <span class="n">nz</span><span class="p">,</span> <span class="n">pad</span><span class="p">,</span> <span class="n">decay</span><span class="p">)</span>
+        <span class="c"># Set the boundary conditions</span>
+        <span class="n">_boundary_conditions</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="n">utp1</span><span class="p">],</span> <span class="n">nx</span><span class="p">,</span> <span class="n">nz</span><span class="p">)</span>
+        <span class="c"># Update the sources</span>
+        <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">sources</span><span class="p">:</span>
+            <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">coords</span><span class="p">()</span>
+            <span class="n">u</span><span class="p">[</span><span class="n">utp1</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">j</span> <span class="o">+</span> <span class="n">pad</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="n">deltat</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">dens</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span><span class="o">*</span><span class="n">src</span><span class="p">(</span><span class="n">t</span><span class="o">*</span><span class="n">deltat</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">u</span><span class="p">[</span><span class="n">utp1</span><span class="p">][</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">,</span> <span class="n">pad</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">]</span>
+    <span class="c">#if jobs &gt; 1:</span>
+        <span class="c">#pool.close()</span>
+        <span class="c">#pool.join()</span>
+</div>
+<div class="viewcode-block" id="elastic_psv"><a class="viewcode-back" href="../../../api/seismic.wavefd.html#fatiando.seismic.wavefd.elastic_psv">[docs]</a><span class="k">def</span> <span class="nf">elastic_psv</span><span class="p">(</span><span class="n">spacing</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">pvel</span><span class="p">,</span> <span class="n">svel</span><span class="p">,</span> <span class="n">dens</span><span class="p">,</span> <span class="n">deltat</span><span class="p">,</span> <span class="n">iterations</span><span class="p">,</span> <span class="n">xsources</span><span class="p">,</span>
+    <span class="n">zsources</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">partition</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Simulate P and SV waves using an explicit finite differences scheme.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * spacing : (dz, dx)</span>
+<span class="sd">        The node spacing of the finite differences grid</span>
+<span class="sd">    * shape : (nz, nx)</span>
+<span class="sd">        The number of nodes in the grid in the z and x directions</span>
+<span class="sd">    * svel : 2D-array (shape = *shape*)</span>
+<span class="sd">        The S wave velocity at all the grid nodes</span>
+<span class="sd">    * dens : 2D-array (shape = *shape*)</span>
+<span class="sd">        The value of the density at all the grid nodes</span>
+<span class="sd">    * deltat : float</span>
+<span class="sd">        The time interval between iterations</span>
+<span class="sd">    * iterations : int</span>
+<span class="sd">        Number of time steps to take</span>
+<span class="sd">    * xsources : list</span>
+<span class="sd">        A list of the sources of waves for the particle movement in the x</span>
+<span class="sd">        direction</span>
+<span class="sd">        (see :class:`~fatiando.seismic.wavefd.MexHatSource` for an example</span>
+<span class="sd">        source)</span>
+<span class="sd">    * zsources : list</span>
+<span class="sd">        A list of the sources of waves for the particle movement in the z</span>
+<span class="sd">        direction</span>
+<span class="sd">    * padding : float</span>
+<span class="sd">        The decimal percentage of padding to use in the grid to avoid</span>
+<span class="sd">        reflections at the borders</span>
+<span class="sd">    * partition : tuple = (sz, sx)</span>
+<span class="sd">        How to split the grid for parallel computation. Number of parts in z and</span>
+<span class="sd">        x, respectively</span>
+
+<span class="sd">    Yields:</span>
+
+<span class="sd">    * ux, uz : 2D-arrays</span>
+<span class="sd">        The particle movement in the x and z direction at each time step</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">nz</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="n">shape</span>
+    <span class="n">dz</span><span class="p">,</span> <span class="n">dx</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">spacing</span><span class="p">)</span>
+    <span class="c"># Add some nodes in x and z for padding to avoid reflections</span>
+    <span class="n">pad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">padding</span><span class="o">*</span><span class="nb">max</span><span class="p">(</span><span class="n">shape</span><span class="p">))</span>
+    <span class="n">decay</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="mi">20</span><span class="o">*</span><span class="n">pad</span><span class="p">)</span>
+    <span class="n">nx</span> <span class="o">+=</span> <span class="mi">2</span><span class="o">*</span><span class="n">pad</span>
+    <span class="n">nz</span> <span class="o">+=</span> <span class="n">pad</span> <span class="o">+</span> <span class="mi">2</span> <span class="c"># +2 is to remove the 2 nodes for the top boundary condition</span>
+    <span class="c"># Pad the velocity as well</span>
+    <span class="n">pvel_pad</span> <span class="o">=</span> <span class="n">_add_pad</span><span class="p">(</span><span class="n">pvel</span><span class="p">,</span> <span class="n">pad</span><span class="p">,</span> <span class="p">(</span><span class="n">nz</span><span class="p">,</span> <span class="n">nx</span><span class="p">))</span>
+    <span class="n">svel_pad</span> <span class="o">=</span> <span class="n">_add_pad</span><span class="p">(</span><span class="n">svel</span><span class="p">,</span> <span class="n">pad</span><span class="p">,</span> <span class="p">(</span><span class="n">nz</span><span class="p">,</span> <span class="n">nx</span><span class="p">))</span>
+    <span class="c"># Compute and yield the initial solutions</span>
+    <span class="n">ux</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="n">nz</span><span class="p">,</span> <span class="n">nx</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+    <span class="n">uz</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="n">nz</span><span class="p">,</span> <span class="n">nx</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">xsources</span><span class="p">:</span>
+        <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">coords</span><span class="p">()</span>
+        <span class="n">ux</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">+</span> <span class="n">pad</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="n">deltat</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">dens</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span><span class="o">*</span><span class="n">src</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">zsources</span><span class="p">:</span>
+        <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">coords</span><span class="p">()</span>
+        <span class="n">uz</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">+</span> <span class="n">pad</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="n">deltat</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">dens</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span><span class="o">*</span><span class="n">src</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="n">ux</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">,</span> <span class="n">pad</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">],</span> <span class="n">uz</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">,</span> <span class="n">pad</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">]</span>
+    <span class="k">yield</span> <span class="n">ux</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">,</span> <span class="n">pad</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">],</span> <span class="n">uz</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">,</span> <span class="n">pad</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">]</span>
+    <span class="c"># Start the process pool</span>
+    <span class="c">#if jobs &gt; 1:</span>
+        <span class="c">#parts = _split_grid(split, nx, nz)</span>
+        <span class="c">#shr_ux = Array(&#39;d&#39;, ux.ravel())</span>
+        <span class="c">#shr_uz = Array(&#39;d&#39;, uz.ravel())</span>
+        <span class="c">#shr_svel_pad = Array(&#39;d&#39;, svel_pad.ravel())</span>
+        <span class="c">#shr_pvel_pad = Array(&#39;d&#39;, pvel_pad.ravel())</span>
+        <span class="c">#ux = numpy.frombuffer(shr_ux.get_obj()).reshape((3, nz, nx))</span>
+        <span class="c">#uz = numpy.frombuffer(shr_uz.get_obj()).reshape((3, nz, nx))</span>
+        <span class="c">#svel_pad = numpy.frombuffer(shr_svel_pad.get_obj()).reshape((nz, nx))</span>
+        <span class="c">#pvel_pad = numpy.frombuffer(shr_pvel_pad.get_obj()).reshape((nz, nx))</span>
+        <span class="c">#def init(ux_, uz_, svel_, pvel_):</span>
+            <span class="c">#global ux, uz, svel_pad, pvel_pad</span>
+            <span class="c">#ux = ux_</span>
+            <span class="c">#uz = uz_</span>
+            <span class="c">#svel_pad = svel_</span>
+            <span class="c">#pvel_pad = pvel_</span>
+        <span class="c">#poolx = Pool(jobs/2, initializer=init,</span>
+            <span class="c">#initargs=(ux, uz, svel_pad, pvel_pad))</span>
+        <span class="c">#poolz = Pool(jobs/2, initializer=init,</span>
+            <span class="c">#initargs=(ux, uz, svel_pad, pvel_pad))</span>
+    <span class="c"># Time steps</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">iterations</span><span class="p">):</span>
+        <span class="n">utp1</span><span class="p">,</span> <span class="n">ut</span><span class="p">,</span> <span class="n">utm1</span> <span class="o">=</span> <span class="p">(</span><span class="n">t</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="mi">3</span><span class="p">,</span> <span class="n">t</span><span class="o">%</span><span class="mi">3</span><span class="p">,</span> <span class="p">(</span><span class="n">t</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="mi">3</span>
+        <span class="n">_step_elastic_psv_x</span><span class="p">(</span><span class="n">ux</span><span class="p">[</span><span class="n">utp1</span><span class="p">],</span> <span class="n">ux</span><span class="p">[</span><span class="n">ut</span><span class="p">],</span> <span class="n">ux</span><span class="p">[</span><span class="n">utm1</span><span class="p">],</span> <span class="n">uz</span><span class="p">[</span><span class="n">ut</span><span class="p">],</span> <span class="mi">2</span><span class="p">,</span> <span class="n">nx</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="mi">2</span><span class="p">,</span> <span class="n">nz</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,</span> <span class="n">deltat</span><span class="p">,</span> <span class="n">dx</span><span class="p">,</span> <span class="n">dz</span><span class="p">,</span> <span class="n">pvel_pad</span><span class="p">,</span> <span class="n">svel_pad</span><span class="p">)</span>
+        <span class="n">_step_elastic_psv_z</span><span class="p">(</span><span class="n">uz</span><span class="p">[</span><span class="n">utp1</span><span class="p">],</span> <span class="n">uz</span><span class="p">[</span><span class="n">ut</span><span class="p">],</span> <span class="n">uz</span><span class="p">[</span><span class="n">utm1</span><span class="p">],</span> <span class="n">ux</span><span class="p">[</span><span class="n">ut</span><span class="p">],</span> <span class="mi">2</span><span class="p">,</span> <span class="n">nx</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="mi">2</span><span class="p">,</span> <span class="n">nz</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,</span> <span class="n">deltat</span><span class="p">,</span> <span class="n">dx</span><span class="p">,</span> <span class="n">dz</span><span class="p">,</span> <span class="n">pvel_pad</span><span class="p">,</span> <span class="n">svel_pad</span><span class="p">)</span>
+        <span class="c"># Damp the regions in the padding to make waves go to infinity</span>
+        <span class="n">_apply_damping</span><span class="p">(</span><span class="n">ux</span><span class="p">[</span><span class="n">utp1</span><span class="p">],</span> <span class="n">nx</span><span class="p">,</span> <span class="n">nz</span><span class="p">,</span> <span class="n">pad</span><span class="p">,</span> <span class="n">decay</span><span class="p">)</span>
+        <span class="n">_apply_damping</span><span class="p">(</span><span class="n">uz</span><span class="p">[</span><span class="n">utp1</span><span class="p">],</span> <span class="n">nx</span><span class="p">,</span> <span class="n">nz</span><span class="p">,</span> <span class="n">pad</span><span class="p">,</span> <span class="n">decay</span><span class="p">)</span>
+        <span class="c"># Set the boundary conditions</span>
+        <span class="n">_boundary_conditions</span><span class="p">(</span><span class="n">ux</span><span class="p">[</span><span class="n">utp1</span><span class="p">],</span> <span class="n">nx</span><span class="p">,</span> <span class="n">nz</span><span class="p">)</span>
+        <span class="n">_boundary_conditions</span><span class="p">(</span><span class="n">uz</span><span class="p">[</span><span class="n">utp1</span><span class="p">],</span> <span class="n">nx</span><span class="p">,</span> <span class="n">nz</span><span class="p">)</span>
+        <span class="c"># Update the sources</span>
+        <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">xsources</span><span class="p">:</span>
+            <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">coords</span><span class="p">()</span>
+            <span class="n">ux</span><span class="p">[</span><span class="n">utp1</span><span class="p">][</span><span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">j</span> <span class="o">+</span> <span class="n">pad</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="n">deltat</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">dens</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span><span class="o">*</span><span class="n">src</span><span class="p">(</span><span class="n">t</span><span class="o">*</span><span class="n">deltat</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">zsources</span><span class="p">:</span>
+            <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">coords</span><span class="p">()</span>
+            <span class="n">uz</span><span class="p">[</span><span class="n">utp1</span><span class="p">][</span><span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">j</span> <span class="o">+</span> <span class="n">pad</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="n">deltat</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">dens</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span><span class="o">*</span><span class="n">src</span><span class="p">(</span><span class="n">t</span><span class="o">*</span><span class="n">deltat</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">ux</span><span class="p">[</span><span class="n">utp1</span><span class="p">][</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">,</span> <span class="n">pad</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">],</span> <span class="n">uz</span><span class="p">[</span><span class="n">utp1</span><span class="p">][</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">,</span> <span class="n">pad</span><span class="p">:</span><span class="o">-</span><span class="n">pad</span><span class="p">]</span>
+    <span class="c">#if jobs &gt; 1:</span>
+        <span class="c">#poolx.close()</span>
+        <span class="c">#poolx.join()</span>
+        <span class="c">#poolz.close()</span>
+        <span class="c">#poolz.join()</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

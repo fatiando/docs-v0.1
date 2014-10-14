@@ -1,0 +1,354 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Gridding (fatiando.gridder) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="API Reference: The fatiando package" href="fatiando.html" />
+    <link rel="next" title="Visualization (fatiando.vis)" href="vis.html" />
+    <link rel="prev" title="Meshing (fatiando.mesher)" href="mesher.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="vis.html" title="Visualization (fatiando.vis)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="mesher.html" title="Meshing (fatiando.mesher)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" accesskey="U">API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.gridder">
+<span id="gridding-fatiando-gridder"></span><span id="fatiando-gridder"></span><h1>Gridding (<tt class="docutils literal"><span class="pre">fatiando.gridder</span></tt>)<a class="headerlink" href="#module-fatiando.gridder" title="Permalink to this headline">¶</a></h1>
+<p>Create and operate on grids and profiles.</p>
+<p><strong>Grid generation</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.gridder.regular" title="fatiando.gridder.regular"><tt class="xref py py-func docutils literal"><span class="pre">regular</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.gridder.scatter" title="fatiando.gridder.scatter"><tt class="xref py py-func docutils literal"><span class="pre">scatter</span></tt></a></li>
+</ul>
+<p><strong>Grid I/O</strong></p>
+<p><strong>Grid operations</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.gridder.cut" title="fatiando.gridder.cut"><tt class="xref py py-func docutils literal"><span class="pre">cut</span></tt></a></li>
+<li><a class="reference internal" href="#fatiando.gridder.interp" title="fatiando.gridder.interp"><tt class="xref py py-func docutils literal"><span class="pre">interp</span></tt></a></li>
+</ul>
+<p><strong>Misc</strong></p>
+<ul class="simple">
+<li><a class="reference internal" href="#fatiando.gridder.spacing" title="fatiando.gridder.spacing"><tt class="xref py py-func docutils literal"><span class="pre">spacing</span></tt></a></li>
+</ul>
+<hr class="docutils" />
+<dl class="function">
+<dt id="fatiando.gridder.cut">
+<tt class="descclassname">fatiando.gridder.</tt><tt class="descname">cut</tt><big>(</big><em>x</em>, <em>y</em>, <em>scalars</em>, <em>area</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gridder.html#cut"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gridder.cut" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a subsection of a grid.</p>
+<p>The returned subsection is not a copy! In technical terms, returns a slice
+of the numpy arrays. So changes made to the subsection reflect on the
+original grid. Use numpy.copy to make copies of the subsections and avoid
+this.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>x, y</dt>
+<dd><p class="first last">Arrays with the x and y coordinates of the data points.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>scalars</dt>
+<dd><p class="first last">List of arrays with the scalar values assigned to the grid points.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>area</dt>
+<dd><p class="first last"><tt class="docutils literal"><span class="pre">(x1,</span> <span class="pre">x2,</span> <span class="pre">y1,</span> <span class="pre">y2)</span></tt>: Borders of the subsection</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">[subx,</span> <span class="pre">suby,</span> <span class="pre">subscalars]</span></tt></dt>
+<dd><p class="first last">Arrays with x and y coordinates and scalar values of the subsection.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gridder.interp">
+<tt class="descclassname">fatiando.gridder.</tt><tt class="descname">interp</tt><big>(</big><em>x</em>, <em>y</em>, <em>v</em>, <em>shape</em>, <em>area=None</em>, <em>algorithm='nn'</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gridder.html#interp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gridder.interp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interpolate data onto a regular grid.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Doesn&#8217;t extrapolate. Will return a masked array in the
+extrapolated areas.</p>
+</div>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>x, y <span class="classifier-delimiter">:</span> <span class="classifier">1D arrays</span></dt>
+<dd><p class="first last">Arrays with the x and y coordinates of the data points.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>v <span class="classifier-delimiter">:</span> <span class="classifier">1D array</span></dt>
+<dd><p class="first last">Array with the scalar value assigned to the data points.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>shape <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (ny, nx)</span></dt>
+<dd><p class="first last">Shape of the interpolated regular grid, ie (ny, nx).</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>area <span class="classifier-delimiter">:</span> <span class="classifier">tuple = (x1, x2, y1, y2)</span></dt>
+<dd><p class="first last">The are where the data will be interpolated. If None, then will get the
+area from <em>x</em> and <em>y</em>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>algorithm <span class="classifier-delimiter">:</span> <span class="classifier">string</span></dt>
+<dd><p class="first last">Interpolation algorithm. Either <tt class="docutils literal"><span class="pre">'nn'</span></tt> for natural neighbor
+or <tt class="docutils literal"><span class="pre">'linear'</span></tt> for linear interpolation. (see numpy.griddata)</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">[X,</span> <span class="pre">Y,</span> <span class="pre">V]</span></tt></dt>
+<dd><p class="first last">Three 2D arrays with the interpolated x, y, and v</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gridder.regular">
+<tt class="descclassname">fatiando.gridder.</tt><tt class="descname">regular</tt><big>(</big><em>area</em>, <em>shape</em>, <em>z=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gridder.html#regular"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gridder.regular" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a regular grid. Order of the output grid is x varies first, then y.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>area</dt>
+<dd><p class="first last"><tt class="docutils literal"><span class="pre">(x1,</span> <span class="pre">x2,</span> <span class="pre">y1,</span> <span class="pre">y2)</span></tt>: Borders of the grid</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>shape</dt>
+<dd><p class="first last">Shape of the regular grid, ie <tt class="docutils literal"><span class="pre">(ny,</span> <span class="pre">nx)</span></tt>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>z</dt>
+<dd><p class="first last">Optional. z coordinate of the grid points. If given, will return an
+array with the value <em>z</em>.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">[xcoords,</span> <span class="pre">ycoords]</span></tt></dt>
+<dd><p class="first last">Numpy arrays with the x and y coordinates of the grid points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">[xcoords,</span> <span class="pre">ycoords,</span> <span class="pre">zcoords]</span></tt></dt>
+<dd><p class="first last">If <em>z</em> given. Numpy arrays with the x, y, and z coordinates of the grid
+points</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gridder.scatter">
+<tt class="descclassname">fatiando.gridder.</tt><tt class="descname">scatter</tt><big>(</big><em>area</em>, <em>n</em>, <em>z=None</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gridder.html#scatter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gridder.scatter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an irregular grid with a random scattering of points.</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>area</dt>
+<dd><p class="first last"><tt class="docutils literal"><span class="pre">(x1,</span> <span class="pre">x2,</span> <span class="pre">y1,</span> <span class="pre">y2)</span></tt>: Borders of the grid</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>n</dt>
+<dd><p class="first last">Number of points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>z</dt>
+<dd><p class="first last">Optional. z coordinate of the points. If given, will return an
+array with the value <em>z</em>.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">[xcoords,</span> <span class="pre">ycoords]</span></tt></dt>
+<dd><p class="first last">Numpy arrays with the x and y coordinates of the points</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">[xcoords,</span> <span class="pre">ycoords,</span> <span class="pre">zcoords]</span></tt></dt>
+<dd><p class="first last">If <em>z</em> given. Arrays with the x, y, and z coordinates of the points</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="fatiando.gridder.spacing">
+<tt class="descclassname">fatiando.gridder.</tt><tt class="descname">spacing</tt><big>(</big><em>area</em>, <em>shape</em><big>)</big><a class="reference internal" href="../_modules/fatiando/gridder.html#spacing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fatiando.gridder.spacing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the spacing between grid nodes</p>
+<p>Parameters:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>area</dt>
+<dd><p class="first last"><tt class="docutils literal"><span class="pre">(x1,</span> <span class="pre">x2,</span> <span class="pre">y1,</span> <span class="pre">y2)</span></tt>: Borders of the grid</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>shape</dt>
+<dd><p class="first last">Shape of the regular grid, ie <tt class="docutils literal"><span class="pre">(ny,</span> <span class="pre">nx)</span></tt>.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">[dy,</span> <span class="pre">dx]</span></tt></dt>
+<dd><p class="first last">Spacing the y and x directions</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="mesher.html"
+                        title="previous chapter">Meshing (<tt class="docutils literal"><span class="pre">fatiando.mesher</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="vis.html"
+                        title="next chapter">Visualization (<tt class="docutils literal"><span class="pre">fatiando.vis</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/gridder.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="vis.html" title="Visualization (fatiando.vis)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="mesher.html" title="Meshing (fatiando.mesher)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

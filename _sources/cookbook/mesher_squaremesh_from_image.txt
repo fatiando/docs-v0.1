@@ -1,0 +1,12 @@
+.. _cookbook_mesher_squaremesh_from_image:
+
+Meshing: Generate a SquareMesh and get the physical properties from an image
+=============================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/mesher_squaremesh_from_image.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/mesher_squaremesh_from_image.py
+    :language: python
+    :linenos:

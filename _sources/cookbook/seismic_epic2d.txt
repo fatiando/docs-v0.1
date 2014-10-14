@@ -1,0 +1,12 @@
+.. _cookbook_seismic_epic2d:
+
+Seismic: 2D epicenter estimation assuming a homogeneous and flat Earth
+=======================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/seismic_epic2d.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/seismic_epic2d.py
+    :language: python
+    :linenos:

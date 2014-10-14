@@ -1,0 +1,238 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Seismic: Invert vertical seismic profile (VSP) traveltimes using sharpness regularization &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="Cookbook" href="../cookbook.html" />
+    <link rel="next" title="Seismic: Invert vertical seismic profile (VSP) traveltimes using smoothness regularization" href="seismic_profile_vertical_smooth.html" />
+    <link rel="prev" title="Seismic: Interactive forward modeling of 1D vertical seismic profile (VSP) data in layered media" href="seismic_profile_vertical_interactive.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="seismic_profile_vertical_smooth.html" title="Seismic: Invert vertical seismic profile (VSP) traveltimes using smoothness regularization"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="seismic_profile_vertical_interactive.html" title="Seismic: Interactive forward modeling of 1D vertical seismic profile (VSP) data in layered media"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../cookbook.html" accesskey="U">Cookbook</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="seismic-invert-vertical-seismic-profile-vsp-traveltimes-using-sharpness-regularization">
+<span id="cookbook-seismic-profile-vertical-sharp"></span><h1>Seismic: Invert vertical seismic profile (VSP) traveltimes using sharpness regularization<a class="headerlink" href="#seismic-invert-vertical-seismic-profile-vsp-traveltimes-using-sharpness-regularization" title="Permalink to this headline">¶</a></h1>
+[<a href="../_static/cookbook/seismic_profile_vertical_sharp.py">source code</a>]<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56</pre></div></td><td class="code"><div class="highlight"><pre><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Seismic: Invert vertical seismic profile (VSP) traveltimes using sharpness</span>
+<span class="sd">regularization</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">logger</span><span class="p">,</span> <span class="n">utils</span><span class="p">,</span> <span class="n">seismic</span><span class="p">,</span> <span class="n">vis</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">logger</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">header</span><span class="p">())</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">__doc__</span><span class="p">)</span>
+
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Generating synthetic data&quot;</span><span class="p">)</span>
+<span class="n">thickness</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">60</span><span class="p">]</span>
+<span class="n">velocity</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2000</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">5000</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">3000</span><span class="p">,</span> <span class="mi">6000</span><span class="p">]</span>
+<span class="n">zp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="n">thickness</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;f&#39;</span><span class="p">)</span>
+<span class="n">tts</span><span class="p">,</span> <span class="n">error</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">contaminate</span><span class="p">(</span>
+    <span class="n">seismic</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">vertical</span><span class="p">(</span><span class="n">thickness</span><span class="p">,</span> <span class="n">velocity</span><span class="p">,</span> <span class="n">zp</span><span class="p">),</span>
+    <span class="mf">0.02</span><span class="p">,</span> <span class="n">percent</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">return_stddev</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Preparing for the inversion using 5 m thick layers&quot;</span><span class="p">)</span>
+<span class="n">thick</span> <span class="o">=</span> <span class="mf">10.</span>
+<span class="n">mesh</span> <span class="o">=</span> <span class="p">[</span><span class="n">thick</span><span class="p">]</span><span class="o">*</span><span class="nb">int</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">thickness</span><span class="p">)</span><span class="o">/</span><span class="n">thick</span><span class="p">)</span>
+<span class="n">sharp</span> <span class="o">=</span> <span class="mf">0.00015</span>
+<span class="n">beta</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">12</span><span class="p">)</span>
+<span class="n">estimates</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">30</span><span class="p">):</span>
+    <span class="n">p</span><span class="p">,</span> <span class="n">r</span> <span class="o">=</span> <span class="n">seismic</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">ivertical</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">contaminate</span><span class="p">(</span><span class="n">tts</span><span class="p">,</span> <span class="n">error</span><span class="p">),</span>
+        <span class="n">zp</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">sharp</span><span class="o">=</span><span class="n">sharp</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="n">beta</span><span class="p">)</span>
+    <span class="n">estimates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">p</span><span class="p">)</span>
+<span class="n">estimate</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">vecmean</span><span class="p">(</span><span class="n">estimates</span><span class="p">)</span>
+<span class="n">predicted</span> <span class="o">=</span> <span class="n">seismic</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">vertical</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">estimate</span><span class="p">,</span> <span class="n">zp</span><span class="p">)</span>
+
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Plotting results...&quot;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&quot;Vertical seismic profile&quot;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">tts</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="s">&#39;ok&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;Observed&#39;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">predicted</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="s">&#39;-r&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;Predicted&#39;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s">&#39;upper right&#39;</span><span class="p">,</span> <span class="n">numpoints</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&quot;Travel-time (s)&quot;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&quot;Z (m)&quot;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">thickness</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&quot;True velocity + sharp estimate&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">estimates</span><span class="p">:</span>
+    <span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">layers</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="s">&#39;-r&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">layers</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">estimate</span><span class="p">,</span> <span class="s">&#39;.-k&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;Mean estimate&#39;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">layers</span><span class="p">(</span><span class="n">thickness</span><span class="p">,</span> <span class="n">velocity</span><span class="p">,</span> <span class="s">&#39;--b&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;True&#39;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">thickness</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10000</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s">&#39;upper right&#39;</span><span class="p">,</span> <span class="n">numpoints</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&quot;Velocity (m/s)&quot;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&quot;Z (m)&quot;</span><span class="p">)</span>
+<span class="n">vis</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="seismic_profile_vertical_interactive.html"
+                        title="previous chapter">Seismic: Interactive forward modeling of 1D vertical seismic profile (VSP) data in layered media</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="seismic_profile_vertical_smooth.html"
+                        title="next chapter">Seismic: Invert vertical seismic profile (VSP) traveltimes using smoothness regularization</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/cookbook/seismic_profile_vertical_sharp.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="seismic_profile_vertical_smooth.html" title="Seismic: Invert vertical seismic profile (VSP) traveltimes using smoothness regularization"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="seismic_profile_vertical_interactive.html" title="Seismic: Interactive forward modeling of 1D vertical seismic profile (VSP) data in layered media"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../cookbook.html" >Cookbook</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

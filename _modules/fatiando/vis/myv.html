@@ -1,0 +1,995 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fatiando.vis.myv &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for fatiando.vis.myv</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Wrappers for calls to Mayavi2&#39;s `mlab` module for plotting</span>
+<span class="sd">:mod:`fatiando.mesher` objects and automating common tasks.</span>
+
+<span class="sd">**Objects**</span>
+
+<span class="sd">* :func:`~fatiando.vis.myv.prisms`</span>
+<span class="sd">* :func:`~fatiando.vis.myv.polyprisms`</span>
+<span class="sd">* :func:`~fatiando.vis.myv.points`</span>
+<span class="sd">* :func:`~fatiando.vis.myv.tesseroids`</span>
+
+<span class="sd">**Misc objects**</span>
+
+<span class="sd">* :func:`~fatiando.vis.myv.outline`</span>
+<span class="sd">* :func:`~fatiando.vis.myv.axes`</span>
+<span class="sd">* :func:`~fatiando.vis.myv.wall_north`</span>
+<span class="sd">* :func:`~fatiando.vis.myv.wall_south`</span>
+<span class="sd">* :func:`~fatiando.vis.myv.wall_east`</span>
+<span class="sd">* :func:`~fatiando.vis.myv.wall_west`</span>
+<span class="sd">* :func:`~fatiando.vis.myv.wall_top`</span>
+<span class="sd">* :func:`~fatiando.vis.myv.wall_bottom`</span>
+<span class="sd">* :func:`~fatiando.vis.myv.earth`</span>
+<span class="sd">* :func:`~fatiando.vis.myv.core`</span>
+<span class="sd">* :func:`~fatiando.vis.myv.continents`</span>
+<span class="sd">* :func:`~fatiando.vis.myv.meridians`</span>
+<span class="sd">* :func:`~fatiando.vis.myv.parallels`</span>
+
+<span class="sd">**Helpers**</span>
+
+<span class="sd">* :func:`~fatiando.vis.myv.figure`</span>
+<span class="sd">* :func:`~fatiando.vis.myv.title`</span>
+<span class="sd">* :func:`~fatiando.vis.myv.show`</span>
+<span class="sd">* :func:`~fatiando.vis.myv.savefig`</span>
+
+<span class="sd">----</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="kn">import</span> <span class="nn">fatiando.logger</span>
+<span class="kn">from</span> <span class="nn">fatiando</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">fatiando.constants</span> <span class="kn">import</span> <span class="n">MEAN_EARTH_RADIUS</span>
+
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">fatiando</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">dummy</span><span class="p">(</span><span class="s">&#39;fatiando.vis.myv&#39;</span><span class="p">)</span>
+
+<span class="c"># Do lazy imports of mlab and tvtk to avoid the slow imports when I don&#39;t need</span>
+<span class="c"># 3D plotting</span>
+<span class="n">mlab</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="n">tvtk</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="n">BuiltinSurface</span> <span class="o">=</span> <span class="bp">None</span>
+
+<span class="k">def</span> <span class="nf">_lazy_import_BuiltinSurface</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Do the lazy import of BuiltinSurface</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">BuiltinSurface</span>
+    <span class="k">if</span> <span class="n">BuiltinSurface</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">mayavi.sources.builtin_surface</span> <span class="kn">import</span> <span class="n">BuiltinSurface</span>
+
+<span class="k">def</span> <span class="nf">_lazy_import_mlab</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Do the lazy import of mlab</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">mlab</span>
+    <span class="c"># For campatibility with versions of Mayavi2 &lt; 4</span>
+    <span class="k">if</span> <span class="n">mlab</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">mayavi</span> <span class="kn">import</span> <span class="n">mlab</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">enthought.mayavi</span> <span class="kn">import</span> <span class="n">mlab</span>
+
+<span class="k">def</span> <span class="nf">_lazy_import_tvtk</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Do the lazy import of tvtk</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">tvtk</span>
+    <span class="c"># For campatibility with versions of Mayavi2 &lt; 4</span>
+    <span class="k">if</span> <span class="n">tvtk</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">tvtk.api</span> <span class="kn">import</span> <span class="n">tvtk</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">enthought.tvtk.api</span> <span class="kn">import</span> <span class="n">tvtk</span>
+
+<div class="viewcode-block" id="title"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.title">[docs]</a><span class="k">def</span> <span class="nf">title</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>  <span class="n">size</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Draw a title on a Mayavi figure.</span>
+
+<span class="sd">    .. warning:: Must be called **after** you&#39;ve plotted something (e.g.,</span>
+<span class="sd">        prisms) to the figure. This is a bug.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * text : str</span>
+<span class="sd">        The title</span>
+<span class="sd">    * color : tuple = (r, g, b)</span>
+<span class="sd">        RGB of the color of the text</span>
+<span class="sd">    * size : float</span>
+<span class="sd">        The size of the text</span>
+<span class="sd">    * height : float</span>
+<span class="sd">        The height where the title will be placed on the screen</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_lazy_import_mlab</span><span class="p">()</span>
+    <span class="n">mlab</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="n">height</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="savefig"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.savefig">[docs]</a><span class="k">def</span> <span class="nf">savefig</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">magnification</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Save a snapshot the current Mayavi figure to a file.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * fname : str</span>
+<span class="sd">        The name of the file. The format is deduced from the extension.</span>
+<span class="sd">    * magnification : int or None</span>
+<span class="sd">        If not None, then the scaling between the pixels on the screen, and the</span>
+<span class="sd">        pixels in the file saved.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_lazy_import_mlab</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">magnification</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">mlab</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mlab</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">magnification</span><span class="o">=</span><span class="n">magnification</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="show"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.show">[docs]</a><span class="k">def</span> <span class="nf">show</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Show the 3D plot of Mayavi2.</span>
+
+<span class="sd">    Enters a loop until the window is closed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_lazy_import_mlab</span><span class="p">()</span>
+    <span class="n">mlab</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="points"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.points">[docs]</a><span class="k">def</span> <span class="nf">points</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">opacity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">200.</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot a series of 3D points.</span>
+
+<span class="sd">    .. note:: Still doesn&#39;t plot points with physical properties.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * points : list</span>
+<span class="sd">        The list of points to plot. Each point is an [x, y, z] list with the</span>
+<span class="sd">        x, y, and z coordinates of the point</span>
+<span class="sd">    * color : tuple = (r, g, b)</span>
+<span class="sd">        RGB of the color of the points</span>
+<span class="sd">    * opacity : float</span>
+<span class="sd">        Decimal percentage of opacity</span>
+<span class="sd">    * size : float</span>
+<span class="sd">        The size of the points (relative to their spacing)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_lazy_import_mlab</span><span class="p">()</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+    <span class="n">mlab</span><span class="o">.</span><span class="n">points3d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="n">opacity</span><span class="p">,</span> <span class="n">scale_factor</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="polyprisms"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.polyprisms">[docs]</a><span class="k">def</span> <span class="nf">polyprisms</span><span class="p">(</span><span class="n">prisms</span><span class="p">,</span> <span class="n">prop</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s">&#39;surface&#39;</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">edges</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+    <span class="n">vmin</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s">&#39;blue-red&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot a list of 3D polygonal prisms using Mayavi2.</span>
+
+<span class="sd">    Will not plot a value None in *prisms*.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * prisms : list of :class:`fatiando.mesher.PolygonalPrism`</span>
+<span class="sd">        The prisms</span>
+<span class="sd">    * prop : str or None</span>
+<span class="sd">        The physical property of the prisms to use as the color scale. If a</span>
+<span class="sd">        prism doesn&#39;t have *prop*, or if it is None, then it will not be plotted</span>
+<span class="sd">    * style : str</span>
+<span class="sd">        Either ``&#39;surface&#39;`` for solid prisms or ``&#39;wireframe&#39;`` for just the</span>
+<span class="sd">        contour</span>
+<span class="sd">    * opacity : float</span>
+<span class="sd">        Decimal percentage of opacity</span>
+<span class="sd">    * edges : True or False</span>
+<span class="sd">        Wether or not to display the edges of the prisms in black lines. Will</span>
+<span class="sd">        ignore this if ``style=&#39;wireframe&#39;``</span>
+<span class="sd">    * vmin, vmax : float</span>
+<span class="sd">        Min and max values for the color scale. If *None* will default to</span>
+<span class="sd">        the min and max of *prop* in the prisms.</span>
+<span class="sd">    * cmap : Mayavi colormap</span>
+<span class="sd">        Color map to use. See the &#39;Colors and Legends&#39; menu on the Mayavi2 GUI</span>
+<span class="sd">        for valid color maps.</span>
+<span class="sd">    * linewidth : float</span>
+<span class="sd">        The width of the lines (edges) of the prisms.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * surface</span>
+<span class="sd">        the last element on the pipeline</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">style</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;surface&#39;</span><span class="p">,</span> <span class="s">&#39;wireframe&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;Invalid style &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">style</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">opacity</span> <span class="o">&gt;</span> <span class="mf">1.</span> <span class="ow">or</span> <span class="n">opacity</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;Invalid opacity </span><span class="si">%g</span><span class="s">. Must be in range [1,0]&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">opacity</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="n">msg</span>
+    <span class="c"># mlab and tvtk are really slow to import</span>
+    <span class="n">_lazy_import_mlab</span><span class="p">()</span>
+    <span class="n">_lazy_import_tvtk</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">prop</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="s">&#39;scalar&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">prop</span>
+    <span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">polygons</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">scalars</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="p">(</span><span class="n">prop</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">prop</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">y</span>
+        <span class="n">nverts</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">nverts</span>
+        <span class="n">scalar</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="n">prop</span><span class="p">]</span>
+        <span class="c"># The top surface</span>
+        <span class="n">points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+            <span class="nb">reversed</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">transpose</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">x</span><span class="p">)])))</span>
+        <span class="n">polygons</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">nverts</span><span class="p">))</span>
+        <span class="n">scalars</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">scalar</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">nverts</span><span class="p">))</span>
+        <span class="n">offset</span> <span class="o">+=</span> <span class="n">nverts</span>
+        <span class="c"># The bottom surface</span>
+        <span class="n">points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+            <span class="nb">reversed</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">transpose</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z2</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">x</span><span class="p">)])))</span>
+        <span class="n">polygons</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">nverts</span><span class="p">))</span>
+        <span class="n">scalars</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">scalar</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">nverts</span><span class="p">))</span>
+        <span class="n">offset</span> <span class="o">+=</span> <span class="n">nverts</span>
+        <span class="c"># The sides</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">nverts</span><span class="p">):</span>
+            <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">x</span><span class="p">[(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">nverts</span><span class="p">],</span> <span class="n">y</span><span class="p">[(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">nverts</span><span class="p">]</span>
+            <span class="n">points</span><span class="o">.</span><span class="n">extend</span><span class="p">([[</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span><span class="p">],</span> <span class="p">[</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z1</span><span class="p">],</span>
+                           <span class="p">[</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z2</span><span class="p">],</span> <span class="p">[</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">prism</span><span class="o">.</span><span class="n">z2</span><span class="p">]])</span>
+            <span class="n">polygons</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span> <span class="n">offset</span> <span class="o">+</span> <span class="mi">4</span><span class="p">))</span>
+            <span class="n">scalars</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">scalar</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="mi">4</span>
+    <span class="n">mesh</span> <span class="o">=</span> <span class="n">tvtk</span><span class="o">.</span><span class="n">PolyData</span><span class="p">(</span><span class="n">points</span><span class="o">=</span><span class="n">points</span><span class="p">,</span> <span class="n">polys</span><span class="o">=</span><span class="n">polygons</span><span class="p">)</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">point_data</span><span class="o">.</span><span class="n">scalars</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">scalars</span><span class="p">)</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">point_data</span><span class="o">.</span><span class="n">scalars</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">label</span>
+    <span class="k">if</span> <span class="n">vmin</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">vmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">scalars</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">vmax</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">vmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">scalars</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">style</span> <span class="o">==</span> <span class="s">&#39;wireframe&#39;</span><span class="p">:</span>
+        <span class="n">surf</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">surface</span><span class="p">(</span><span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">add_dataset</span><span class="p">(</span><span class="n">mesh</span><span class="p">),</span>
+                                     <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">colormap</span><span class="o">=</span><span class="n">cmap</span><span class="p">)</span>
+        <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">representation</span> <span class="o">=</span> <span class="s">&#39;wireframe&#39;</span>
+        <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">line_width</span> <span class="o">=</span> <span class="n">linewidth</span>
+    <span class="k">if</span> <span class="n">style</span> <span class="o">==</span> <span class="s">&#39;surface&#39;</span><span class="p">:</span>
+        <span class="c"># The triangle filter is needed because VTK doesnt seem to handle convex</span>
+        <span class="c"># polygons too well</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">triangle_filter</span><span class="p">(</span><span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">add_dataset</span><span class="p">(</span><span class="n">mesh</span><span class="p">))</span>
+        <span class="n">surf</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">surface</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span>
+                                     <span class="n">colormap</span><span class="o">=</span><span class="n">cmap</span><span class="p">)</span>
+        <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">representation</span> <span class="o">=</span> <span class="s">&#39;surface&#39;</span>
+        <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">edge_visibility</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">edges</span><span class="p">:</span>
+            <span class="n">edge</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">surface</span><span class="p">(</span><span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">add_dataset</span><span class="p">(</span><span class="n">mesh</span><span class="p">))</span>
+            <span class="n">edge</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">representation</span> <span class="o">=</span> <span class="s">&#39;wireframe&#39;</span>
+            <span class="n">edge</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">mapper</span><span class="o">.</span><span class="n">scalar_visibility</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">edge</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">line_width</span> <span class="o">=</span> <span class="n">linewidth</span>
+            <span class="n">edge</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">opacity</span> <span class="o">=</span> <span class="n">opacity</span>
+    <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">opacity</span> <span class="o">=</span> <span class="n">opacity</span>
+    <span class="k">return</span> <span class="n">surf</span>
+</div>
+<div class="viewcode-block" id="tesseroids"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.tesseroids">[docs]</a><span class="k">def</span> <span class="nf">tesseroids</span><span class="p">(</span><span class="n">tesseroids</span><span class="p">,</span> <span class="n">prop</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s">&#39;surface&#39;</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">edges</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+    <span class="n">vmin</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s">&#39;blue-red&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot a list of tesseroids using Mayavi2.</span>
+
+<span class="sd">    Will not plot a value None in *tesseroids*</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * tesseroids : list of :class:`fatiando.mesher.Tesseroid`</span>
+<span class="sd">        The prisms</span>
+<span class="sd">    * prop : str or None</span>
+<span class="sd">        The physical property of the tesseroids to use as the color scale. If a</span>
+<span class="sd">        tesseroid doesn&#39;t have *prop*, or if it is None, then it will not be</span>
+<span class="sd">        plotted</span>
+<span class="sd">    * style : str</span>
+<span class="sd">        Either ``&#39;surface&#39;`` for solid tesseroids or ``&#39;wireframe&#39;`` for just</span>
+<span class="sd">        the contour</span>
+<span class="sd">    * opacity : float</span>
+<span class="sd">        Decimal percentage of opacity</span>
+<span class="sd">    * edges : True or False</span>
+<span class="sd">        Wether or not to display the edges of the tesseroids in black lines.</span>
+<span class="sd">        Will ignore this if ``style=&#39;wireframe&#39;``</span>
+<span class="sd">    * vmin, vmax : float</span>
+<span class="sd">        Min and max values for the color scale. If *None* will default to</span>
+<span class="sd">        the min and max of *prop*.</span>
+<span class="sd">    * cmap : Mayavi colormap</span>
+<span class="sd">        Color map to use. See the &#39;Colors and Legends&#39; menu on the Mayavi2 GUI</span>
+<span class="sd">        for valid color maps.</span>
+<span class="sd">    * linewidth : float</span>
+<span class="sd">        The width of the lines (edges).</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * surface</span>
+<span class="sd">        the last element on the pipeline</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">style</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;surface&#39;</span><span class="p">,</span> <span class="s">&#39;wireframe&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;Invalid style &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">style</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">opacity</span> <span class="o">&gt;</span> <span class="mf">1.</span> <span class="ow">or</span> <span class="n">opacity</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;Invalid opacity </span><span class="si">%g</span><span class="s">. Must be in range [1,0]&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">opacity</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="n">msg</span>
+
+    <span class="c"># mlab and tvtk are really slow to import</span>
+    <span class="n">_lazy_import_mlab</span><span class="p">()</span>
+    <span class="n">_lazy_import_tvtk</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">prop</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="s">&#39;scalar&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">prop</span>
+    <span class="c"># VTK parameters</span>
+    <span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">cells</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">offsets</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">mesh_size</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">celldata</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c"># To mark what index in the points the cell starts</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">tess</span> <span class="ow">in</span> <span class="n">tesseroids</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">tess</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="p">(</span><span class="n">prop</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">prop</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tess</span><span class="o">.</span><span class="n">props</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">w</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">top</span><span class="p">,</span> <span class="n">bottom</span> <span class="o">=</span> <span class="n">tess</span><span class="o">.</span><span class="n">get_bounds</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">prop</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">scalar</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">scalar</span> <span class="o">=</span> <span class="n">tess</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="n">prop</span><span class="p">]</span>
+        <span class="n">points</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">bottom</span><span class="p">),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">bottom</span><span class="p">),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">bottom</span><span class="p">),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">bottom</span><span class="p">),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">top</span><span class="p">),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">top</span><span class="p">),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">top</span><span class="p">),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">top</span><span class="p">),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">w</span> <span class="o">+</span> <span class="n">e</span><span class="p">),</span> <span class="n">s</span><span class="p">,</span> <span class="n">bottom</span><span class="p">),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="n">n</span><span class="p">),</span> <span class="n">bottom</span><span class="p">),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">w</span> <span class="o">+</span> <span class="n">e</span><span class="p">),</span> <span class="n">n</span><span class="p">,</span> <span class="n">bottom</span><span class="p">),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="n">n</span><span class="p">),</span> <span class="n">bottom</span><span class="p">),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">w</span> <span class="o">+</span> <span class="n">e</span><span class="p">),</span> <span class="n">s</span><span class="p">,</span> <span class="n">top</span><span class="p">),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="n">n</span><span class="p">),</span> <span class="n">top</span><span class="p">),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">w</span> <span class="o">+</span> <span class="n">e</span><span class="p">),</span> <span class="n">n</span><span class="p">,</span> <span class="n">top</span><span class="p">),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="n">n</span><span class="p">),</span> <span class="n">top</span><span class="p">),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">top</span> <span class="o">+</span> <span class="n">bottom</span><span class="p">)),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">top</span> <span class="o">+</span> <span class="n">bottom</span><span class="p">)),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">top</span> <span class="o">+</span> <span class="n">bottom</span><span class="p">)),</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">top</span> <span class="o">+</span> <span class="n">bottom</span><span class="p">))])</span>
+        <span class="n">cells</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+        <span class="n">cells</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">start</span> <span class="o">+</span> <span class="mi">20</span><span class="p">))</span>
+        <span class="n">start</span> <span class="o">+=</span> <span class="mi">20</span>
+        <span class="n">offsets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>
+        <span class="n">offset</span> <span class="o">+=</span> <span class="mi">21</span>
+        <span class="n">celldata</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">scalar</span><span class="p">)</span>
+        <span class="n">mesh_size</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">cell_array</span> <span class="o">=</span> <span class="n">tvtk</span><span class="o">.</span><span class="n">CellArray</span><span class="p">()</span>
+    <span class="n">cell_array</span><span class="o">.</span><span class="n">set_cells</span><span class="p">(</span><span class="n">mesh_size</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cells</span><span class="p">))</span>
+    <span class="n">cell_types</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">25</span><span class="p">]</span><span class="o">*</span><span class="n">mesh_size</span><span class="p">,</span> <span class="s">&#39;i&#39;</span><span class="p">)</span>
+    <span class="n">vtkmesh</span> <span class="o">=</span> <span class="n">tvtk</span><span class="o">.</span><span class="n">UnstructuredGrid</span><span class="p">(</span><span class="n">points</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="s">&#39;f&#39;</span><span class="p">))</span>
+    <span class="n">vtkmesh</span><span class="o">.</span><span class="n">set_cells</span><span class="p">(</span><span class="n">cell_types</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">offsets</span><span class="p">,</span> <span class="s">&#39;i&#39;</span><span class="p">),</span> <span class="n">cell_array</span><span class="p">)</span>
+    <span class="n">vtkmesh</span><span class="o">.</span><span class="n">cell_data</span><span class="o">.</span><span class="n">scalars</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">celldata</span><span class="p">)</span>
+    <span class="n">vtkmesh</span><span class="o">.</span><span class="n">cell_data</span><span class="o">.</span><span class="n">scalars</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">label</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">threshold</span><span class="p">(</span><span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">add_dataset</span><span class="p">(</span><span class="n">vtkmesh</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">vmin</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">vmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">vtkmesh</span><span class="o">.</span><span class="n">cell_data</span><span class="o">.</span><span class="n">scalars</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">vmax</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">vmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">vtkmesh</span><span class="o">.</span><span class="n">cell_data</span><span class="o">.</span><span class="n">scalars</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">style</span> <span class="o">==</span> <span class="s">&#39;wireframe&#39;</span><span class="p">:</span>
+        <span class="n">surf</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">surface</span><span class="p">(</span><span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">extract_edges</span><span class="p">(</span><span class="n">dataset</span><span class="p">),</span>
+            <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">colormap</span><span class="o">=</span><span class="n">cmap</span><span class="p">)</span>
+        <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">representation</span> <span class="o">=</span> <span class="s">&#39;wireframe&#39;</span>
+        <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">line_width</span> <span class="o">=</span> <span class="n">linewidth</span>
+    <span class="k">if</span> <span class="n">style</span> <span class="o">==</span> <span class="s">&#39;surface&#39;</span><span class="p">:</span>
+        <span class="n">surf</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">surface</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span>
+            <span class="n">colormap</span><span class="o">=</span><span class="n">cmap</span><span class="p">)</span>
+        <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">representation</span> <span class="o">=</span> <span class="s">&#39;surface&#39;</span>
+        <span class="k">if</span> <span class="n">edges</span><span class="p">:</span>
+            <span class="n">edge</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">surface</span><span class="p">(</span><span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">extract_edges</span><span class="p">(</span><span class="n">dataset</span><span class="p">),</span>
+                <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">)</span>
+            <span class="n">edge</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">representation</span> <span class="o">=</span> <span class="s">&#39;wireframe&#39;</span>
+            <span class="n">edge</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">mapper</span><span class="o">.</span><span class="n">scalar_visibility</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">edge</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">line_width</span> <span class="o">=</span> <span class="n">linewidth</span>
+            <span class="n">edge</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">opacity</span> <span class="o">=</span> <span class="n">opacity</span>
+    <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">opacity</span> <span class="o">=</span> <span class="n">opacity</span>
+    <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">backface_culling</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">surf</span>
+</div>
+<div class="viewcode-block" id="prisms"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.prisms">[docs]</a><span class="k">def</span> <span class="nf">prisms</span><span class="p">(</span><span class="n">prisms</span><span class="p">,</span> <span class="n">prop</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s">&#39;surface&#39;</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">edges</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+    <span class="n">vmin</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s">&#39;blue-red&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot a list of 3D right rectangular prisms using Mayavi2.</span>
+
+<span class="sd">    Will not plot a value None in *prisms*</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * prisms : list of :class:`fatiando.mesher.Prism`</span>
+<span class="sd">        The prisms</span>
+<span class="sd">    * prop : str or None</span>
+<span class="sd">        The physical property of the prisms to use as the color scale. If a</span>
+<span class="sd">        prism doesn&#39;t have *prop*, or if it is None, then it will not be plotted</span>
+<span class="sd">    * style : str</span>
+<span class="sd">        Either ``&#39;surface&#39;`` for solid prisms or ``&#39;wireframe&#39;`` for just the</span>
+<span class="sd">        contour</span>
+<span class="sd">    * opacity : float</span>
+<span class="sd">        Decimal percentage of opacity</span>
+<span class="sd">    * edges : True or False</span>
+<span class="sd">        Wether or not to display the edges of the prisms in black lines. Will</span>
+<span class="sd">        ignore this if ``style=&#39;wireframe&#39;``</span>
+<span class="sd">    * vmin, vmax : float</span>
+<span class="sd">        Min and max values for the color scale. If *None* will default to</span>
+<span class="sd">        the min and max of *prop* in the prisms.</span>
+<span class="sd">    * cmap : Mayavi colormap</span>
+<span class="sd">        Color map to use. See the &#39;Colors and Legends&#39; menu on the Mayavi2 GUI</span>
+<span class="sd">        for valid color maps.</span>
+<span class="sd">    * linewidth : float</span>
+<span class="sd">        The width of the lines (edges) of the prisms.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * surface</span>
+<span class="sd">        the last element on the pipeline</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">style</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;surface&#39;</span><span class="p">,</span> <span class="s">&#39;wireframe&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;Invalid style &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">style</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">opacity</span> <span class="o">&gt;</span> <span class="mf">1.</span> <span class="ow">or</span> <span class="n">opacity</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;Invalid opacity </span><span class="si">%g</span><span class="s">. Must be in range [1,0]&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">opacity</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="n">msg</span>
+
+    <span class="c"># mlab and tvtk are really slow to import</span>
+    <span class="n">_lazy_import_mlab</span><span class="p">()</span>
+    <span class="n">_lazy_import_tvtk</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">prop</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="s">&#39;scalar&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">prop</span>
+    <span class="c"># VTK parameters</span>
+    <span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">cells</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">offsets</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">mesh_size</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">celldata</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c"># To mark what index in the points the cell starts</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">prism</span> <span class="ow">in</span> <span class="n">prisms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prism</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="p">(</span><span class="n">prop</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">prop</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">z1</span><span class="p">,</span> <span class="n">z2</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">get_bounds</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">prop</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">scalar</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">scalar</span> <span class="o">=</span> <span class="n">prism</span><span class="o">.</span><span class="n">props</span><span class="p">[</span><span class="n">prop</span><span class="p">]</span>
+        <span class="n">points</span><span class="o">.</span><span class="n">extend</span><span class="p">([[</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">z1</span><span class="p">],</span> <span class="p">[</span><span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">z1</span><span class="p">],</span> <span class="p">[</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">z1</span><span class="p">],</span> <span class="p">[</span><span class="n">x1</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">z1</span><span class="p">],</span>
+                       <span class="p">[</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">z2</span><span class="p">],</span> <span class="p">[</span><span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">z2</span><span class="p">],</span> <span class="p">[</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">z2</span><span class="p">],</span> <span class="p">[</span><span class="n">x1</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">z2</span><span class="p">]])</span>
+        <span class="n">cells</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+        <span class="n">cells</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">start</span> <span class="o">+</span> <span class="mi">8</span><span class="p">)])</span>
+        <span class="n">start</span> <span class="o">+=</span> <span class="mi">8</span>
+        <span class="n">offsets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>
+        <span class="n">offset</span> <span class="o">+=</span> <span class="mi">9</span>
+        <span class="n">celldata</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">scalar</span><span class="p">)</span>
+        <span class="n">mesh_size</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">cell_array</span> <span class="o">=</span> <span class="n">tvtk</span><span class="o">.</span><span class="n">CellArray</span><span class="p">()</span>
+    <span class="n">cell_array</span><span class="o">.</span><span class="n">set_cells</span><span class="p">(</span><span class="n">mesh_size</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cells</span><span class="p">))</span>
+    <span class="n">cell_types</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">12</span><span class="p">]</span><span class="o">*</span><span class="n">mesh_size</span><span class="p">,</span> <span class="s">&#39;i&#39;</span><span class="p">)</span>
+    <span class="n">vtkmesh</span> <span class="o">=</span> <span class="n">tvtk</span><span class="o">.</span><span class="n">UnstructuredGrid</span><span class="p">(</span><span class="n">points</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="s">&#39;f&#39;</span><span class="p">))</span>
+    <span class="n">vtkmesh</span><span class="o">.</span><span class="n">set_cells</span><span class="p">(</span><span class="n">cell_types</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">offsets</span><span class="p">,</span> <span class="s">&#39;i&#39;</span><span class="p">),</span> <span class="n">cell_array</span><span class="p">)</span>
+    <span class="n">vtkmesh</span><span class="o">.</span><span class="n">cell_data</span><span class="o">.</span><span class="n">scalars</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">celldata</span><span class="p">)</span>
+    <span class="n">vtkmesh</span><span class="o">.</span><span class="n">cell_data</span><span class="o">.</span><span class="n">scalars</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">label</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">threshold</span><span class="p">(</span><span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">add_dataset</span><span class="p">(</span><span class="n">vtkmesh</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">vmin</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">vmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">vtkmesh</span><span class="o">.</span><span class="n">cell_data</span><span class="o">.</span><span class="n">scalars</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">vmax</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">vmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">vtkmesh</span><span class="o">.</span><span class="n">cell_data</span><span class="o">.</span><span class="n">scalars</span><span class="p">)</span>
+    <span class="n">surf</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">surface</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">colormap</span><span class="o">=</span><span class="n">cmap</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">style</span> <span class="o">==</span> <span class="s">&#39;wireframe&#39;</span><span class="p">:</span>
+        <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">representation</span> <span class="o">=</span> <span class="s">&#39;wireframe&#39;</span>
+        <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">line_width</span> <span class="o">=</span> <span class="n">linewidth</span>
+    <span class="k">if</span> <span class="n">style</span> <span class="o">==</span> <span class="s">&#39;surface&#39;</span><span class="p">:</span>
+        <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">representation</span> <span class="o">=</span> <span class="s">&#39;surface&#39;</span>
+        <span class="k">if</span> <span class="n">edges</span><span class="p">:</span>
+            <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">edge_visibility</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">line_width</span> <span class="o">=</span> <span class="n">linewidth</span>
+    <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">opacity</span> <span class="o">=</span> <span class="n">opacity</span>
+    <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">backface_culling</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">surf</span>
+</div>
+<div class="viewcode-block" id="figure"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.figure">[docs]</a><span class="k">def</span> <span class="nf">figure</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">zdown</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a default figure in Mayavi with white background</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * size : tuple = (dx, dy)</span>
+<span class="sd">        The size of the figure. If ``None`` will use the default size.</span>
+<span class="sd">    * zdown : True or False</span>
+<span class="sd">        If True, will turn the figure upside-down to make the z-axis point down</span>
+
+<span class="sd">    Return:</span>
+
+<span class="sd">    * fig : Mayavi figure object</span>
+<span class="sd">        The figure</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_lazy_import_mlab</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">bgcolor</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">bgcolor</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">zdown</span><span class="p">:</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">view_up</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.</span><span class="p">])</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">elevation</span><span class="p">(</span><span class="mf">60.</span><span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">azimuth</span><span class="p">(</span><span class="mf">180.</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fig</span>
+</div>
+<div class="viewcode-block" id="outline"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.outline">[docs]</a><span class="k">def</span> <span class="nf">outline</span><span class="p">(</span><span class="n">extent</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="n">width</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a default outline in Mayavi2.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * extent : list = [xmin, xmax, ymin, ymax, zmin, zmax]</span>
+<span class="sd">        Default if the objects extent.</span>
+<span class="sd">    * color : tuple = (r, g, b)</span>
+<span class="sd">        RGB of the color of the axes and text</span>
+<span class="sd">    * width : float</span>
+<span class="sd">        Line width</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * outline : Mayavi outline instace</span>
+<span class="sd">        The outline in the pipeline</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_lazy_import_mlab</span><span class="p">()</span>
+    <span class="n">outline</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">outline</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">line_width</span><span class="o">=</span><span class="n">width</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">extent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">outline</span><span class="o">.</span><span class="n">bounds</span> <span class="o">=</span> <span class="n">extent</span>
+    <span class="k">return</span> <span class="n">outline</span>
+</div>
+<div class="viewcode-block" id="axes"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.axes">[docs]</a><span class="k">def</span> <span class="nf">axes</span><span class="p">(</span><span class="n">plot</span><span class="p">,</span> <span class="n">nlabels</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ranges</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span>
+             <span class="n">width</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s">&quot;</span><span class="si">%-#.2f</span><span class="s">&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add an Axes module to a Mayavi2 plot or dataset.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * plot</span>
+<span class="sd">        Either the plot (as returned by one of the plotting functions of this</span>
+<span class="sd">        module) or a TVTK dataset.</span>
+<span class="sd">    * nlabels : int</span>
+<span class="sd">        Number of labels on the axes</span>
+<span class="sd">    * extent : list = [xmin, xmax, ymin, ymax, zmin, zmax]</span>
+<span class="sd">        Default if the objects extent.</span>
+<span class="sd">    * ranges : list = [xmin, xmax, ymin, ymax, zmin, zmax]</span>
+<span class="sd">        What will be display in the axes labels. Default is *extent*</span>
+<span class="sd">    * color : tuple = (r, g, b)</span>
+<span class="sd">        RGB of the color of the axes and text</span>
+<span class="sd">    * width : float</span>
+<span class="sd">        Line width</span>
+<span class="sd">    * fmt : str</span>
+<span class="sd">        Label number format</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * axes : Mayavi axes instace</span>
+<span class="sd">        The axes object in the pipeline</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_lazy_import_mlab</span><span class="p">()</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">axes</span><span class="p">(</span><span class="n">plot</span><span class="p">,</span> <span class="n">nb_labels</span><span class="o">=</span><span class="n">nlabels</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
+    <span class="n">a</span><span class="o">.</span><span class="n">label_text_property</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="n">color</span>
+    <span class="n">a</span><span class="o">.</span><span class="n">title_text_property</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="n">color</span>
+    <span class="k">if</span> <span class="n">extent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">a</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">bounds</span> <span class="o">=</span> <span class="n">extent</span>
+    <span class="k">if</span> <span class="n">ranges</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">a</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">ranges</span> <span class="o">=</span> <span class="n">ranges</span>
+        <span class="n">a</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">use_ranges</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="n">a</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">line_width</span> <span class="o">=</span> <span class="n">width</span>
+    <span class="n">a</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">label_format</span> <span class="o">=</span> <span class="n">fmt</span>
+    <span class="n">a</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">x_label</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">y_label</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">z_label</span> <span class="o">=</span> <span class="s">&quot;N&quot;</span><span class="p">,</span> <span class="s">&quot;E&quot;</span><span class="p">,</span> <span class="s">&quot;Z&quot;</span>
+    <span class="k">return</span> <span class="n">a</span>
+</div>
+<div class="viewcode-block" id="wall_north"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.wall_north">[docs]</a><span class="k">def</span> <span class="nf">wall_north</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Draw a 3D wall in Mayavi2 on the North side.</span>
+
+<span class="sd">    .. note:: Remember that x-&gt;North, y-&gt;East and z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * bounds : list = [xmin, xmax, ymin, ymax, zmin, zmax]</span>
+<span class="sd">        The extent of the region where the wall is placed</span>
+<span class="sd">    * color : tuple = (r, g, b)</span>
+<span class="sd">        RGB of the color of the wall</span>
+<span class="sd">    * opacity : float</span>
+<span class="sd">        Decimal percentage of opacity</span>
+
+<span class="sd">    .. tip:: You can use :func:`~fatiando.vis.myv.add_axes` to create and</span>
+<span class="sd">        `axes` variable and get the bounds as ``axes.axes.bounds``</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">s</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">bounds</span>
+    <span class="n">_wall</span><span class="p">([</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">],</span> <span class="n">color</span><span class="p">,</span> <span class="n">opacity</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="wall_south"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.wall_south">[docs]</a><span class="k">def</span> <span class="nf">wall_south</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Draw a 3D wall in Mayavi2 on the South side.</span>
+
+<span class="sd">    .. note:: Remember that x-&gt;North, y-&gt;East and z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * bounds : list = [xmin, xmax, ymin, ymax, zmin, zmax]</span>
+<span class="sd">        The extent of the region where the wall is placed</span>
+<span class="sd">    * color : tuple = (r, g, b)</span>
+<span class="sd">        RGB of the color of the wall</span>
+<span class="sd">    * opacity : float</span>
+<span class="sd">        Decimal percentage of opacity</span>
+
+<span class="sd">    .. tip:: You can use :func:`~fatiando.vis.myv.add_axes` to create and</span>
+<span class="sd">        `axes` variable and get the bounds as ``axes.axes.bounds``</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">s</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">bounds</span>
+    <span class="n">_wall</span><span class="p">([</span><span class="n">s</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">],</span> <span class="n">color</span><span class="p">,</span> <span class="n">opacity</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="wall_east"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.wall_east">[docs]</a><span class="k">def</span> <span class="nf">wall_east</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Draw a 3D wall in Mayavi2 on the East side.</span>
+
+<span class="sd">    .. note:: Remember that x-&gt;North, y-&gt;East and z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * bounds : list = [xmin, xmax, ymin, ymax, zmin, zmax]</span>
+<span class="sd">        The extent of the region where the wall is placed</span>
+<span class="sd">    * color : tuple = (r, g, b)</span>
+<span class="sd">        RGB of the color of the wall</span>
+<span class="sd">    * opacity : float</span>
+<span class="sd">        Decimal percentage of opacity</span>
+
+<span class="sd">    .. tip:: You can use :func:`~fatiando.vis.myv.add_axes` to create and</span>
+<span class="sd">        `axes` variable and get the bounds as ``axes.axes.bounds``</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">s</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">bounds</span>
+    <span class="n">_wall</span><span class="p">([</span><span class="n">s</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">],</span> <span class="n">color</span><span class="p">,</span> <span class="n">opacity</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="wall_west"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.wall_west">[docs]</a><span class="k">def</span> <span class="nf">wall_west</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Draw a 3D wall in Mayavi2 on the West side.</span>
+
+<span class="sd">    .. note:: Remember that x-&gt;North, y-&gt;East and z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * bounds : list = [xmin, xmax, ymin, ymax, zmin, zmax]</span>
+<span class="sd">        The extent of the region where the wall is placed</span>
+<span class="sd">    * color : tuple = (r, g, b)</span>
+<span class="sd">        RGB of the color of the wall</span>
+<span class="sd">    * opacity : float</span>
+<span class="sd">        Decimal percentage of opacity</span>
+
+<span class="sd">    .. tip:: You can use :func:`~fatiando.vis.myv.add_axes` to create and</span>
+<span class="sd">        `axes` variable and get the bounds as ``axes.axes.bounds``</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">s</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">bounds</span>
+    <span class="n">_wall</span><span class="p">([</span><span class="n">s</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">],</span> <span class="n">color</span><span class="p">,</span> <span class="n">opacity</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="wall_top"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.wall_top">[docs]</a><span class="k">def</span> <span class="nf">wall_top</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Draw a 3D wall in Mayavi2 on the Top side.</span>
+
+<span class="sd">    .. note:: Remember that x-&gt;North, y-&gt;East and z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * bounds : list = [xmin, xmax, ymin, ymax, zmin, zmax]</span>
+<span class="sd">        The extent of the region where the wall is placed</span>
+<span class="sd">    * color : tuple = (r, g, b)</span>
+<span class="sd">        RGB of the color of the wall</span>
+<span class="sd">    * opacity : float</span>
+<span class="sd">        Decimal percentage of opacity</span>
+
+<span class="sd">    .. tip:: You can use :func:`~fatiando.vis.myv.add_axes` to create and</span>
+<span class="sd">        `axes` variable and get the bounds as ``axes.axes.bounds``</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">s</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">bounds</span>
+    <span class="n">_wall</span><span class="p">([</span><span class="n">s</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">t</span><span class="p">],</span> <span class="n">color</span><span class="p">,</span> <span class="n">opacity</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="wall_bottom"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.wall_bottom">[docs]</a><span class="k">def</span> <span class="nf">wall_bottom</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Draw a 3D wall in Mayavi2 on the Bottom side.</span>
+
+<span class="sd">    .. note:: Remember that x-&gt;North, y-&gt;East and z-&gt;Down</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * bounds : list = [xmin, xmax, ymin, ymax, zmin, zmax]</span>
+<span class="sd">        The extent of the region where the wall is placed</span>
+<span class="sd">    * color : tuple = (r, g, b)</span>
+<span class="sd">        RGB of the color of the wall</span>
+<span class="sd">    * opacity : float</span>
+<span class="sd">        Decimal percentage of opacity</span>
+
+<span class="sd">    .. tip:: You can use :func:`~fatiando.vis.myv.add_axes` to create and</span>
+<span class="sd">        `axes` variable and get the bounds as ``axes.axes.bounds``</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">s</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">bounds</span>
+    <span class="n">_wall</span><span class="p">([</span><span class="n">s</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">b</span><span class="p">],</span> <span class="n">color</span><span class="p">,</span> <span class="n">opacity</span><span class="p">)</span>
+</div>
+<span class="k">def</span> <span class="nf">_wall</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">opacity</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Generate a 3D wall in Mayavi&quot;&quot;&quot;</span>
+    <span class="n">_lazy_import_mlab</span><span class="p">()</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">builtin_surface</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="s">&#39;outline&#39;</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">data_source</span><span class="o">.</span><span class="n">bounds</span> <span class="o">=</span> <span class="n">bounds</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">data_source</span><span class="o">.</span><span class="n">generate_faces</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">su</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">surface</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+    <span class="n">su</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="n">color</span>
+    <span class="n">su</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">opacity</span> <span class="o">=</span> <span class="n">opacity</span>
+
+<div class="viewcode-block" id="continents"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.continents">[docs]</a><span class="k">def</span> <span class="nf">continents</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">radius</span><span class="o">=</span><span class="n">MEAN_EARTH_RADIUS</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot the outline of the continents.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * color : tuple</span>
+<span class="sd">        RGB color of the lines. Default = black</span>
+<span class="sd">    * linewidth : float</span>
+<span class="sd">        The width of the continent lines</span>
+<span class="sd">    * resolution : float</span>
+<span class="sd">        The data_source.on_ratio parameter that controls the resolution of the</span>
+<span class="sd">        continents</span>
+<span class="sd">    * opacity : float</span>
+<span class="sd">        The opacity of the lines. Must be between 0 and 1</span>
+<span class="sd">    * radius : float</span>
+<span class="sd">        The radius of the sphere where the continents will be plotted. Defaults</span>
+<span class="sd">        to the mean Earth radius</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * continents : Mayavi surface</span>
+<span class="sd">        The Mayavi surface element of the continents</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_lazy_import_mlab</span><span class="p">()</span>
+    <span class="n">_lazy_import_BuiltinSurface</span><span class="p">()</span>
+    <span class="n">continents_src</span> <span class="o">=</span> <span class="n">BuiltinSurface</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s">&#39;earth&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;Continents&#39;</span><span class="p">)</span>
+    <span class="n">continents_src</span><span class="o">.</span><span class="n">data_source</span><span class="o">.</span><span class="n">on_ratio</span> <span class="o">=</span> <span class="n">resolution</span>
+    <span class="n">continents_src</span><span class="o">.</span><span class="n">data_source</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">MEAN_EARTH_RADIUS</span>
+    <span class="n">surf</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">surface</span><span class="p">(</span><span class="n">continents_src</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
+    <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">line_width</span> <span class="o">=</span> <span class="n">linewidth</span>
+    <span class="n">surf</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">opacity</span> <span class="o">=</span> <span class="n">opacity</span>
+    <span class="k">return</span> <span class="n">surf</span>
+</div>
+<div class="viewcode-block" id="earth"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.earth">[docs]</a><span class="k">def</span> <span class="nf">earth</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="n">opacity</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Draw a sphere representing the Earth.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * color : tuple</span>
+<span class="sd">        RGB color of the sphere. Defaults to ocean blue.</span>
+<span class="sd">    * opacity : float</span>
+<span class="sd">        The opacity of the sphere. Must be between 0 and 1</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * sphere : Mayavi surface</span>
+<span class="sd">        The Mayavi surface element of the sphere</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_lazy_import_mlab</span><span class="p">()</span>
+    <span class="n">sphere</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">points3d</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">scale_mode</span><span class="o">=</span><span class="s">&#39;none&#39;</span><span class="p">,</span>
+        <span class="n">scale_factor</span><span class="o">=</span><span class="mi">2</span><span class="o">*</span><span class="n">MEAN_EARTH_RADIUS</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+        <span class="n">opacity</span><span class="o">=</span><span class="n">opacity</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;Earth&#39;</span><span class="p">)</span>
+    <span class="n">sphere</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">specular</span> <span class="o">=</span> <span class="mf">0.45</span>
+    <span class="n">sphere</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">specular_power</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">sphere</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">backface_culling</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">return</span> <span class="n">sphere</span>
+</div>
+<div class="viewcode-block" id="core"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.core">[docs]</a><span class="k">def</span> <span class="nf">core</span><span class="p">(</span><span class="n">inner</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">opacity</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Draw a sphere representing the Earth&#39;s core.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * inner : True or False</span>
+<span class="sd">        If True, will use the radius of the inner core, else the outer core.</span>
+<span class="sd">    * color : tuple</span>
+<span class="sd">        RGB color of the sphere. Defaults to red.</span>
+<span class="sd">    * opacity : float</span>
+<span class="sd">        The opacity of the sphere. Must be between 0 and 1</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * sphere : Mayavi surface</span>
+<span class="sd">        The Mayavi surface element of the sphere</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_lazy_import_mlab</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">inner</span><span class="p">:</span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="mf">1216000.</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;Inner core&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="mf">3486000.</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;Core&#39;</span>
+    <span class="n">sphere</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">points3d</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">scale_mode</span><span class="o">=</span><span class="s">&#39;none&#39;</span><span class="p">,</span>
+        <span class="n">scale_factor</span><span class="o">=</span><span class="mf">2.</span><span class="o">*</span><span class="n">radius</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+        <span class="n">opacity</span><span class="o">=</span><span class="n">opacity</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">sphere</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">specular</span> <span class="o">=</span> <span class="mf">0.45</span>
+    <span class="n">sphere</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">specular_power</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">sphere</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">backface_culling</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">return</span> <span class="n">sphere</span>
+</div>
+<div class="viewcode-block" id="meridians"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.meridians">[docs]</a><span class="k">def</span> <span class="nf">meridians</span><span class="p">(</span><span class="n">longitudes</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Draw meridians on the Earth.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * longitudes : list</span>
+<span class="sd">        The longitudes where the meridians will be drawn.</span>
+<span class="sd">    * color : tuple</span>
+<span class="sd">        RGB color of the lines. Defaults to black.</span>
+<span class="sd">    * linewidth : float</span>
+<span class="sd">        The width of the lines</span>
+<span class="sd">    * opacity : float</span>
+<span class="sd">        The opacity of the lines. Must be between 0 and 1</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * lines : Mayavi surface</span>
+<span class="sd">        The Mayavi surface element of the lines</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">lats</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mf">270.</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">lon</span> <span class="ow">in</span> <span class="n">longitudes</span><span class="p">:</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">lats</span><span class="p">)</span><span class="o">*</span><span class="n">lon</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">x</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+        <span class="n">y</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+        <span class="n">z</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">plot3d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="n">opacity</span><span class="p">,</span>
+        <span class="n">tube_radius</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+    <span class="n">lines</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">line_width</span> <span class="o">=</span> <span class="n">linewidth</span>
+    <span class="k">return</span> <span class="n">lines</span>
+</div>
+<div class="viewcode-block" id="parallels"><a class="viewcode-back" href="../../../api/vis.myv.html#fatiando.vis.myv.parallels">[docs]</a><span class="k">def</span> <span class="nf">parallels</span><span class="p">(</span><span class="n">latitudes</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Draw parallels on the Earth.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * latitudes : list</span>
+<span class="sd">        The latitudes where the parallels will be drawn.</span>
+<span class="sd">    * color : tuple</span>
+<span class="sd">        RGB color of the lines. Defaults to black.</span>
+<span class="sd">    * linewidth : float</span>
+<span class="sd">        The width of the lines</span>
+<span class="sd">    * opacity : float</span>
+<span class="sd">        The opacity of the lines. Must be between 0 and 1</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * lines : list</span>
+<span class="sd">        List of the Mayavi surface elements of each line</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">lons</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">360.</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+    <span class="n">parallels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">lat</span> <span class="ow">in</span> <span class="n">latitudes</span><span class="p">:</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">sph2cart</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">lons</span><span class="p">)</span><span class="o">*</span><span class="n">lat</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">plot3d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="n">opacity</span><span class="p">,</span>
+            <span class="n">tube_radius</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">actor</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">line_width</span> <span class="o">=</span> <span class="n">linewidth</span>
+        <span class="n">parallels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">parallels</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

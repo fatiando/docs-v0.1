@@ -1,0 +1,12 @@
+.. _cookbook_mesher_prismrelief_grav:
+
+Meshing: Generate a topographic model using prisms and calculate its gravity anomaly
+=====================================================================================
+
+.. raw:: html
+
+    [<a href="../_static/cookbook/mesher_prismrelief_grav.py">source code</a>]
+
+.. literalinclude:: ../../cookbook/mesher_prismrelief_grav.py
+    :language: python
+    :linenos:

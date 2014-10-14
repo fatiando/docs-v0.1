@@ -1,0 +1,177 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Physical constants and unit conversions (fatiando.constants) &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../index.html" />
+    <link rel="up" title="API Reference: The fatiando package" href="fatiando.html" />
+    <link rel="next" title="Inverse problem solving tools (fatiando.inversion)" href="inversion.html" />
+    <link rel="prev" title="Logging (fatiando.logger)" href="logger.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="inversion.html" title="Inverse problem solving tools (fatiando.inversion)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="logger.html" title="Logging (fatiando.logger)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" accesskey="U">API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-fatiando.constants">
+<span id="physical-constants-and-unit-conversions-fatiando-constants"></span><span id="fatiando-constants"></span><h1>Physical constants and unit conversions (<tt class="docutils literal"><span class="pre">fatiando.constants</span></tt>)<a class="headerlink" href="#module-fatiando.constants" title="Permalink to this headline">¶</a></h1>
+<p>Holds all physical constants and unit conversions used in <a class="reference internal" href="fatiando.html#module-fatiando" title="fatiando"><tt class="xref py py-mod docutils literal"><span class="pre">fatiando</span></tt></a>.</p>
+<p>All modules should import the constants from here!</p>
+<p>All constants should be in SI, unless otherwise stated!</p>
+<hr class="docutils" />
+<dl class="data">
+<dt id="fatiando.constants.CM">
+<tt class="descclassname">fatiando.constants.</tt><tt class="descname">CM</tt><em class="property"> = 1e-07</em><a class="headerlink" href="#fatiando.constants.CM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Proportionality constant used in the magnetic method in henry/m (SI)</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fatiando.constants.G">
+<tt class="descclassname">fatiando.constants.</tt><tt class="descname">G</tt><em class="property"> = 6.673e-11</em><a class="headerlink" href="#fatiando.constants.G" title="Permalink to this definition">¶</a></dt>
+<dd><p>The gravitational constant in <span class="math">\(m^3 kg^{-1} s^{-1}\)</span></p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fatiando.constants.MEAN_EARTH_RADIUS">
+<tt class="descclassname">fatiando.constants.</tt><tt class="descname">MEAN_EARTH_RADIUS</tt><em class="property"> = 6378137.0</em><a class="headerlink" href="#fatiando.constants.MEAN_EARTH_RADIUS" title="Permalink to this definition">¶</a></dt>
+<dd><p>The mean earth radius in meters</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fatiando.constants.SI2EOTVOS">
+<tt class="descclassname">fatiando.constants.</tt><tt class="descname">SI2EOTVOS</tt><em class="property"> = 1000000000.0</em><a class="headerlink" href="#fatiando.constants.SI2EOTVOS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conversion factor from SI units to Eotvos: <span class="math">\(1/s^2 = 10^9\ Eotvos\)</span></p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fatiando.constants.SI2MGAL">
+<tt class="descclassname">fatiando.constants.</tt><tt class="descname">SI2MGAL</tt><em class="property"> = 100000.0</em><a class="headerlink" href="#fatiando.constants.SI2MGAL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conversion factor from SI units to mGal: <span class="math">\(1\ m/s^2 = 10^5\ mGal\)</span></p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fatiando.constants.T2NT">
+<tt class="descclassname">fatiando.constants.</tt><tt class="descname">T2NT</tt><em class="property"> = 1000000000.0</em><a class="headerlink" href="#fatiando.constants.T2NT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conversion factor from tesla to nanotesla</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fatiando.constants.THERMAL_DIFFUSIVITY">
+<tt class="descclassname">fatiando.constants.</tt><tt class="descname">THERMAL_DIFFUSIVITY</tt><em class="property"> = 1e-06</em><a class="headerlink" href="#fatiando.constants.THERMAL_DIFFUSIVITY" title="Permalink to this definition">¶</a></dt>
+<dd><p>The default thermal diffusivity in <span class="math">\(m^2/s\)</span></p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fatiando.constants.THERMAL_DIFFUSIVITY_YEAR">
+<tt class="descclassname">fatiando.constants.</tt><tt class="descname">THERMAL_DIFFUSIVITY_YEAR</tt><em class="property"> = 31.5576</em><a class="headerlink" href="#fatiando.constants.THERMAL_DIFFUSIVITY_YEAR" title="Permalink to this definition">¶</a></dt>
+<dd><p>The default thermal diffusivity but in <span class="math">\(m^2/year\)</span></p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="logger.html"
+                        title="previous chapter">Logging (<tt class="docutils literal"><span class="pre">fatiando.logger</span></tt>)</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="inversion.html"
+                        title="next chapter">Inverse problem solving tools (<tt class="docutils literal"><span class="pre">fatiando.inversion</span></tt>)</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/constants.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="inversion.html" title="Inverse problem solving tools (fatiando.inversion)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="logger.html" title="Logging (fatiando.logger)"
+             >previous</a> |</li>
+        <li><a href="../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="fatiando.html" >API Reference: The <tt class="docutils literal"><span class="pre">fatiando</span></tt> package</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

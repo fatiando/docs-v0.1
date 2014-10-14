@@ -1,0 +1,307 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fatiando.gridder &mdash; Fatiando a Terra v0.1</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="top" title="Fatiando a Terra v0.1" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for fatiando.gridder</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Create and operate on grids and profiles.</span>
+
+<span class="sd">**Grid generation**</span>
+
+<span class="sd">* :func:`~fatiando.gridder.regular`</span>
+<span class="sd">* :func:`~fatiando.gridder.scatter`</span>
+
+<span class="sd">**Grid I/O**</span>
+
+<span class="sd">**Grid operations**</span>
+
+<span class="sd">* :func:`~fatiando.gridder.cut`</span>
+<span class="sd">* :func:`~fatiando.gridder.interp`</span>
+
+<span class="sd">**Misc**</span>
+
+<span class="sd">* :func:`~fatiando.gridder.spacing`</span>
+
+<span class="sd">----</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">matplotlib.mlab</span>
+
+<span class="kn">import</span> <span class="nn">fatiando.logger</span>
+
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">fatiando</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">dummy</span><span class="p">(</span><span class="s">&#39;fatiando.gridder&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="regular"><a class="viewcode-back" href="../../api/gridder.html#fatiando.gridder.regular">[docs]</a><span class="k">def</span> <span class="nf">regular</span><span class="p">(</span><span class="n">area</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a regular grid. Order of the output grid is x varies first, then y.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * area</span>
+<span class="sd">        ``(x1, x2, y1, y2)``: Borders of the grid</span>
+<span class="sd">    * shape</span>
+<span class="sd">        Shape of the regular grid, ie ``(ny, nx)``.</span>
+<span class="sd">    * z</span>
+<span class="sd">        Optional. z coordinate of the grid points. If given, will return an</span>
+<span class="sd">        array with the value *z*.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * ``[xcoords, ycoords]``</span>
+<span class="sd">        Numpy arrays with the x and y coordinates of the grid points</span>
+<span class="sd">    * ``[xcoords, ycoords, zcoords]``</span>
+<span class="sd">        If *z* given. Numpy arrays with the x, y, and z coordinates of the grid</span>
+<span class="sd">        points</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Generating regular grid:&quot;</span><span class="p">)</span>
+    <span class="n">ny</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="n">shape</span>
+    <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">area</span>
+    <span class="n">dy</span><span class="p">,</span> <span class="n">dx</span> <span class="o">=</span> <span class="n">spacing</span><span class="p">(</span><span class="n">area</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  area = (x1, x2, y1, y2) = </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">((</span><span class="n">x1</span><span class="p">,</span><span class="n">x2</span><span class="p">,</span><span class="n">y1</span><span class="p">,</span><span class="n">y2</span><span class="p">))))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  shape = (ny, nx) = </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">shape</span><span class="p">)))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  spacing = (dy, dx) = </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">((</span><span class="n">dy</span><span class="p">,</span> <span class="n">dx</span><span class="p">))))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  points = nx*ny = </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nx</span><span class="o">*</span><span class="n">ny</span><span class="p">))</span>
+    <span class="n">x_range</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">dx</span><span class="p">)</span>
+    <span class="n">y_range</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">y1</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">dy</span><span class="p">)</span>
+    <span class="c"># Need to make sure that the number of points in the grid is correct because</span>
+    <span class="c"># of rounding errors in arange. Sometimes x2 and y2 are included, sometimes</span>
+    <span class="c"># not</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_range</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">nx</span><span class="p">:</span>
+        <span class="n">x_range</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x_range</span><span class="p">,</span> <span class="n">x2</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_range</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">ny</span><span class="p">:</span>
+        <span class="n">y_range</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_range</span><span class="p">,</span> <span class="n">y2</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_range</span><span class="p">)</span> <span class="o">==</span> <span class="n">nx</span><span class="p">,</span> <span class="s">&quot;Failed! x_range doesn&#39;t have nx points&quot;</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_range</span><span class="p">)</span> <span class="o">==</span> <span class="n">ny</span><span class="p">,</span> <span class="s">&quot;Failed! y_range doesn&#39;t have ny points&quot;</span>
+    <span class="n">xcoords</span><span class="p">,</span> <span class="n">ycoords</span> <span class="o">=</span> <span class="p">[</span><span class="n">mat</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span> <span class="k">for</span> <span class="n">mat</span> <span class="ow">in</span> <span class="n">numpy</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x_range</span><span class="p">,</span> <span class="n">y_range</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">z</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  z = </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">z</span><span class="p">)))</span>
+        <span class="n">zcoords</span> <span class="o">=</span> <span class="n">z</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">xcoords</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">xcoords</span><span class="p">,</span> <span class="n">ycoords</span><span class="p">,</span> <span class="n">zcoords</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">xcoords</span><span class="p">,</span> <span class="n">ycoords</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="scatter"><a class="viewcode-back" href="../../api/gridder.html#fatiando.gridder.scatter">[docs]</a><span class="k">def</span> <span class="nf">scatter</span><span class="p">(</span><span class="n">area</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create an irregular grid with a random scattering of points.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * area</span>
+<span class="sd">        ``(x1, x2, y1, y2)``: Borders of the grid</span>
+<span class="sd">    * n</span>
+<span class="sd">        Number of points</span>
+<span class="sd">    * z</span>
+<span class="sd">        Optional. z coordinate of the points. If given, will return an</span>
+<span class="sd">        array with the value *z*.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * ``[xcoords, ycoords]``</span>
+<span class="sd">        Numpy arrays with the x and y coordinates of the points</span>
+<span class="sd">    * ``[xcoords, ycoords, zcoords]``</span>
+<span class="sd">        If *z* given. Arrays with the x, y, and z coordinates of the points</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">area</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Generating irregular grid (scatter):&quot;</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  area = (x1, x2, y1, y2) = </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">((</span><span class="n">x1</span><span class="p">,</span><span class="n">x2</span><span class="p">,</span><span class="n">y1</span><span class="p">,</span><span class="n">y2</span><span class="p">))))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  number of points = n = </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">)))</span>
+    <span class="n">xcoords</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">ycoords</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">y1</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">z</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;  z = </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">z</span><span class="p">)))</span>
+        <span class="n">zcoords</span> <span class="o">=</span> <span class="n">z</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">xcoords</span><span class="p">,</span> <span class="n">ycoords</span><span class="p">,</span> <span class="n">zcoords</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">xcoords</span><span class="p">,</span> <span class="n">ycoords</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="spacing"><a class="viewcode-back" href="../../api/gridder.html#fatiando.gridder.spacing">[docs]</a><span class="k">def</span> <span class="nf">spacing</span><span class="p">(</span><span class="n">area</span><span class="p">,</span> <span class="n">shape</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns the spacing between grid nodes</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * area</span>
+<span class="sd">        ``(x1, x2, y1, y2)``: Borders of the grid</span>
+<span class="sd">    * shape</span>
+<span class="sd">        Shape of the regular grid, ie ``(ny, nx)``.</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * ``[dy, dx]``</span>
+<span class="sd">        Spacing the y and x directions</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">area</span>
+    <span class="n">ny</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="n">shape</span>
+    <span class="n">dx</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">x2</span> <span class="o">-</span> <span class="n">x1</span><span class="p">)</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">nx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">dy</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">y2</span> <span class="o">-</span> <span class="n">y1</span><span class="p">)</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">ny</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">dy</span><span class="p">,</span> <span class="n">dx</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="interp"><a class="viewcode-back" href="../../api/gridder.html#fatiando.gridder.interp">[docs]</a><span class="k">def</span> <span class="nf">interp</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">area</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">algorithm</span><span class="o">=</span><span class="s">&#39;nn&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Interpolate data onto a regular grid.</span>
+
+<span class="sd">    .. warning:: Doesn&#39;t extrapolate. Will return a masked array in the</span>
+<span class="sd">        extrapolated areas.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * x, y : 1D arrays</span>
+<span class="sd">        Arrays with the x and y coordinates of the data points.</span>
+<span class="sd">    * v : 1D array</span>
+<span class="sd">        Array with the scalar value assigned to the data points.</span>
+<span class="sd">    * shape : tuple = (ny, nx)</span>
+<span class="sd">        Shape of the interpolated regular grid, ie (ny, nx).</span>
+<span class="sd">    * area : tuple = (x1, x2, y1, y2)</span>
+<span class="sd">        The are where the data will be interpolated. If None, then will get the</span>
+<span class="sd">        area from *x* and *y*.</span>
+<span class="sd">    * algorithm : string</span>
+<span class="sd">        Interpolation algorithm. Either ``&#39;nn&#39;`` for natural neighbor</span>
+<span class="sd">        or ``&#39;linear&#39;`` for linear interpolation. (see numpy.griddata)</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * ``[X, Y, V]``</span>
+<span class="sd">        Three 2D arrays with the interpolated x, y, and v</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">algorithm</span> <span class="o">!=</span> <span class="s">&#39;nn&#39;</span> <span class="ow">and</span> <span class="n">algorithm</span> <span class="o">!=</span> <span class="s">&#39;linear&#39;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Invalid interpolation: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">algorithm</span><span class="p">)))</span>
+    <span class="n">ny</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="n">shape</span>
+    <span class="k">if</span> <span class="n">area</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">area</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">x</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+    <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">area</span>
+    <span class="n">xs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">nx</span><span class="p">)</span>
+    <span class="n">ys</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">y1</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">ys</span><span class="p">)</span>
+    <span class="n">V</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">mlab</span><span class="o">.</span><span class="n">griddata</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">algorithm</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">V</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="cut"><a class="viewcode-back" href="../../api/gridder.html#fatiando.gridder.cut">[docs]</a><span class="k">def</span> <span class="nf">cut</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">scalars</span><span class="p">,</span> <span class="n">area</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a subsection of a grid.</span>
+
+<span class="sd">    The returned subsection is not a copy! In technical terms, returns a slice</span>
+<span class="sd">    of the numpy arrays. So changes made to the subsection reflect on the</span>
+<span class="sd">    original grid. Use numpy.copy to make copies of the subsections and avoid</span>
+<span class="sd">    this.</span>
+
+<span class="sd">    Parameters:</span>
+
+<span class="sd">    * x, y</span>
+<span class="sd">        Arrays with the x and y coordinates of the data points.</span>
+<span class="sd">    * scalars</span>
+<span class="sd">        List of arrays with the scalar values assigned to the grid points.</span>
+<span class="sd">    * area</span>
+<span class="sd">        ``(x1, x2, y1, y2)``: Borders of the subsection</span>
+
+<span class="sd">    Returns:</span>
+
+<span class="sd">    * ``[subx, suby, subscalars]``</span>
+<span class="sd">        Arrays with x and y coordinates and scalar values of the subsection.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">area</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;x and y must have the same length&quot;</span><span class="p">)</span>
+    <span class="n">inside</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">xmin</span> <span class="ow">and</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">xmax</span> <span class="ow">and</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">ymin</span> <span class="ow">and</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">ymax</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="n">inside</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">inside</span><span class="p">],</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="n">inside</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">scalars</span><span class="p">]]</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">Fatiando a Terra v0.1</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Leonardo Uieda.
+      Last updated on Oct 14, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>
